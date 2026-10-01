@@ -1,0 +1,22 @@
+{
+  "name": "@passwave/manifest",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "passwave": {
+    "kind": "module",
+    "level": 3,
+    "schema": "manifest"
+  },
+  "dependencies": {
+    "@passwave/contracts": "workspace:*",
+    "@passwave/crypto": "workspace:*",
+    "@passwave/ticketing": "workspace:*",
+    "@passwave/inventory": "workspace:*",
+    "@passwave/courtesy": "workspace:*",
+    "@passwave/staff": "workspace:*"
+  }
+}

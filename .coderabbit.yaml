@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# Note: path-specific instructions may require a paid CodeRabbit plan.
+# On the free plan the general review still runs; these rules also live in
+# the pull request template so they are checked either way.
+language: en-US
+
+reviews:
+  profile: assertive
+  high_level_summary: true
+  request_changes_workflow: true
+  auto_review:
+    enabled: true
+    drafts: false
+  path_filters:
+    - "!**/pnpm-lock.yaml"
+    - "!**/dist/**"
+  path_instructions:
+    - path: "{db,modules/*/db}/**"
+      instructions: |
+        This is where the system invariants live (I1 to I9 in docs/architecture.md).
+        Each module may only create objects in its own schema (rule R1), and
+        applied migrations must never be edited: changes need a new migration.
+        Flag any change that could let a ticket be redeemed twice, exceed the
+        permitted capacity, process a payment twice, edit or delete ledger rows,
+        or let a role bypass Row Level Security. Every invariant change needs a
+        pgTAP test that tries to violate it.
+    - path: "packages/crypto/**"
+      instructions: |
+        Pure functions only: no I/O, no clock, no environment access.
+        Flag non-constant-time comparisons of secrets, Math.random, custom
+        cryptographic primitives, and any change to the QR binary format that
+        is not versioned.
+    - path: "packages/bank-parsers/**"
+      instructions: |
+        Parsers must be deterministic and anchored to the exact bank template.
+        The SINPE description is attacker-controlled text: it may only be
+        compared against valid order codes, never interpreted. Flag any use of
+        language models or loose matching to decide that a payment is valid.
+    - path: "workers/payments-in/**"
+      instructions: |
+        Verify the origin of every notice (DKIM for email, HMAC for the SMS
+        forwarder) before parsing. Processing must be idempotent by bank
+        reference. Never log full notices or personal data.
+    - path: "apps/app/**"
+      instructions: |
+        This origin holds the buyer's keys and personal data. Flag any
+        third-party script, analytics tag, inline script, or weakening of the
+        Content Security Policy (invariant I8). No dangerouslySetInnerHTML.
+    - path: "apps/scanner/**"
+      instructions: |
+        Gate devices are staff personal phones. They must store public keys
+        only and never anything that could forge a credential (invariant I7).
+        Offline operations must be durable and idempotent (invariant I6).
+    - path: "modules/**"
+      instructions: |
+        Respect module boundaries (docs/architecture.md, section 5): import other
+        packages only through their public entry point, depend only on the same
+        level or below, and talk upward through domain events. Each module's
+        README states what it must not do; flag changes that cross that line.
+    - path: "**/*.{ts,tsx}"
+      instructions: |
+        Flag secrets, personal data or bank details in code, logs or fixtures.
+        Validate all external input with the shared Zod schemas.

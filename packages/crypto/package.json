@@ -1,0 +1,16 @@
+{
+  "name": "@passwave/crypto",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "passwave": {
+    "kind": "core",
+    "level": 0
+  },
+  "dependencies": {
+    "@passwave/contracts": "workspace:*"
+  }
+}

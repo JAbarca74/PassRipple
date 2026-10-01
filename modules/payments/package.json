@@ -1,0 +1,19 @@
+{
+  "name": "@passwave/payments",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "passwave": {
+    "kind": "module",
+    "level": 3,
+    "schema": "payments"
+  },
+  "dependencies": {
+    "@passwave/contracts": "workspace:*",
+    "@passwave/bank-parsers": "workspace:*",
+    "@passwave/orders": "workspace:*"
+  }
+}

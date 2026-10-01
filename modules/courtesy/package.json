@@ -1,0 +1,19 @@
+{
+  "name": "@passwave/courtesy",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "passwave": {
+    "kind": "module",
+    "level": 2,
+    "schema": "courtesy"
+  },
+  "dependencies": {
+    "@passwave/contracts": "workspace:*",
+    "@passwave/events": "workspace:*",
+    "@passwave/ticketing": "workspace:*"
+  }
+}

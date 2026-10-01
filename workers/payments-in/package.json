@@ -1,0 +1,9 @@
+{
+  "name": "@passwave/worker-payments-in",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "passwave": {
+    "kind": "worker"
+  }
+}

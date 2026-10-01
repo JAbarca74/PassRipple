@@ -1,0 +1,21 @@
+{
+  "name": "@passwave/orders",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "passwave": {
+    "kind": "module",
+    "level": 3,
+    "schema": "orders"
+  },
+  "dependencies": {
+    "@passwave/contracts": "workspace:*",
+    "@passwave/pricing": "workspace:*",
+    "@passwave/events": "workspace:*",
+    "@passwave/catalog": "workspace:*",
+    "@passwave/inventory": "workspace:*"
+  }
+}

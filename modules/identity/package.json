@@ -1,0 +1,17 @@
+{
+  "name": "@passwave/identity",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "passwave": {
+    "kind": "module",
+    "level": 1,
+    "schema": "identity"
+  },
+  "dependencies": {
+    "@passwave/contracts": "workspace:*"
+  }
+}

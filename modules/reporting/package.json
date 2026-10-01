@@ -1,0 +1,17 @@
+{
+  "name": "@passwave/reporting",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "passwave": {
+    "kind": "module",
+    "level": 4,
+    "schema": "reporting"
+  },
+  "dependencies": {
+    "@passwave/contracts": "workspace:*"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "@passwave/municipal",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "passwave": {
+    "kind": "module",
+    "level": 4,
+    "schema": "municipal"
+  },
+  "dependencies": {
+    "@passwave/contracts": "workspace:*",
+    "@passwave/tax": "workspace:*",
+    "@passwave/jurisdictions": "workspace:*",
+    "@passwave/events": "workspace:*"
+  }
+}

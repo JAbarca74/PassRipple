@@ -1,0 +1,53 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+.turbo/
+.expo/
+.wrangler/
+coverage/
+*.tsbuildinfo
+
+# Environment and secrets: never commit these
+.env
+.env.*
+!.env.example
+.dev.vars
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+google-services.json
+GoogleService-Info.plist
+credentials*.json
+service-account*.json
+
+# Database dumps and exports
+*.dump
+*.sql.gz
+backups/
+
+# Design and business documents (including the private design guide): kept local only
+docs/
+
+# Real bank notices and personal data: only anonymized fixtures are allowed
+**/bank-notices/real/
+**/exports/
+
+# OS and editors
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*

@@ -1,0 +1,19 @@
+{
+  "name": "@passwave/staff",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "passwave": {
+    "kind": "module",
+    "level": 2,
+    "schema": "staff"
+  },
+  "dependencies": {
+    "@passwave/contracts": "workspace:*",
+    "@passwave/identity": "workspace:*",
+    "@passwave/events": "workspace:*"
+  }
+}

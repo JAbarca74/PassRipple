@@ -1,0 +1,28 @@
+{
+  "name": "passwave",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "check:boundaries": "node scripts/check-boundaries.ts",
+    "verify": "pnpm lint && pnpm typecheck && pnpm check:boundaries && pnpm test",
+    "db:up": "docker compose -f db/compose.yaml up -d --build --wait",
+    "db:down": "docker compose -f db/compose.yaml down -v",
+    "db:migrate": "node scripts/db.ts migrate",
+    "db:test": "node scripts/db.ts test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15",
+    "@types/node": "26.6.3",
+    "typescript": "7.0.2",
+    "vitest": "5.0.3"
+  }
+}

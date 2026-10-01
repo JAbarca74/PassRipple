@@ -1,0 +1,20 @@
+{
+  "name": "@passwave/redemption",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "passwave": {
+    "kind": "module",
+    "level": 3,
+    "schema": "redemption"
+  },
+  "dependencies": {
+    "@passwave/contracts": "workspace:*",
+    "@passwave/crypto": "workspace:*",
+    "@passwave/ticketing": "workspace:*",
+    "@passwave/staff": "workspace:*"
+  }
+}
