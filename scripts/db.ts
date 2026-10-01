@@ -1,6 +1,7 @@
 // Database helper: applies migrations in dependency order and runs pgTAP tests.
 //
-//   node scripts/db.ts migrate   apply bootstrap SQL, then each module's new migrations
+//   node scripts/db.ts migrate   apply bootstrap SQL, then each module's new migrations,
+//                                each one as the module's owner role (rule R1)
 //   node scripts/db.ts test      run db/tests and every module's db/tests with pgTAP
 //
 // Connects with DATABASE_URL (default: the local database from db/compose.yaml).
@@ -10,6 +11,7 @@ import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { topologicalOrder } from "./lib/boundaries.ts";
+import { moduleSpecs, schemaArrayLiteral } from "./lib/db-modules.ts";
 import { loadWorkspace } from "./lib/workspace.ts";
 
 const ROOT = process.cwd();
@@ -56,12 +58,28 @@ function migrate(): void {
   }
 
   let applied = 0;
-  for (const mod of modulesInOrder()) {
+  const modules = modulesInOrder();
+  const specs = moduleSpecs(modules);
+  for (const [index, mod] of modules.entries()) {
+    const spec = specs[index];
+    if (spec?.name !== mod.name) throw new Error(`module order mismatch at ${mod.name}`);
+
+    // Creates the owner role and schema, and syncs read access to the module's dependencies.
+    const owner = psql(
+      "SELECT migrations.prepare_module(:'module', :'schema', :'level'::integer, :'deps'::text[]);\n",
+      {
+        module: spec.name,
+        schema: spec.schema,
+        level: String(spec.level),
+        deps: schemaArrayLiteral(spec.dependsOn),
+      },
+    ).trim();
+
     for (const path of sqlFiles(join(mod.dir, "db", "migrations"))) {
       // Recorded with forward slashes so the same database works from any OS.
       const file = toPosix(path.slice(mod.dir.length + 1));
       const checksum = createHash("sha256").update(readFileSync(path)).digest("hex");
-      const vars = { module: mod.name, file, checksum };
+      const vars = { module: mod.name, file, checksum, owner };
 
       const existing = psql(
         "SELECT checksum FROM migrations.applied WHERE module = :'module' AND file = :'file';\n",
@@ -75,8 +93,19 @@ function migrate(): void {
         );
       }
 
+      // The migration runs as the module's owner role, so it can only create objects in its
+      // own schema and only read the schemas of the modules it depends on.
       psql(
-        `BEGIN;\n${include(path)}INSERT INTO migrations.applied (module, file, checksum) VALUES (:'module', :'file', :'checksum');\nCOMMIT;\n`,
+        [
+          "BEGIN;",
+          "SELECT migrations.allow_schema_creation(:'owner', true);",
+          'SET LOCAL ROLE :"owner";',
+          include(path),
+          "RESET ROLE;",
+          "SELECT migrations.allow_schema_creation(:'owner', false);",
+          "INSERT INTO migrations.applied (module, file, checksum) VALUES (:'module', :'file', :'checksum');",
+          "COMMIT;\n",
+        ].join("\n"),
         vars,
       );
       console.log(`applied ${mod.name}/${file}`);
