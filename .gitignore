@@ -38,6 +38,10 @@ docs/
 **/bank-notices/real/
 **/exports/
 
+# Local AI assistant settings and instructions: never commit these
+.claude/
+CLAUDE.md
+
 # OS and editors
 .DS_Store
 Thumbs.db

@@ -1,8 +1,12 @@
 # Local database for development and tests only.
 # Bound to 127.0.0.1 and using trust authentication, so it must never be exposed.
+name: passripple
+
 services:
   db:
     build: .
+    image: passripple-db
+    container_name: passripple-db
     environment:
       POSTGRES_USER: passripple
       POSTGRES_DB: passripple

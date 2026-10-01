@@ -48,7 +48,7 @@ The rules the system must never break. They live in the database and in the cryp
 
 A **modular monolith**: domain modules with enforced boundaries, each owning its own database schema. The full design is in [`docs/architecture.md`](docs/architecture.md), and the reasons behind each decision are in [`docs/adr/`](docs/adr/).
 
-> **Note:** `docs/` is kept private and is not part of this repository, so links to it do not resolve here. To work on the code, use [`CLAUDE.md`](CLAUDE.md) and each package's `README.md`, which hold the commands and the rules.
+> **Note:** `docs/` is kept private and is not part of this repository, so links to it do not resolve here. To work on the code, use this file and each package's `README.md`, which hold the commands and the rules.
 
 | Layer | Technology |
 |---|---|

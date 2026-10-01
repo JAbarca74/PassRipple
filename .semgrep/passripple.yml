@@ -15,10 +15,10 @@ rules:
     languages: [typescript, javascript]
     paths:
       include:
-        - "packages/crypto/"
-        - "packages/pricing/"
-        - "packages/tax/"
-        - "packages/bank-parsers/"
+        - "/packages/crypto/"
+        - "/packages/pricing/"
+        - "/packages/tax/"
+        - "/packages/bank-parsers/"
     pattern-either:
       - pattern: fetch(...)
       - pattern: Date.now()
