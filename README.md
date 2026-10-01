@@ -1,4 +1,4 @@
-# Passwave
+# PassRipple
 
 **Fraud-proof event ticketing for Costa Rica.** Device-bound QR tickets, offline-first gate validation, SINPE Móvil payments and verifiable payouts to organizers.
 
@@ -6,11 +6,11 @@
 
 ---
 
-## Why Passwave
+## Why PassRipple
 
 Organizers of mass events in Costa Rica sell paper tickets that get reprinted and resold as originals. At the gate, the copy looks exactly like the real one, and the fraud is only discovered when more people are inside than tickets were sold.
 
-Passwave starts from one idea:
+PassRipple starts from one idea:
 
 > **The paper is not the ticket. The database record is.**
 
@@ -113,7 +113,7 @@ pnpm db:down         # stop the database and delete its data
 
 ## Security
 
-Passwave handles money and personal data, so security is designed in, not added on:
+PassRipple handles money and personal data, so security is designed in, not added on:
 
 - Gate devices store **public keys only**. Extracting a gate device's data cannot produce a valid ticket.
 - Payments are confirmed **only** by the bank's notice, parsed deterministically. Screenshots never approve a payment, and no AI model decides one.

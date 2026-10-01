@@ -1,4 +1,4 @@
-title = "Passwave secret scanning rules"
+title = "PassRipple secret scanning rules"
 
 # Start from the full set of default gitleaks rules.
 [extend]
@@ -7,7 +7,7 @@ useDefault = true
 # Raw Ed25519 private seed assigned to a key-like name.
 # The server signing key must only ever live in Cloudflare Workers secrets.
 [[rules]]
-id = "passwave-ed25519-seed"
+id = "passripple-ed25519-seed"
 description = "Possible raw Ed25519 private seed (32 bytes as hex)"
 regex = '''(?i)(?:private|secret|seed|signing)[_-]?key\s*[:=]\s*["']?([a-f0-9]{64})\b'''
 secretGroup = 1
@@ -15,7 +15,7 @@ keywords = ["private", "secret", "seed", "signing"]
 
 # HMAC key shared with the SMS forwarder.
 [[rules]]
-id = "passwave-forwarder-hmac"
+id = "passripple-forwarder-hmac"
 description = "SMS forwarder HMAC key"
 regex = '''(?i)forwarder[_-]?(?:hmac|secret|key)\s*[:=]\s*["']?([A-Za-z0-9+/=_-]{24,})'''
 secretGroup = 1
@@ -23,7 +23,7 @@ keywords = ["forwarder"]
 
 # Costa Rican IBAN: the collection account must never appear in the repository.
 [[rules]]
-id = "passwave-cr-iban"
+id = "passripple-cr-iban"
 description = "Costa Rican IBAN"
 regex = '''\bCR\d{2}0\d{17}\b'''
 keywords = ["cr"]

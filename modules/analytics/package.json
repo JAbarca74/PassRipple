@@ -1,18 +1,18 @@
 {
-  "name": "@passwave/analytics",
+  "name": "@passripple/analytics",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
-  "passwave": {
+  "passripple": {
     "kind": "module",
     "level": 4,
     "schema": "analytics"
   },
   "dependencies": {
-    "@passwave/contracts": "workspace:*",
-    "@passwave/privacy": "workspace:*"
+    "@passripple/contracts": "workspace:*",
+    "@passripple/privacy": "workspace:*"
   }
 }

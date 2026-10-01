@@ -2,9 +2,9 @@ BEGIN;
 SELECT plan(4);
 
 SELECT has_table('migrations', 'applied', 'applied migrations are recorded');
-SELECT has_role('passwave_api', 'the API role exists');
+SELECT has_role('passripple_api', 'the API role exists');
 SELECT is(
-  (SELECT rolbypassrls FROM pg_roles WHERE rolname = 'passwave_api'),
+  (SELECT rolbypassrls FROM pg_roles WHERE rolname = 'passripple_api'),
   false,
   'the API role cannot bypass Row Level Security'
 );

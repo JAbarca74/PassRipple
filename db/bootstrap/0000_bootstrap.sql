@@ -16,8 +16,8 @@ CREATE TABLE IF NOT EXISTS migrations.applied (
 -- Role used by the API. It can never bypass Row Level Security.
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'passwave_api') THEN
-    CREATE ROLE passwave_api NOLOGIN NOBYPASSRLS;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'passripple_api') THEN
+    CREATE ROLE passripple_api NOLOGIN NOBYPASSRLS;
   END IF;
 END
 $$;
