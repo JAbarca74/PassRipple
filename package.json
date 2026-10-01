@@ -8,6 +8,11 @@
     "node": ">=22.18"
   },
   "scripts": {
+    "dev:app": "pnpm --filter @passripple/app dev",
+    "dev:site": "pnpm --filter @passripple/site dev",
+    "dev:coming-soon": "pnpm --filter @passripple/site dev:coming-soon",
+    "build": "pnpm -r --if-present build",
+    "build:coming-soon": "pnpm --filter @passripple/site build:coming-soon",
     "lint": "biome check .",
     "format": "biome check --write .",
     "typecheck": "tsc -p tsconfig.json",

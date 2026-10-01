@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-6 -16 444 133" role="img" aria-labelledby="title">
+  <title id="title">PassRipple</title>
+  <g fill="none" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M0 60V-10H12A20 20 0 0 1 12 30H0" stroke="#FFFFFF"/>
+    <path d="M89 20V60M49 40a20 20 0 1 0 40 0a20 20 0 1 0-40 0" stroke="#FFFFFF"/>
+    <path d="M129.8 25.8A13 10 0 1 0 118 40A13 10 0 1 1 106.2 54.2" stroke="#FFFFFF"/>
+    <path d="M171.8 25.8A13 10 0 1 0 160 40A13 10 0 1 1 148.2 54.2" stroke="#FFFFFF"/>
+    <path d="M189 60V-10H201A20 20 0 0 1 201 30H189M203 30L223 60" stroke="#FFFFFF"/>
+    <path d="M241 20V60M241 0v0" stroke="#FFFFFF"/>
+    <path d="M261 20V80M261 40a20 20 0 1 0 40 0a20 20 0 1 0-40 0" stroke="#FFFFFF"/>
+    <path d="M318 20V80M318 40a20 20 0 1 0 40 0a20 20 0 1 0-40 0" stroke="#FFFFFF"/>
+    <path d="M375 -10V60" stroke="#FFFFFF"/>
+    <path d="M392 40H432A20 20 0 1 0 428.4 51.5" stroke="#FFFFFF"/>
+    <path d="M156 104q15-14 30 0t30 0t30 0t30 0" stroke="#00E5D8"/>
+  </g>
+</svg>

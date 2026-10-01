@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-labelledby="title">
+  <title id="title">PassRipple</title>
+  <rect width="100" height="100" rx="22" fill="#5B1FE0"/>
+  <g fill="none" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" transform="translate(-6 -2)">
+    <path d="M30 18V82M30 40a22 22 0 1 0 44 0a22 22 0 1 0-44 0" stroke="#FFFFFF"/>
+    <path d="M46 84q6-8 12 0t12 0t12 0" stroke="#00E5D8"/>
+  </g>
+</svg>
