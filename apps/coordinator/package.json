@@ -1,9 +1,9 @@
 {
-  "name": "@passwave/coordinator",
+  "name": "@passripple/coordinator",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "passwave": {
+  "passripple": {
     "kind": "app"
   }
 }

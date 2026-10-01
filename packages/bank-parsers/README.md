@@ -1,4 +1,4 @@
-# @passwave/bank-parsers
+# @passripple/bank-parsers
 
 **Kind:** core · **Level:** 0 (core)
 
@@ -8,7 +8,7 @@ Deterministic parsers that turn a bank payment notice (email or SMS) into a type
 
 ## Depends on
 
-- `@passwave/contracts`
+- `@passripple/contracts`
 
 ## Does not
 

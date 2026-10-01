@@ -14,13 +14,13 @@ export interface WorkspacePackage {
 }
 
 export const WORKSPACE_DIRS = ["packages", "modules", "apps", "workers"] as const;
-export const SCOPE = "@passwave/";
+export const SCOPE = "@passripple/";
 
 const KINDS: readonly Kind[] = ["core", "module", "app", "worker"];
 
 interface RawPackageJson {
   name?: string;
-  passwave?: { kind?: string; level?: number; schema?: string };
+  passripple?: { kind?: string; level?: number; schema?: string };
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
   peerDependencies?: Record<string, string>;
@@ -49,15 +49,15 @@ function isKind(value: string | undefined): value is Kind {
 }
 
 export function parsePackage(dir: string, raw: RawPackageJson): WorkspacePackage {
-  const kind = raw.passwave?.kind;
+  const kind = raw.passripple?.kind;
   const all = { ...raw.dependencies, ...raw.devDependencies, ...raw.peerDependencies };
   const internal = Object.entries(all).filter(([dep]) => dep.startsWith(SCOPE));
   return {
     name: raw.name ?? dir,
     dir,
     kind: isKind(kind) ? kind : "invalid",
-    level: raw.passwave?.level,
-    schema: raw.passwave?.schema,
+    level: raw.passripple?.level,
+    schema: raw.passripple?.schema,
     internalDeps: internal.map(([dep]) => dep).sort(),
     invalidDepSpecs: internal.filter(([, spec]) => spec !== "workspace:*").map(([dep]) => dep),
   };

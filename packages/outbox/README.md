@@ -1,4 +1,4 @@
-# @passwave/outbox
+# @passripple/outbox
 
 **Kind:** core · **Level:** 0 (core)
 
@@ -8,7 +8,7 @@ Durable on-device queue: enqueue operations and drain them in batches through an
 
 ## Depends on
 
-- `@passwave/contracts`
+- `@passripple/contracts`
 
 ## Guarantees
 

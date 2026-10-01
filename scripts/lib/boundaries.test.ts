@@ -10,12 +10,12 @@ function pkg(
   schema?: string,
 ): WorkspacePackage {
   return {
-    name: `@passwave/${name}`,
+    name: `@passripple/${name}`,
     dir: name,
     kind,
     level,
     schema: kind === "module" ? (schema ?? name) : undefined,
-    internalDeps: deps.map((d) => `@passwave/${d}`),
+    internalDeps: deps.map((d) => `@passripple/${d}`),
     invalidDepSpecs: [],
   };
 }
@@ -47,7 +47,7 @@ describe("checkBoundaries", () => {
 
   it("rejects a core package depending on anything but contracts", () => {
     const errors = checkBoundaries([...base, pkg("pricing", "core", 0, ["crypto"])]);
-    expect(errors.join("\n")).toMatch(/only depend on @passwave\/contracts/);
+    expect(errors.join("\n")).toMatch(/only depend on @passripple\/contracts/);
   });
 
   it("rejects depending on an app or worker", () => {
@@ -76,7 +76,7 @@ describe("findCycle", () => {
     const cycle = findCycle(cyclic) ?? [];
     expect(cycle).toHaveLength(3);
     expect(cycle[0]).toBe(cycle[2]);
-    expect(new Set(cycle)).toEqual(new Set(["@passwave/identity", "@passwave/events"]));
+    expect(new Set(cycle)).toEqual(new Set(["@passripple/identity", "@passripple/events"]));
   });
 
   it("returns undefined for an acyclic graph", () => {

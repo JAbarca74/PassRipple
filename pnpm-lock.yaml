@@ -31,262 +31,262 @@ importers:
 
   modules/analytics:
     dependencies:
-      '@passwave/contracts':
+      '@passripple/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@passwave/privacy':
+      '@passripple/privacy':
         specifier: workspace:*
         version: link:../privacy
 
   modules/audit:
     dependencies:
-      '@passwave/contracts':
+      '@passripple/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
 
   modules/catalog:
     dependencies:
-      '@passwave/contracts':
+      '@passripple/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@passwave/events':
+      '@passripple/events':
         specifier: workspace:*
         version: link:../events
 
   modules/courtesy:
     dependencies:
-      '@passwave/contracts':
+      '@passripple/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@passwave/events':
+      '@passripple/events':
         specifier: workspace:*
         version: link:../events
-      '@passwave/ticketing':
+      '@passripple/ticketing':
         specifier: workspace:*
         version: link:../ticketing
 
   modules/door-sales:
     dependencies:
-      '@passwave/contracts':
+      '@passripple/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@passwave/inventory':
+      '@passripple/inventory':
         specifier: workspace:*
         version: link:../inventory
-      '@passwave/staff':
+      '@passripple/staff':
         specifier: workspace:*
         version: link:../staff
-      '@passwave/ticketing':
+      '@passripple/ticketing':
         specifier: workspace:*
         version: link:../ticketing
 
   modules/events:
     dependencies:
-      '@passwave/contracts':
+      '@passripple/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@passwave/identity':
+      '@passripple/identity':
         specifier: workspace:*
         version: link:../identity
-      '@passwave/jurisdictions':
+      '@passripple/jurisdictions':
         specifier: workspace:*
         version: link:../jurisdictions
 
   modules/identity:
     dependencies:
-      '@passwave/contracts':
+      '@passripple/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
 
   modules/inventory:
     dependencies:
-      '@passwave/catalog':
+      '@passripple/catalog':
         specifier: workspace:*
         version: link:../catalog
-      '@passwave/contracts':
+      '@passripple/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@passwave/events':
+      '@passripple/events':
         specifier: workspace:*
         version: link:../events
 
   modules/invoicing:
     dependencies:
-      '@passwave/contracts':
+      '@passripple/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
 
   modules/jurisdictions:
     dependencies:
-      '@passwave/contracts':
+      '@passripple/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
 
   modules/manifest:
     dependencies:
-      '@passwave/contracts':
+      '@passripple/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@passwave/courtesy':
+      '@passripple/courtesy':
         specifier: workspace:*
         version: link:../courtesy
-      '@passwave/crypto':
+      '@passripple/crypto':
         specifier: workspace:*
         version: link:../../packages/crypto
-      '@passwave/inventory':
+      '@passripple/inventory':
         specifier: workspace:*
         version: link:../inventory
-      '@passwave/staff':
+      '@passripple/staff':
         specifier: workspace:*
         version: link:../staff
-      '@passwave/ticketing':
+      '@passripple/ticketing':
         specifier: workspace:*
         version: link:../ticketing
 
   modules/municipal:
     dependencies:
-      '@passwave/contracts':
+      '@passripple/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@passwave/events':
+      '@passripple/events':
         specifier: workspace:*
         version: link:../events
-      '@passwave/jurisdictions':
+      '@passripple/jurisdictions':
         specifier: workspace:*
         version: link:../jurisdictions
-      '@passwave/tax':
+      '@passripple/tax':
         specifier: workspace:*
         version: link:../../packages/tax
 
   modules/notifications:
     dependencies:
-      '@passwave/contracts':
+      '@passripple/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
 
   modules/orders:
     dependencies:
-      '@passwave/catalog':
+      '@passripple/catalog':
         specifier: workspace:*
         version: link:../catalog
-      '@passwave/contracts':
+      '@passripple/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@passwave/events':
+      '@passripple/events':
         specifier: workspace:*
         version: link:../events
-      '@passwave/inventory':
+      '@passripple/inventory':
         specifier: workspace:*
         version: link:../inventory
-      '@passwave/pricing':
+      '@passripple/pricing':
         specifier: workspace:*
         version: link:../../packages/pricing
 
   modules/payments:
     dependencies:
-      '@passwave/bank-parsers':
+      '@passripple/bank-parsers':
         specifier: workspace:*
         version: link:../../packages/bank-parsers
-      '@passwave/contracts':
+      '@passripple/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@passwave/orders':
+      '@passripple/orders':
         specifier: workspace:*
         version: link:../orders
 
   modules/privacy:
     dependencies:
-      '@passwave/contracts':
+      '@passripple/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@passwave/identity':
+      '@passripple/identity':
         specifier: workspace:*
         version: link:../identity
 
   modules/redemption:
     dependencies:
-      '@passwave/contracts':
+      '@passripple/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@passwave/crypto':
+      '@passripple/crypto':
         specifier: workspace:*
         version: link:../../packages/crypto
-      '@passwave/staff':
+      '@passripple/staff':
         specifier: workspace:*
         version: link:../staff
-      '@passwave/ticketing':
+      '@passripple/ticketing':
         specifier: workspace:*
         version: link:../ticketing
 
   modules/reporting:
     dependencies:
-      '@passwave/contracts':
+      '@passripple/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
 
   modules/seo:
     dependencies:
-      '@passwave/catalog':
+      '@passripple/catalog':
         specifier: workspace:*
         version: link:../catalog
-      '@passwave/contracts':
+      '@passripple/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@passwave/events':
+      '@passripple/events':
         specifier: workspace:*
         version: link:../events
 
   modules/settlement:
     dependencies:
-      '@passwave/contracts':
+      '@passripple/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@passwave/events':
+      '@passripple/events':
         specifier: workspace:*
         version: link:../events
-      '@passwave/identity':
+      '@passripple/identity':
         specifier: workspace:*
         version: link:../identity
-      '@passwave/orders':
+      '@passripple/orders':
         specifier: workspace:*
         version: link:../orders
-      '@passwave/payments':
+      '@passripple/payments':
         specifier: workspace:*
         version: link:../payments
-      '@passwave/pricing':
+      '@passripple/pricing':
         specifier: workspace:*
         version: link:../../packages/pricing
 
   modules/staff:
     dependencies:
-      '@passwave/contracts':
+      '@passripple/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@passwave/events':
+      '@passripple/events':
         specifier: workspace:*
         version: link:../events
-      '@passwave/identity':
+      '@passripple/identity':
         specifier: workspace:*
         version: link:../identity
 
   modules/ticketing:
     dependencies:
-      '@passwave/catalog':
+      '@passripple/catalog':
         specifier: workspace:*
         version: link:../catalog
-      '@passwave/contracts':
+      '@passripple/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@passwave/crypto':
+      '@passripple/crypto':
         specifier: workspace:*
         version: link:../../packages/crypto
-      '@passwave/events':
+      '@passripple/events':
         specifier: workspace:*
         version: link:../events
 
   packages/bank-parsers:
     dependencies:
-      '@passwave/contracts':
+      '@passripple/contracts':
         specifier: workspace:*
         version: link:../contracts
 
@@ -294,25 +294,25 @@ importers:
 
   packages/crypto:
     dependencies:
-      '@passwave/contracts':
+      '@passripple/contracts':
         specifier: workspace:*
         version: link:../contracts
 
   packages/outbox:
     dependencies:
-      '@passwave/contracts':
+      '@passripple/contracts':
         specifier: workspace:*
         version: link:../contracts
 
   packages/pricing:
     dependencies:
-      '@passwave/contracts':
+      '@passripple/contracts':
         specifier: workspace:*
         version: link:../contracts
 
   packages/tax:
     dependencies:
-      '@passwave/contracts':
+      '@passripple/contracts':
         specifier: workspace:*
         version: link:../contracts
 

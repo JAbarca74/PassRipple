@@ -1,19 +1,19 @@
 {
-  "name": "@passwave/staff",
+  "name": "@passripple/staff",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
-  "passwave": {
+  "passripple": {
     "kind": "module",
     "level": 2,
     "schema": "staff"
   },
   "dependencies": {
-    "@passwave/contracts": "workspace:*",
-    "@passwave/identity": "workspace:*",
-    "@passwave/events": "workspace:*"
+    "@passripple/contracts": "workspace:*",
+    "@passripple/identity": "workspace:*",
+    "@passripple/events": "workspace:*"
   }
 }

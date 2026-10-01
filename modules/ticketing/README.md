@@ -1,4 +1,4 @@
-# @passwave/ticketing
+# @passripple/ticketing
 
 **Kind:** module · **Level:** 2 (composite domain)
 
@@ -12,10 +12,10 @@ The `ticketing` database schema. No other module writes to it (rule R1).
 
 ## Depends on
 
-- `@passwave/contracts`
-- `@passwave/crypto`
-- `@passwave/events`
-- `@passwave/catalog`
+- `@passripple/contracts`
+- `@passripple/crypto`
+- `@passripple/events`
+- `@passripple/catalog`
 
 ## Emits
 

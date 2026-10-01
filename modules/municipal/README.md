@@ -1,4 +1,4 @@
-# @passwave/municipal
+# @passripple/municipal
 
 **Kind:** module · **Level:** 4 (consumer)
 
@@ -12,10 +12,10 @@ The `municipal` database schema. No other module writes to it (rule R1).
 
 ## Depends on
 
-- `@passwave/contracts`
-- `@passwave/tax`
-- `@passwave/jurisdictions`
-- `@passwave/events`
+- `@passripple/contracts`
+- `@passripple/tax`
+- `@passripple/jurisdictions`
+- `@passripple/events`
 
 ## Does not
 

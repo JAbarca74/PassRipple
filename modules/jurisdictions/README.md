@@ -1,4 +1,4 @@
-# @passwave/jurisdictions
+# @passripple/jurisdictions
 
 **Kind:** module · **Level:** 1 (base domain)
 
@@ -12,7 +12,7 @@ The `jurisdictions` database schema. No other module writes to it (rule R1).
 
 ## Depends on
 
-- `@passwave/contracts`
+- `@passripple/contracts`
 
 ## Does not
 

@@ -1,4 +1,4 @@
-# @passwave/orders
+# @passripple/orders
 
 **Kind:** module · **Level:** 3 (transactional)
 
@@ -12,11 +12,11 @@ The `orders` database schema. No other module writes to it (rule R1).
 
 ## Depends on
 
-- `@passwave/contracts`
-- `@passwave/pricing`
-- `@passwave/events`
-- `@passwave/catalog`
-- `@passwave/inventory`
+- `@passripple/contracts`
+- `@passripple/pricing`
+- `@passripple/events`
+- `@passripple/catalog`
+- `@passripple/inventory`
 
 ## Guarantees
 

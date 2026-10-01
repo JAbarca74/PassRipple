@@ -1,18 +1,18 @@
 {
-  "name": "@passwave/catalog",
+  "name": "@passripple/catalog",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
-  "passwave": {
+  "passripple": {
     "kind": "module",
     "level": 1,
     "schema": "catalog"
   },
   "dependencies": {
-    "@passwave/contracts": "workspace:*",
-    "@passwave/events": "workspace:*"
+    "@passripple/contracts": "workspace:*",
+    "@passripple/events": "workspace:*"
   }
 }

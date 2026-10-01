@@ -1,22 +1,22 @@
 {
-  "name": "@passwave/manifest",
+  "name": "@passripple/manifest",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
-  "passwave": {
+  "passripple": {
     "kind": "module",
     "level": 3,
     "schema": "manifest"
   },
   "dependencies": {
-    "@passwave/contracts": "workspace:*",
-    "@passwave/crypto": "workspace:*",
-    "@passwave/ticketing": "workspace:*",
-    "@passwave/inventory": "workspace:*",
-    "@passwave/courtesy": "workspace:*",
-    "@passwave/staff": "workspace:*"
+    "@passripple/contracts": "workspace:*",
+    "@passripple/crypto": "workspace:*",
+    "@passripple/ticketing": "workspace:*",
+    "@passripple/inventory": "workspace:*",
+    "@passripple/courtesy": "workspace:*",
+    "@passripple/staff": "workspace:*"
   }
 }

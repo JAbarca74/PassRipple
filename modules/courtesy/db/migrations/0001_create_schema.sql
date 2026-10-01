@@ -1,3 +1,3 @@
--- Module @passwave/courtesy owns this schema and is its only writer (rule R1).
+-- Module @passripple/courtesy owns this schema and is its only writer (rule R1).
 CREATE SCHEMA IF NOT EXISTS courtesy;
-COMMENT ON SCHEMA courtesy IS 'Owned by module @passwave/courtesy';
+COMMENT ON SCHEMA courtesy IS 'Owned by module @passripple/courtesy';

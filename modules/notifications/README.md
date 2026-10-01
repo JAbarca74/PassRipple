@@ -1,4 +1,4 @@
-# @passwave/notifications
+# @passripple/notifications
 
 **Kind:** module · **Level:** 4 (consumer)
 
@@ -12,7 +12,7 @@ The `notifications` database schema. No other module writes to it (rule R1).
 
 ## Depends on
 
-- `@passwave/contracts`
+- `@passripple/contracts`
 
 ## Does not
 

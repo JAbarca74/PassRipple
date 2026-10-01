@@ -1,4 +1,4 @@
-# @passwave/contracts
+# @passripple/contracts
 
 **Kind:** core · **Level:** 0 (core)
 

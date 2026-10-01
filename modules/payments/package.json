@@ -1,19 +1,19 @@
 {
-  "name": "@passwave/payments",
+  "name": "@passripple/payments",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
-  "passwave": {
+  "passripple": {
     "kind": "module",
     "level": 3,
     "schema": "payments"
   },
   "dependencies": {
-    "@passwave/contracts": "workspace:*",
-    "@passwave/bank-parsers": "workspace:*",
-    "@passwave/orders": "workspace:*"
+    "@passripple/contracts": "workspace:*",
+    "@passripple/bank-parsers": "workspace:*",
+    "@passripple/orders": "workspace:*"
   }
 }

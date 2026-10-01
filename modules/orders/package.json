@@ -1,21 +1,21 @@
 {
-  "name": "@passwave/orders",
+  "name": "@passripple/orders",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
-  "passwave": {
+  "passripple": {
     "kind": "module",
     "level": 3,
     "schema": "orders"
   },
   "dependencies": {
-    "@passwave/contracts": "workspace:*",
-    "@passwave/pricing": "workspace:*",
-    "@passwave/events": "workspace:*",
-    "@passwave/catalog": "workspace:*",
-    "@passwave/inventory": "workspace:*"
+    "@passripple/contracts": "workspace:*",
+    "@passripple/pricing": "workspace:*",
+    "@passripple/events": "workspace:*",
+    "@passripple/catalog": "workspace:*",
+    "@passripple/inventory": "workspace:*"
   }
 }

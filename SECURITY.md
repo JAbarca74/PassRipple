@@ -1,6 +1,6 @@
 # Security Policy
 
-Passwave handles payments, personal data and the credentials that let people into events. We take every report seriously.
+PassRipple handles payments, personal data and the credentials that let people into events. We take every report seriously.
 
 ## Reporting a vulnerability
 

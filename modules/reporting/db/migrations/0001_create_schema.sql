@@ -1,3 +1,3 @@
--- Module @passwave/reporting owns this schema and is its only writer (rule R1).
+-- Module @passripple/reporting owns this schema and is its only writer (rule R1).
 CREATE SCHEMA IF NOT EXISTS reporting;
-COMMENT ON SCHEMA reporting IS 'Owned by module @passwave/reporting';
+COMMENT ON SCHEMA reporting IS 'Owned by module @passripple/reporting';

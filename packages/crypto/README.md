@@ -1,4 +1,4 @@
-# @passwave/crypto
+# @passripple/crypto
 
 **Kind:** core · **Level:** 0 (core)
 
@@ -8,7 +8,7 @@ Server certificates, device-bound credential presentation and verification, and 
 
 ## Depends on
 
-- `@passwave/contracts`
+- `@passripple/contracts`
 
 ## Guarantees
 

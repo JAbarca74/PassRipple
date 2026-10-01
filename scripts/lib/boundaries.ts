@@ -3,7 +3,7 @@ import type { WorkspacePackage } from "./workspace.ts";
 /** Level of consumer modules: nothing but apps and workers may depend on them. */
 export const CONSUMER_LEVEL = 4;
 const MAX_LEVEL = 4;
-const CONTRACTS = "@passwave/contracts";
+const CONTRACTS = "@passripple/contracts";
 
 /**
  * Checks the module boundary rules described in docs/architecture.md.
@@ -16,7 +16,7 @@ export function checkBoundaries(packages: WorkspacePackage[]): string[] {
 
   for (const pkg of packages) {
     if (pkg.kind === "invalid") {
-      errors.push(`${pkg.name}: "passwave.kind" must be one of core, module, app, worker`);
+      errors.push(`${pkg.name}: "passripple.kind" must be one of core, module, app, worker`);
       continue;
     }
     if (pkg.kind === "core" && pkg.level !== 0) {
@@ -65,7 +65,7 @@ function dependencyViolation(pkg: WorkspacePackage, dep: WorkspacePackage): stri
   if (pkg.kind === "core") {
     return dep.name === CONTRACTS
       ? undefined
-      : "core packages may only depend on @passwave/contracts";
+      : "core packages may only depend on @passripple/contracts";
   }
 
   // pkg is a module

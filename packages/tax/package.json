@@ -1,16 +1,16 @@
 {
-  "name": "@passwave/tax",
+  "name": "@passripple/tax",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
-  "passwave": {
+  "passripple": {
     "kind": "core",
     "level": 0
   },
   "dependencies": {
-    "@passwave/contracts": "workspace:*"
+    "@passripple/contracts": "workspace:*"
   }
 }

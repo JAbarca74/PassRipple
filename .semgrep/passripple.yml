@@ -1,5 +1,5 @@
 rules:
-  - id: passwave-no-math-random
+  - id: passripple-no-math-random
     message: >-
       Math.random() is not cryptographically secure. Use crypto.getRandomValues()
       for codes, tokens, identifiers and anything security-related.
@@ -7,7 +7,7 @@ rules:
     languages: [typescript, javascript]
     pattern: Math.random()
 
-  - id: passwave-pure-packages-no-io
+  - id: passripple-pure-packages-no-io
     message: >-
       Pure packages must not perform I/O or read the clock (architecture rule R4).
       Receive the time or the data as a parameter instead.
@@ -25,7 +25,7 @@ rules:
       - pattern: new Date()
       - pattern: process.env.$X
 
-  - id: passwave-no-sql-string-building
+  - id: passripple-no-sql-string-building
     message: >-
       Do not build SQL with string concatenation or interpolation.
       Use parameterized queries.
@@ -36,7 +36,7 @@ rules:
       - pattern: $DB.query(`...${$X}...`, ...)
       - pattern: $DB.unsafe(...)
 
-  - id: passwave-no-dangerous-html
+  - id: passripple-no-dangerous-html
     message: >-
       dangerouslySetInnerHTML opens the door to XSS, which in the wallet means
       a script that can use the buyer's ticket keys (invariant I8).
@@ -44,7 +44,7 @@ rules:
     languages: [typescript, javascript]
     pattern: <$EL dangerouslySetInnerHTML={...} />
 
-  - id: passwave-no-eval
+  - id: passripple-no-eval
     message: eval and new Function execute arbitrary code.
     severity: ERROR
     languages: [typescript, javascript]

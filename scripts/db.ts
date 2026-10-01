@@ -13,7 +13,7 @@ import { topologicalOrder } from "./lib/boundaries.ts";
 import { loadWorkspace } from "./lib/workspace.ts";
 
 const ROOT = process.cwd();
-const LOCAL_URL = "postgres://passwave@localhost:54329/passwave";
+const LOCAL_URL = "postgres://passripple@localhost:54329/passripple";
 const DATABASE_URL = process.env.DATABASE_URL ?? LOCAL_URL;
 
 function psql(input: string, variables: Record<string, string> = {}): string {

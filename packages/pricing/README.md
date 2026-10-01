@@ -1,4 +1,4 @@
-# @passwave/pricing
+# @passripple/pricing
 
 **Kind:** core · **Level:** 0 (core)
 
@@ -8,7 +8,7 @@ Fee calculation and price breakdowns from a fee schedule received as a parameter
 
 ## Depends on
 
-- `@passwave/contracts`
+- `@passripple/contracts`
 
 ## Does not
 
