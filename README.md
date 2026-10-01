@@ -129,7 +129,7 @@ Found a vulnerability? Read [`SECURITY.md`](SECURITY.md) and report it privately
 
 - [ ] **Phase 0** — Foundations: schema, Row Level Security, invariants I1–I5 under test
 - [ ] **Phase 1** — Cryptography: device-bound credentials (I7)
-- [ ] **Phase 2** — Single-gate offline validator, Play Store closed testing
+- [ ] **Phase 2** — Single-gate offline validator, Play Store closed testing, iOS build tested in the simulator
 - [ ] **Phase 3** — Three-tap checkout, SINPE collection and reconciliation
 - [ ] **Phase 4** — Dashboard, ledger and verifiable payouts (I9)
 - [ ] **Phase 5** — Public site, SEO and analytics
@@ -137,7 +137,7 @@ Found a vulnerability? Read [`SECURITY.md`](SECURITY.md) and report it privately
 - [ ] **Phase 7** — Age ratings, complimentary tickets, door sales
 - [ ] **Phase 8** — Municipal oversight portal
 - [ ] **Phase 9** — Multi-gate events
-- [ ] **Phase 10** — Cards, iOS gate app, e-invoicing
+- [ ] **Phase 10** — Cards, e-invoicing
 
 ## License
 
