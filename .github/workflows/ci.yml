@@ -41,7 +41,12 @@ jobs:
         run: pnpm check:boundaries
 
       - name: Unit tests
-        run: pnpm test
+        run: pnpm test:cov
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: coverage
+          path: coverage/
 
   database:
     runs-on: ubuntu-latest

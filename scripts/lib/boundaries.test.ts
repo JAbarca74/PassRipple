@@ -64,6 +64,36 @@ describe("checkBoundaries", () => {
     const errors = checkBoundaries([...base, pkg("orders", "module", 7)]);
     expect(errors.join("\n")).toMatch(/integer level/);
   });
+
+  it("rejects an invalid kind", () => {
+    const errors = checkBoundaries([...base, pkg("invalid-pkg", "invalid" as unknown as Kind, 0)]);
+    expect(errors.join("\n")).toMatch(/"passripple.kind" must be one of/);
+  });
+
+  it("rejects a core package with level !== 0", () => {
+    const errors = checkBoundaries([...base, pkg("core-wrong", "core", 1)]);
+    expect(errors.join("\n")).toMatch(/core packages must have level 0/);
+  });
+
+  it("rejects a module without a schema", () => {
+    const p = pkg("no-schema", "module", 1);
+    p.schema = undefined;
+    const errors = checkBoundaries([...base, p]);
+    expect(errors.join("\n")).toMatch(/declare the database schema/);
+  });
+
+  it("rejects dependencies not using workspace:*", () => {
+    const p = pkg("bad-dep", "core", 0);
+    p.invalidDepSpecs = ["@passripple/contracts"];
+    const errors = checkBoundaries([...base, p]);
+    expect(errors.join("\n")).toMatch(/must use "workspace:\*"/);
+  });
+
+  it("rejects unknown internal dependencies", () => {
+    const p = pkg("unknown-dep", "core", 0, ["non-existent"]);
+    const errors = checkBoundaries([...base, p]);
+    expect(errors.join("\n")).toMatch(/unknown internal package @passripple\/non-existent/);
+  });
 });
 
 describe("findCycle", () => {

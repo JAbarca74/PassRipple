@@ -104,6 +104,7 @@ pre-commit install   # scan every commit for secrets
 pnpm install
 
 pnpm verify          # lint, type check, module boundaries and unit tests
+pnpm test:cov        # Vitest unit tests with coverage
 
 pnpm db:up           # start the local database (Docker)
 pnpm db:migrate      # apply migrations in module dependency order

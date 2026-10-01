@@ -12,8 +12,9 @@
     "format": "biome check --write .",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
+    "test:cov": "vitest run --coverage",
     "check:boundaries": "node scripts/check-boundaries.ts",
-    "verify": "pnpm lint && pnpm typecheck && pnpm check:boundaries && pnpm test",
+    "verify": "pnpm lint && pnpm typecheck && pnpm check:boundaries && pnpm test:cov",
     "db:up": "docker compose -f db/compose.yaml up -d --build --wait",
     "db:down": "docker compose -f db/compose.yaml down -v",
     "db:migrate": "node scripts/db.ts migrate",
@@ -22,6 +23,8 @@
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
     "@types/node": "26.6.3",
+    "@vitest/coverage-v8": "5.0.3",
+    "fast-check": "4.10.2",
     "typescript": "7.0.2",
     "vitest": "5.0.3"
   }
