@@ -29,6 +29,10 @@ Shared vocabulary for the whole system: Zod schemas, TypeScript types, the domai
 
 `src/gate-manifest.ts` describes the package a gate device downloads before an event: the event and its window, the server keys it trusts, the ticket types, and for each ticket its type, entry mode, status, whether it was redeemed, its device key, key version and fallback code. It holds no secret (invariant I7). It travels as JSON with bytes in base64url (`src/base64url.ts`, canonical), whole the first time (`GateManifest`) and as deltas after that (`GateManifestDelta`), with a cursor and the server clock. `decodeGateManifest`, `decodeGateManifestDelta` and `decodeServerKeys` validate untrusted JSON.
 
+## Gate operations
+
+`src/gate-operations.ts` holds the operations a gate device records offline (`redemption`, `staff_scan`, `incident`) and the batch format of `POST /v1/gate/batches`: the API checks only the envelope, so a malformed operation is rejected on its own by the database instead of failing the batch.
+
 ## API wire format
 
 `src/staff-api.ts` holds the Zod schemas of sign-in, staff codes and gate device enrollment, shared by the API, which validates untrusted input with them, and the gate app. The database checks everything again.

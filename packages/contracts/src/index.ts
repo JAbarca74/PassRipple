@@ -61,6 +61,22 @@ export {
   type TicketAudience,
 } from "./gate-manifest.ts";
 export {
+  BATCH_ITEM_STATUSES,
+  DEVICE_INCIDENT_KINDS,
+  type DeviceIncidentKind,
+  GATE_OPERATION_TYPES,
+  type GateBatchItemResult,
+  type GateBatchRequest,
+  type GateBatchResponse,
+  type GateOperation,
+  type GateOperationType,
+  gateBatchItemResult,
+  gateBatchRequest,
+  gateBatchResponse,
+  type IncidentPayload,
+  type ScanPayload,
+} from "./gate-operations.ts";
+export {
   type ApiErrorBody,
   apiError,
   type CreatedStaffCode,

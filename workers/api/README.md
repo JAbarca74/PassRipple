@@ -39,6 +39,7 @@ Every response carries the server's clock in `X-Server-Time` (milliseconds), whi
 | `POST /v1/staff/enroll` | person, as staff | Enrolls a phone with a staff code; returns the device token (`prd_…`) |
 | `GET /v1/gate/session` | device | The device's status (`active`, `revoked`, `expired`) and the server clock |
 | `GET /v1/gate/manifest[?since=cursor]` | active device | The event's gate manifest (`@passripple/contracts`), whole or only what changed since a cursor |
+| `POST /v1/gate/batches` | any device | Uploads 1 to 100 offline operations to `redemption.apply_batch`. Always `200` with one result per operation; revoked and expired devices may upload too (I6) |
 | `POST /v1/gate/sign-out` | device | Signs the device out for good |
 
 Organizers send their organization in `X-Org-Id`; `identity.set_actor` checks the membership.
@@ -66,6 +67,8 @@ pnpm dev:api          # wrangler dev on http://localhost:8787
 ```
 
 For a gate to try, seed the development event (`pnpm dev:fixtures seed`) and put the `SERVER_PUBLIC_KEYS` line it prints in `.dev.vars`. `pnpm dev:fixtures qr <n>` prints a QR valid now for fixture ticket `n`; set `DB_CONTAINER=passripple-db` if `psql` is not on PATH.
+
+The fixtures stay in the local database, and the pgTAP suite expects one without them: run `pnpm db:down` and `pnpm db:up` before `pnpm db:test`.
 
 `wrangler dev` connects to the local database through the Hyperdrive binding's `localConnectionString`. Secrets come from `.dev.vars` (never committed), copied from `.dev.vars.example`.
 

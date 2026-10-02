@@ -8,7 +8,10 @@ import {
   decodeServerKeys,
   encodeGateManifest,
   encodeGateManifestDelta,
+  type GateBatchItemResult,
+  type GateBatchResponse,
   type GateSessionResponse,
+  gateBatchRequest,
   type ManifestServerKey,
   manifestCursor,
 } from "@passripple/contracts";
@@ -25,7 +28,7 @@ import { type AuthenticatedDevice, deviceActor, gateDeviceView } from "../auth.t
 import type { Tx } from "../db.ts";
 import { type Env, required } from "../env.ts";
 import { ApiError } from "../errors.ts";
-import { param } from "../validation.ts";
+import { jsonBody, param } from "../validation.ts";
 
 /** Runs `work` for the device behind the request's token, if its status is allowed. */
 export async function forDevice<T>(
@@ -42,6 +45,9 @@ export async function forDevice<T>(
     return work(device, tx);
   });
 }
+
+// The envelope was checked; the database checks each operation (it is plain JSON).
+type JsonArray = Parameters<Tx["json"]>[0];
 
 function serverKeys(env: Env): ManifestServerKey[] {
   let json: unknown;
@@ -92,6 +98,20 @@ export const gateRoutes = new Hono<AppEnv>()
         ? encodeGateManifest(buildGateManifest(input))
         : encodeGateManifestDelta(buildGateManifestDelta({ ...input, since }));
     });
+    return c.json(body);
+  })
+
+  // Uploads a batch of offline operations (design 8.7). Always 200 with one result per
+  // operation. Every status may upload: a revoked or expired device still delivers what it
+  // recorded (I6).
+  .post("/batches", async (c) => {
+    const { items } = await jsonBody(c, gateBatchRequest);
+    const results = await forDevice(c, DEVICE_STATUSES, async (device, tx) => {
+      const [row] = await tx<{ results: GateBatchItemResult[] }[]>`
+        SELECT redemption.apply_batch(${device.deviceId}, ${tx.json(items as JsonArray)}) AS results`;
+      return row?.results ?? [];
+    });
+    const body: GateBatchResponse = { results, serverTime: Date.now() };
     return c.json(body);
   })
 
