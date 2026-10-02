@@ -18,9 +18,15 @@ describe("uuidToBytes", () => {
 
   test("rejects uppercase UUID", () => {
     fc.assert(
-      fc.property(fc.uuid().filter(u => /[a-f]/.test(u)).map(u => u.toUpperCase()), (uuid) => {
-        expect(() => uuidToBytes(uuid)).toThrow(RangeError);
-      }),
+      fc.property(
+        fc
+          .uuid()
+          .filter((u) => /[a-f]/.test(u))
+          .map((u) => u.toUpperCase()),
+        (uuid) => {
+          expect(() => uuidToBytes(uuid)).toThrow(RangeError);
+        },
+      ),
     );
   });
 

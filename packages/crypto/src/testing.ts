@@ -18,7 +18,10 @@ export function createSigner(label: string): Signer & { seed: Uint8Array } {
   };
 }
 
-export function createServerSigner(label: string, keyId: number): ServerSigner & { seed: Uint8Array } {
+export function createServerSigner(
+  label: string,
+  keyId: number,
+): ServerSigner & { seed: Uint8Array } {
   return {
     ...createSigner(label),
     keyId,

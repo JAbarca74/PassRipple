@@ -1,8 +1,8 @@
+import { decodeCertificate, encodeCertificate, encodeCertificateBody } from "@passripple/contracts";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { eventRef, signCertificate, verifyCertificate } from "./certificate.ts";
 import { createServerSigner, createSigner } from "./testing.ts";
-import { encodeCertificateBody, encodeCertificate } from "@passripple/contracts";
 
 describe("eventRef", () => {
   test("returns 8 bytes", () => {
@@ -46,8 +46,12 @@ describe("signCertificate", () => {
 
   test("rejects small order and 31-byte holder keys", async () => {
     const smallOrder = new Uint8Array(32); // All zeros is a small order point
-    await expect(signCertificate({ ...input, holderPubkey: smallOrder }, server)).rejects.toThrow(RangeError);
-    await expect(signCertificate({ ...input, holderPubkey: new Uint8Array(31) }, server)).rejects.toThrow(RangeError);
+    await expect(signCertificate({ ...input, holderPubkey: smallOrder }, server)).rejects.toThrow(
+      RangeError,
+    );
+    await expect(
+      signCertificate({ ...input, holderPubkey: new Uint8Array(31) }, server),
+    ).rejects.toThrow(RangeError);
   });
 
   test("throws if signer returns invalid signature length or bad signature", async () => {
@@ -60,7 +64,9 @@ describe("signCertificate", () => {
 
   test("propagates RangeError for out of bounds fields", async () => {
     await expect(signCertificate({ ...input, keyVersion: 0 }, server)).rejects.toThrow(RangeError);
-    await expect(signCertificate({ ...input, keyVersion: 256 }, server)).rejects.toThrow(RangeError);
+    await expect(signCertificate({ ...input, keyVersion: 256 }, server)).rejects.toThrow(
+      RangeError,
+    );
     await expect(signCertificate({ ...input, typeRef: 65536 }, server)).rejects.toThrow(RangeError);
   });
 });
@@ -93,9 +99,13 @@ describe("verifyCertificate", () => {
 
   test("returns false on altered fields", async () => {
     const cert = await signCertificate(input, server);
-    expect(verifyCertificate({ ...cert, fields: { ...cert.fields, keyVersion: 2 } }, serverKeys)).toBe(false);
+    expect(
+      verifyCertificate({ ...cert, fields: { ...cert.fields, keyVersion: 2 } }, serverKeys),
+    ).toBe(false);
     // fields out of bounds return false (because encodeCertificateBody throws internally and it is caught)
-    expect(verifyCertificate({ ...cert, fields: { ...cert.fields, keyVersion: 256 } }, serverKeys)).toBe(false);
+    expect(
+      verifyCertificate({ ...cert, fields: { ...cert.fields, keyVersion: 256 } }, serverKeys),
+    ).toBe(false);
   });
 
   test("returns false on altered signature", async () => {
@@ -109,24 +119,26 @@ describe("verifyCertificate", () => {
     const cert = await signCertificate(input, server);
     const raw = encodeCertificate(cert);
     fc.assert(
-      fc.property(fc.integer({ min: 0, max: raw.length - 1 }), fc.integer({ min: 1, max: 255 }), (pos, diff) => {
-        const altered = new Uint8Array(raw);
-        altered[pos] = altered[pos]! ^ diff;
-        // The decoder is tested in contracts, but verifying that the verification fails here.
-        // But verifyCertificate takes a Certificate, not raw bytes.
-        // We decode it manually. If it fails to decode, that's fine.
-        // If it decodes, verifyCertificate must be false.
-        try {
-          const { decodeCertificate } = require("@passripple/contracts");
-          const res = decodeCertificate(altered);
-          if (res.ok) {
-            expect(verifyCertificate(res.value, serverKeys)).toBe(false);
+      fc.property(
+        fc.integer({ min: 0, max: raw.length - 1 }),
+        fc.integer({ min: 1, max: 255 }),
+        (pos, diff) => {
+          const altered = new Uint8Array(raw);
+          altered[pos] = altered[pos]! ^ diff;
+          // The decoder is tested in contracts, but verifying that the verification fails here.
+          // But verifyCertificate takes a Certificate, not raw bytes.
+          // We decode it manually. If it fails to decode, that's fine.
+          // If it decodes, verifyCertificate must be false.
+          try {
+            const res = decodeCertificate(altered);
+            if (res.ok) {
+              expect(verifyCertificate(res.value, serverKeys)).toBe(false);
+            }
+          } catch {
+            // If it throws, it's fine. (it shouldn't throw though, decodeCertificate returns an error result)
           }
-        } catch {
-          // If it throws, it's fine. (it shouldn't throw though, decodeCertificate returns an error result)
-        }
-      }),
+        },
+      ),
     );
   });
 });
-

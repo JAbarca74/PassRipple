@@ -1,30 +1,45 @@
-import fc from "fast-check";
-import { describe, expect, test, beforeAll } from "vitest";
-import { signCertificate } from "./certificate.ts";
-import { presentCredential, timeWindow, verifyCredential, WINDOW_MS, WINDOW_TOLERANCE } from "./credential.ts";
-import { createServerSigner, createSigner } from "./testing.ts";
-import { humanCode } from "./human-code.ts";
-import { decodeBase45, encodeBase45, encodeQr, decodeQrPayload, encodeQrPayload } from "@passripple/contracts";
-import { sha256 } from "@noble/hashes/sha2.js";
-import { utf8ToBytes } from "@noble/hashes/utils.js";
 import { ed25519 } from "@noble/curves/ed25519.js";
+import { sha256 } from "@noble/hashes/sha2.js";
+import { concatBytes, utf8ToBytes } from "@noble/hashes/utils.js";
+import {
+  decodeBase45,
+  decodeQrPayload,
+  encodeBase45,
+  encodeCertificateBody,
+  encodeQr,
+  encodeQrPayload,
+  encodeTimeWindow,
+} from "@passripple/contracts";
+import fc from "fast-check";
+import { beforeAll, describe, expect, test } from "vitest";
+import { PRESENTATION_TAG } from "./bytes.ts";
+import { certificateMessage, eventRef, signCertificate } from "./certificate.ts";
+import {
+  presentCredential,
+  timeWindow,
+  verifyCredential,
+  WINDOW_MS,
+  WINDOW_TOLERANCE,
+} from "./credential.ts";
+import { humanCode } from "./human-code.ts";
+import { createServerSigner, createSigner } from "./testing.ts";
 
 // Invariant I7: No validator can forge a valid credential
 describe("I7: Attacker cannot forge credentials", () => {
   const eventIdA = "11111111-1111-1111-1111-111111111111";
   const eventIdB = "22222222-2222-2222-2222-222222222222";
-  
+
   const server1 = createServerSigner("server1", 1);
   const server2 = createServerSigner("server2", 2);
   const retiredServer = createServerSigner("server3", 3);
-  
+
   const serverKeys = new Map([
     [1, server1.publicKey],
     [2, server2.publicKey],
   ]);
 
   const attacker = createSigner("attacker");
-  
+
   const buyers: ReturnType<typeof createSigner>[] = [];
   for (let i = 0; i < 10; i++) buyers.push(createSigner(`buyer-${i}`));
 
@@ -32,7 +47,7 @@ describe("I7: Attacker cannot forge credentials", () => {
   const manifests = new Map<string, any>();
   const credentials = new Map<string, string>(); // ticketId -> qr
   const certificates = new Map<string, any>(); // ticketId -> certificate
-  
+
   const nowMs = 1000 * WINDOW_MS;
 
   beforeAll(async () => {
@@ -41,7 +56,7 @@ describe("I7: Attacker cannot forge credentials", () => {
       for (let i = 0; i < ticketCount; i++) {
         const ticketId = `00000000-0000-4000-8000-${eventId.split("-")[0]!.substring(0, 8)}${i.toString(16).padStart(4, "0")}`;
         const buyer = buyers[i % buyers.length]!;
-        
+
         // Use crypto.subtle in tests? The requirements say:
         // "No uses crypto.getRandomValues fuera de archivos *.test.ts"
         // Let's use a deterministic fake entropy for the tests so it's reproducible.
@@ -102,7 +117,7 @@ describe("I7: Attacker cannot forge credentials", () => {
     const manifest = manifests.get(eventIdA)!;
     const ticket = manifest.tickets[0];
     const cert = certificates.get(ticket.ticketId);
-    
+
     // Attacker tries to use a piece of data from the manifest as a seed
     const attackerSeeds = [
       ticket.holderPubkey,
@@ -116,7 +131,7 @@ describe("I7: Attacker cannot forge credentials", () => {
       // pad or slice to 32 bytes
       const actualSeed = new Uint8Array(32);
       actualSeed.set(seed.slice(0, 32));
-      
+
       const fakeSigner = {
         publicKey: ed25519.getPublicKey(actualSeed),
         sign: async (msg: Uint8Array) => ed25519.sign(msg, actualSeed),
@@ -125,14 +140,13 @@ describe("I7: Attacker cannot forge credentials", () => {
       // Tries to present it
       // presentCredential would fail since fakeSigner.publicKey !== cert.holderPubkey
       // so we build it manually
-      const { encodeQr } = require("@passripple/contracts");
-      const { certificateMessage } = require("./certificate.ts");
-      const { encodeCertificateBody, encodeTimeWindow } = require("@passripple/contracts");
-      const { concatBytes } = require("@noble/hashes/utils.js");
-      const { PRESENTATION_TAG } = require("./bytes.ts");
-      
+
       const window = timeWindow(nowMs);
-      const msg = concatBytes(PRESENTATION_TAG, encodeCertificateBody(cert.fields), encodeTimeWindow(window));
+      const msg = concatBytes(
+        PRESENTATION_TAG,
+        encodeCertificateBody(cert.fields),
+        encodeTimeWindow(window),
+      );
       const holderSig = await fakeSigner.sign(msg);
       const qr = encodeQr({ certificate: cert, timeWindow: window, holderSig });
 
@@ -146,11 +160,11 @@ describe("I7: Attacker cannot forge credentials", () => {
     const ticketId = manifests.get(eventIdA)!.tickets[0].ticketId;
     const qr = credentials.get(ticketId)!;
     const bytes = decodeBase45(qr)!;
-    
+
     // Copy server_sig (bytes 62 to 126) into holder_sig (bytes 130 to 194)
     const serverSig = bytes.slice(62, 126);
     bytes.set(serverSig, 130);
-    
+
     expect(verifyCredential(encodeBase45(bytes), getCtx(), nowMs).ok).toBe(false);
   });
 
@@ -158,7 +172,11 @@ describe("I7: Attacker cannot forge credentials", () => {
     const ticketId = manifests.get(eventIdA)!.tickets[0].ticketId;
     const qr = credentials.get(ticketId)!;
     const originalBytes = decodeBase45(qr)!;
-    const view = new DataView(originalBytes.buffer, originalBytes.byteOffset, originalBytes.byteLength);
+    const view = new DataView(
+      originalBytes.buffer,
+      originalBytes.byteOffset,
+      originalBytes.byteLength,
+    );
     const originalWindow = view.getUint32(126);
 
     for (let offset = -1000; offset <= 1000; offset++) {
@@ -166,9 +184,12 @@ describe("I7: Attacker cannot forge credentials", () => {
       const forgedWindow = originalWindow + offset;
       if (forgedWindow < 0) continue;
       const forgedBytes = new Uint8Array(originalBytes);
-      new DataView(forgedBytes.buffer, forgedBytes.byteOffset, forgedBytes.byteLength).setUint32(126, forgedWindow);
+      new DataView(forgedBytes.buffer, forgedBytes.byteOffset, forgedBytes.byteLength).setUint32(
+        126,
+        forgedWindow,
+      );
       const forgedQr = encodeBase45(forgedBytes);
-      
+
       expect(verifyCredential(forgedQr, getCtx(), nowMs).ok).toBe(false);
     }
   }, 30000);
@@ -182,8 +203,6 @@ describe("I7: Attacker cannot forge credentials", () => {
     bytes.set(attacker.publicKey, 29);
 
     // The attacker can sign the new window
-    const { concatBytes } = require("@noble/hashes/utils.js");
-    const { PRESENTATION_TAG } = require("./bytes.ts");
     const body = bytes.subarray(0, 62);
     const windowBytes = bytes.subarray(126, 130);
     const msg = concatBytes(PRESENTATION_TAG, body, windowBytes);
@@ -221,14 +240,15 @@ describe("I7: Attacker cannot forge credentials", () => {
     // Find two tickets belonging to the same buyer
     const manifest = manifests.get(eventIdA)!;
     const ticket1 = manifest.tickets[0];
-    let ticket2 = manifest.tickets.find((t: any) => 
-      t.ticketId !== ticket1.ticketId && 
-      Buffer.from(t.holderPubkey).equals(Buffer.from(ticket1.holderPubkey))
+    const ticket2 = manifest.tickets.find(
+      (t: any) =>
+        t.ticketId !== ticket1.ticketId &&
+        Buffer.from(t.holderPubkey).equals(Buffer.from(ticket1.holderPubkey)),
     );
 
     const qr1 = credentials.get(ticket1.ticketId)!;
     const qr2 = credentials.get(ticket2.ticketId)!;
-    
+
     const bytes1 = decodeBase45(qr1)!;
     const bytes2 = decodeBase45(qr2)!;
 
@@ -243,7 +263,7 @@ describe("I7: Attacker cannot forge credentials", () => {
   test("g) presenting a credential of event A in event B", () => {
     const ticketIdA = manifests.get(eventIdA)!.tickets[0].ticketId;
     const qrA = credentials.get(ticketIdA)!;
-    
+
     const res = verifyCredential(qrA, getCtx(eventIdB), nowMs);
     expect(res).toEqual({ ok: false, reason: "wrong_event" });
   });
@@ -268,8 +288,6 @@ describe("I7: Attacker cannot forge credentials", () => {
 
     // Attacker using server1's ID (1)
     const attackerServer = { ...attacker, keyId: 1 };
-    const { encodeCertificateBody, encodeQr } = require("@passripple/contracts");
-    const { certificateMessage, eventRef } = require("./certificate.ts");
     const fields = {
       serverKeyId: 1,
       ticketId: certInput.ticketId,
@@ -285,7 +303,7 @@ describe("I7: Attacker cannot forge credentials", () => {
     const serverSig = await attackerServer.sign(certificateMessage(body));
     const certAttacker = { fields, serverSig };
     const qrAttacker = await presentCredential(certAttacker as any, buyers[0]!, nowMs);
-    
+
     const resAttacker = verifyCredential(qrAttacker, getCtx(), nowMs);
     expect(resAttacker).toEqual({ ok: false, reason: "bad_server_signature" });
   });
@@ -301,8 +319,8 @@ describe("I7: Attacker cannot forge credentials", () => {
     for (let i = 0; i < 32; i++) {
       sBig |= BigInt(bytes[130 + 32 + i]!) << BigInt(i * 8);
     }
-    sBig = (sBig + L);
-    
+    sBig = sBig + L;
+
     const malleableBytes = new Uint8Array(bytes);
     for (let i = 0; i < 32; i++) {
       malleableBytes[130 + 32 + i] = Number((sBig >> BigInt(i * 8)) & 0xffn);
@@ -326,8 +344,8 @@ describe("I7: Attacker cannot forge credentials", () => {
           const alteredBytes = new Uint8Array(bytes);
           alteredBytes[pos] = alteredBytes[pos]! ^ diff;
           expect(verifyCredential(encodeBase45(alteredBytes), getCtx(), nowMs).ok).toBe(false);
-        }
-      )
+        },
+      ),
     );
 
     fc.assert(
@@ -339,8 +357,8 @@ describe("I7: Attacker cannot forge credentials", () => {
           const origIdx = alphabet.indexOf(alteredChars[pos]!);
           alteredChars[pos] = alphabet[(origIdx + diff) % alphabet.length]!;
           expect(verifyCredential(alteredChars.join(""), getCtx(), nowMs).ok).toBe(false);
-        }
-      )
+        },
+      ),
     );
   });
 
@@ -351,7 +369,7 @@ describe("I7: Attacker cannot forge credentials", () => {
       // by marking the ticket as 'redeemed' in the manifest.
       const ticketId = manifests.get(eventIdA)!.tickets[0].ticketId;
       const qr = credentials.get(ticketId)!;
-      
+
       const res1 = verifyCredential(qr, getCtx(), nowMs);
       expect(res1.ok).toBe(true);
 
@@ -377,4 +395,3 @@ describe("I7: Attacker cannot forge credentials", () => {
     });
   });
 });
-

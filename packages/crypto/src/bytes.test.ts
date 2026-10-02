@@ -1,7 +1,21 @@
+import {
+  bytesToUuid,
+  encodeBase45,
+  encodeCertificate,
+  encodeQrPayload,
+  encodeTimeWindow,
+  uuidToBytes,
+} from "@passripple/contracts";
 import { describe, expect, test } from "vitest";
-import { bytesEqual, isAcceptableHolderKey, verifyStrict } from "./bytes.ts";
+import {
+  bytesEqual,
+  CERTIFICATE_TAG,
+  EVENT_REF_TAG,
+  isAcceptableHolderKey,
+  PRESENTATION_TAG,
+  verifyStrict,
+} from "./bytes.ts";
 import { createSigner } from "./testing.ts";
-import { encodeBase45, encodeCertificate, encodeQrPayload, encodeTimeWindow, uuidToBytes, bytesToUuid } from "@passripple/contracts";
 
 describe("bytesEqual", () => {
   test("compares arrays correctly", () => {
@@ -22,7 +36,6 @@ describe("bytesEqual", () => {
 
 describe("tags", () => {
   test("are exported properly", () => {
-    const { CERTIFICATE_TAG, PRESENTATION_TAG, EVENT_REF_TAG } = require("./bytes.ts");
     expect(CERTIFICATE_TAG.length).toBeGreaterThan(0);
     expect(PRESENTATION_TAG.length).toBeGreaterThan(0);
     expect(EVENT_REF_TAG.length).toBeGreaterThan(0);
@@ -41,9 +54,9 @@ describe("tags", () => {
           ageRating: "all",
           named: false,
           holderPubkey: new Uint8Array(32),
-          keyVersion: 1
+          keyVersion: 1,
         },
-        serverSig: new Uint8Array(64)
+        serverSig: new Uint8Array(64),
       },
       timeWindow: 0,
       holderSig: new Uint8Array(64),
@@ -69,20 +82,20 @@ describe("verifyStrict", () => {
     const signer = createSigner("malleable");
     const msg = new Uint8Array([0xcc]);
     const sig = await signer.sign(msg);
-    
+
     // S is the second 32 bytes of the signature. Add L.
     const L = BigInt("0x1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3ed");
     let sBig = 0n;
     for (let i = 0; i < 32; i++) {
       sBig |= BigInt(sig[32 + i]!) << BigInt(i * 8);
     }
-    sBig = (sBig + L);
-    
+    sBig = sBig + L;
+
     const malleableSig = new Uint8Array(sig);
     for (let i = 0; i < 32; i++) {
       malleableSig[32 + i] = Number((sBig >> BigInt(i * 8)) & 0xffn);
     }
-    
+
     expect(verifyStrict(malleableSig, msg, signer.publicKey)).toBe(false);
   });
 
@@ -92,7 +105,7 @@ describe("verifyStrict", () => {
     const key31 = new Uint8Array(31);
     const sig63 = new Uint8Array(63);
     const sig65 = new Uint8Array(65);
-    
+
     expect(verifyStrict(sig63, msg, key32)).toBe(false);
     expect(verifyStrict(sig65, msg, key32)).toBe(false);
     expect(verifyStrict(new Uint8Array(64), msg, key31)).toBe(false);
@@ -102,7 +115,7 @@ describe("verifyStrict", () => {
     const signer = createSigner("non-canonical");
     const msg = new Uint8Array([0]);
     const sig = await signer.sign(msg);
-    
+
     const badRsig = new Uint8Array(sig);
     badRsig.fill(0xff, 0, 32);
     expect(verifyStrict(badRsig, msg, signer.publicKey)).toBe(false);
@@ -127,7 +140,7 @@ describe("isAcceptableHolderKey", () => {
       "edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
     ];
     for (const hex of torsionHex) {
-      const bytes = new Uint8Array(hex.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
+      const bytes = new Uint8Array(hex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)));
       expect(isAcceptableHolderKey(bytes)).toBe(false);
     }
   });
@@ -143,4 +156,3 @@ describe("isAcceptableHolderKey", () => {
     expect(isAcceptableHolderKey(new Uint8Array(33))).toBe(false);
   });
 });
-

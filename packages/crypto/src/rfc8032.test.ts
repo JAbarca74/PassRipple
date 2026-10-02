@@ -64,4 +64,3 @@ describe("RFC 8032 test vectors", () => {
     expect(await signer.sign(msgBytes)).toEqual(sigBytes);
   });
 });
-
