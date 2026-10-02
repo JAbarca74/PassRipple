@@ -29,9 +29,13 @@ Shared vocabulary for the whole system: Zod schemas, TypeScript types, the domai
 
 `src/gate-manifest.ts` describes the package a gate device downloads before an event: the server keys it trusts, and for each ticket its type, entry mode, status, whether it was redeemed, its device key, key version and fallback code. It holds no secret (invariant I7). It is a draft: Phase 2 builds it from the database and decides how it travels.
 
+## API wire format
+
+`src/staff-api.ts` holds the Zod schemas of sign-in, staff codes and gate device enrollment, shared by the API, which validates untrusted input with them, and the gate app. The database checks everything again.
+
 ## Depends on
 
-Nothing.
+- `zod`, pinned. Schemas are declarations: no I/O.
 
 ## Does not
 

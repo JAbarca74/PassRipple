@@ -12,8 +12,11 @@
   },
   "dependencies": {
     "@passripple/contracts": "workspace:*",
+    "@passripple/crypto": "workspace:*",
+    "aws4fetch": "1.0.20",
     "hono": "4.13.9",
-    "postgres": "3.4.9"
+    "postgres": "3.4.9",
+    "zod": "4.6.5"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20260924.1",

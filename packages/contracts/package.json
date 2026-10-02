@@ -9,5 +9,8 @@
   "passripple": {
     "kind": "core",
     "level": 0
+  },
+  "dependencies": {
+    "zod": "4.6.5"
   }
 }

@@ -6,16 +6,28 @@ import { Hono } from "hono";
 import type { Database } from "./db.ts";
 import type { Env } from "./env.ts";
 import { errorResponse } from "./errors.ts";
+import type { IntegrityVerifier } from "./ports/integrity.ts";
+import type { MailSender } from "./ports/mail.ts";
+import { authRoutes } from "./routes/auth.ts";
+import { gateRoutes } from "./routes/gate.ts";
 import { healthRoutes } from "./routes/health.ts";
+import { staffRoutes } from "./routes/staff.ts";
 
-/** What the app needs from outside, built once per request from the Worker's bindings. */
+/** What the app needs from outside, built per request from the Worker's bindings. */
 export interface Services {
   database(env: Env): Database;
+  mailer(env: Env, requestUrl: string): MailSender;
+  integrity(env: Env): IntegrityVerifier;
 }
 
 export interface AppEnv {
   Bindings: Env;
-  Variables: { db: Database };
+  Variables: {
+    db: Database;
+    /** Built on first use, so a misconfigured mailer only fails the routes that send mail. */
+    mailer: () => MailSender;
+    integrity: IntegrityVerifier;
+  };
 }
 
 /** Header carrying the server's clock, in milliseconds, on every response. */
@@ -39,6 +51,8 @@ export function createApp(services: Services): Hono<AppEnv> {
   app.use(async (c, next) => {
     const db = services.database(c.env);
     c.set("db", db);
+    c.set("mailer", () => services.mailer(c.env, c.req.url));
+    c.set("integrity", services.integrity(c.env));
     try {
       await next();
     } finally {
@@ -49,6 +63,9 @@ export function createApp(services: Services): Hono<AppEnv> {
   });
 
   app.route("/health", healthRoutes);
+  app.route("/auth", authRoutes);
+  app.route("/staff", staffRoutes);
+  app.route("/gate", gateRoutes);
 
   app.notFound((c) => c.json({ error: { code: "not_found", message: "Not found." } }, 404));
   app.onError((error, c) => {

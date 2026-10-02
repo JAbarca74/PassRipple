@@ -1,0 +1,20 @@
+# Local settings and secrets for `wrangler dev`. Copy to `.dev.vars` (never committed) and
+# fill in. In production each one is set with `wrangler secret put <NAME>`.
+
+# Key of the HMAC over sign-in codes and staff codes: 32 or more random bytes, base64.
+# Generate one with: node -e "console.log(crypto.randomBytes(32).toString('base64'))"
+# Use a different value in every environment. Secret.
+SIGN_IN_PEPPER=
+
+# `log` prints emails to the wrangler console and only works on localhost.
+# Production uses `ses`.
+MAIL_PROVIDER=log
+
+# Sender of transactional mail (same values as MAIL_FROM_* in the root .env.example).
+MAIL_FROM_ADDRESS=
+MAIL_FROM_NAME=
+
+# Amazon SES, only when MAIL_PROVIDER=ses. The access key is secret.
+SES_REGION=
+SES_ACCESS_KEY_ID=
+SES_SECRET_ACCESS_KEY=

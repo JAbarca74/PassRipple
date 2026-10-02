@@ -29,6 +29,31 @@ Every response carries the server's clock in `X-Server-Time` (milliseconds), whi
 |---|---|---|
 | `GET /v1/health` | anyone | The Worker is up |
 | `GET /v1/health/db` | anyone | The Worker reaches the database through Hyperdrive |
+| `POST /v1/auth/sign-in` | anyone | Emails a six-digit code (10 minutes). Always `202`; five codes per address in 15 minutes, then `429` |
+| `POST /v1/auth/verify` | anyone | Exchanges the code for a person's session token (`pru_…`, 24 hours). Five wrong attempts kill the code |
+| `POST /v1/auth/sign-out` | person | Ends the session |
+| `POST /v1/staff/codes` | organizer | Creates a staff code for an event, role, zone and window; the code is shown only in this response |
+| `GET /v1/staff/codes?eventId=` | organizer | The event's staff codes, without the codes themselves |
+| `POST /v1/staff/codes/:id/revoke` | organizer | Nobody else enrolls with the code |
+| `POST /v1/staff/devices/:id/revoke` | organizer | The device becomes drain-only: it may upload, not validate |
+| `POST /v1/staff/enroll` | person, as staff | Enrolls a phone with a staff code; returns the device token (`prd_…`) |
+| `GET /v1/gate/session` | device | The device's status (`active`, `revoked`, `expired`) and the server clock |
+| `POST /v1/gate/sign-out` | device | Signs the device out for good |
+
+Organizers send their organization in `X-Org-Id`; `identity.set_actor` checks the membership.
+
+## Tokens and codes
+
+- Bearer tokens are 32 random bytes after a prefix: `pru_` for a person's session, `prd_` for a gate device. The database keeps only their SHA-256.
+- Sign-in codes (six digits) and staff codes (the ten-character human code format of ADR 0015) are stored as an HMAC-SHA256 keyed with `SIGN_IN_PEPPER`, so a leaked table cannot be brute-forced offline.
+- A revoked or expired device keeps a drain-only session for 30 days, so nothing it recorded offline is lost (invariant I6).
+
+## Ports
+
+| Port | Adapters |
+|---|---|
+| `MailSender` (`src/ports/mail.ts`) | `ses` (Amazon SES API v2, SigV4 with `aws4fetch`); `log`, which prints to the console and refuses to run anywhere but localhost |
+| `IntegrityVerifier` (`src/ports/integrity.ts`) | `unverified`: records whether the phone sent a Play Integrity or App Attest token. A signal, never a block |
 
 ## Running it locally
 
@@ -48,6 +73,7 @@ pnpm dev:api          # wrangler dev on http://localhost:8787
 ## Depends on
 
 - `@passripple/contracts`
-- `hono`, `postgres`; `wrangler` and `@cloudflare/workers-types` for development
+- `@passripple/crypto`
+- `hono`, `postgres`, `zod`, `aws4fetch`; `wrangler` and `@cloudflare/workers-types` for development
 
 Apps and workers are composition roots: they may depend on any core package or module, never on another app or worker.
