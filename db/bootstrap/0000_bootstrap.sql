@@ -69,6 +69,11 @@ BEGIN
     EXECUTE format('CREATE ROLE %I NOLOGIN NOINHERIT NOBYPASSRLS', v_owner);
   END IF;
   EXECUTE format('ALTER ROLE %I NOLOGIN NOINHERIT NOBYPASSRLS', v_owner);
+  -- On a managed service such as Neon the migration role is not a superuser. Since
+  -- PostgreSQL 16 creating a role does not let its creator act as it, so the migration
+  -- role becomes a member: SET to create the schema for it and run migrations as it,
+  -- INHERIT to grant and revoke on the objects it owns. The API role never gets this.
+  EXECUTE format('GRANT %I TO CURRENT_USER WITH INHERIT TRUE, SET TRUE', v_owner);
 
   IF NOT EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = p_schema) THEN
     EXECUTE format('CREATE SCHEMA %I AUTHORIZATION %I', p_schema, v_owner);
