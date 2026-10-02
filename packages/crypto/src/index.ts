@@ -6,4 +6,15 @@ export {
   signCertificate,
   verifyCertificate,
 } from "./certificate.ts";
+export {
+  presentCredential,
+  type RejectionReason,
+  timeWindow,
+  type Verdict,
+  type VerificationContext,
+  type VerifiedCredential,
+  verifyCredential,
+  WINDOW_MS,
+  WINDOW_TOLERANCE,
+} from "./credential.ts";
 export type { ServerKeyRing, ServerSigner, Signer } from "./signer.ts";

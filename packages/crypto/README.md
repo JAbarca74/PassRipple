@@ -38,3 +38,10 @@ Everything other packages may use is exported from `src/index.ts`. Deep imports 
 | `signCertificate(input, serverSigner)` | Signs a certificate binding a ticket to a device key. Refuses unacceptable keys, and checks the signature with the signer's own public key |
 | `verifyCertificate(certificate, serverKeys)` | Whether a key in the ring signed a certificate |
 | `eventRef(eventId)` | The 8-byte event reference a credential carries (ADR 0013) |
+| `presentCredential(certificate, holderSigner, nowMs)` | The QR text the wallet shows: the certificate and the device's signature of the current 30-second window, over a domain tag, the certificate body and the window |
+| `verifyCredential(qr, { serverKeys, eventId }, nowMs)` | Offline verification, steps 1 to 3 of the design's 6.3. Returns a `Verdict`: the credential, or the exact reason it was rejected |
+| `timeWindow(ms)` | The 30-second window a time falls in |
+
+`verifyCredential` checks, in order: the format, the server key id, the server's signature, the device key, the device's signature, the window (±2 around the device's corrected clock) and the event. Nothing unauthenticated gets a reason about time or event. It does not look at the manifest: whether the ticket was redeemed or voided, or has a newer key version, is the gate device's next check.
+
+Within the tolerance, the same QR verifies more than once: crypto proves who holds the ticket, and redemption makes sure it is used once (invariant I1).
