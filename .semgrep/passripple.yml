@@ -5,6 +5,10 @@ rules:
       for codes, tokens, identifiers and anything security-related.
     severity: ERROR
     languages: [typescript, javascript]
+    paths:
+      # Test code never ships, so it may use Math.random() (for example, to shuffle inputs).
+      exclude:
+        - "*.test.ts"
     pattern: Math.random()
 
   - id: passripple-pure-packages-no-io
