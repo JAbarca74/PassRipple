@@ -17,6 +17,8 @@ Shared vocabulary for the whole system: Zod schemas, TypeScript types, the domai
 | `event.cancelled` | `events` | An event was cancelled |
 | `payment.succeeded` | `payments` | A bank notice became the payment of an order, and the order is paid |
 | `ticket.issued` | `ticketing` | A ticket was issued |
+| `ticket.bound` | `ticketing` | A ticket was bound to a device key, first or on recovery |
+| `ticket.transferred` | `ticketing` | A ticket was transferred to another person's device |
 | `ticket.voided` | `ticketing` | A ticket was voided |
 
 ## Credential QR format

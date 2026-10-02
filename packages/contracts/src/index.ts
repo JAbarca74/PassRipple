@@ -38,7 +38,9 @@ export type {
   EventPublished,
   EventUpdated,
   PaymentSucceeded,
+  TicketBound,
   TicketIssued,
+  TicketTransferred,
   TicketVoided,
 } from "./domain-events.ts";
 export { bytesToUuid, uuidToBytes } from "./uuid.ts";

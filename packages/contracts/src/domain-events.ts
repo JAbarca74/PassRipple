@@ -48,6 +48,28 @@ export interface TicketIssued {
   occurredAt: string;
 }
 
+/**
+ * A ticket was bound to a device key: the first binding after it was issued, or a
+ * recovery onto a new device of the same person. Older certificates are now stale.
+ */
+export interface TicketBound {
+  type: "ticket.bound";
+  ticketId: string;
+  eventId: string;
+  keyVersion: number;
+  reason: "bind" | "recovery";
+  occurredAt: string;
+}
+
+/** A ticket was transferred to another person's device. Older certificates are now stale. */
+export interface TicketTransferred {
+  type: "ticket.transferred";
+  ticketId: string;
+  eventId: string;
+  keyVersion: number;
+  occurredAt: string;
+}
+
 /** A ticket was voided. Voids happen online only. */
 export interface TicketVoided {
   type: "ticket.voided";
@@ -63,6 +85,8 @@ export type DomainEvent =
   | EventCancelled
   | PaymentSucceeded
   | TicketIssued
+  | TicketBound
+  | TicketTransferred
   | TicketVoided;
 
 /** The `type` of every domain event. */
