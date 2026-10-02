@@ -38,8 +38,32 @@ export interface PaymentSucceeded {
   occurredAt: string;
 }
 
+/** A ticket was issued: sold, complimentary or pre-issued for a door-sale block. */
+export interface TicketIssued {
+  type: "ticket.issued";
+  ticketId: string;
+  eventId: string;
+  orderId: string | null;
+  origin: "sale" | "courtesy" | "door_sale";
+  occurredAt: string;
+}
+
+/** A ticket was voided. Voids happen online only. */
+export interface TicketVoided {
+  type: "ticket.voided";
+  ticketId: string;
+  eventId: string;
+  occurredAt: string;
+}
+
 /** Every domain event in the catalog. */
-export type DomainEvent = EventPublished | EventUpdated | EventCancelled | PaymentSucceeded;
+export type DomainEvent =
+  | EventPublished
+  | EventUpdated
+  | EventCancelled
+  | PaymentSucceeded
+  | TicketIssued
+  | TicketVoided;
 
 /** The `type` of every domain event. */
 export type DomainEventType = DomainEvent["type"];

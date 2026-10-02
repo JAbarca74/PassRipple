@@ -7,4 +7,6 @@ export type {
   EventPublished,
   EventUpdated,
   PaymentSucceeded,
+  TicketIssued,
+  TicketVoided,
 } from "./domain-events.ts";

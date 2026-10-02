@@ -16,6 +16,8 @@ Shared vocabulary for the whole system: Zod schemas, TypeScript types, the domai
 | `event.updated` | `events` | An event's data changed |
 | `event.cancelled` | `events` | An event was cancelled |
 | `payment.succeeded` | `payments` | A bank notice became the payment of an order, and the order is paid |
+| `ticket.issued` | `ticketing` | A ticket was issued |
+| `ticket.voided` | `ticketing` | A ticket was voided |
 
 ## Depends on
 

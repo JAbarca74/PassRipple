@@ -10,6 +10,10 @@ Ticket redemption, applying offline batches from gate devices, and duplicate det
 
 The `redemption` database schema. No other module writes to it (rule R1).
 
+- `redemption.redemptions`: every scan synced from a gate device, append-only. A partial unique index allows at most one `admitted` scan per single-use ticket (invariant I1, ADR 0012); a second scan is kept as `duplicate`, because no offline operation may be rejected (I6). The entry mode is copied from the ticket, whatever the caller passes, and the ticket must belong to the device's event.
+
+`redemption.record_scan(id, ticket, device, device_seq, scanned_at_device, clock_offset_ms, method, id_checked)` records one scan and returns `admitted` or `duplicate`. It is idempotent by the device-generated id. Staff call it for their own devices; the system calls it for synced batches. `redemption.apply_batch` arrives in Phase 2.
+
 ## Depends on
 
 - `@passripple/contracts`
