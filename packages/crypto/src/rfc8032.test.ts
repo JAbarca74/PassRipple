@@ -4,10 +4,13 @@ import { describe, expect, test } from "vitest";
 import { verifyStrict } from "./bytes.ts";
 import { createSigner } from "./testing.ts";
 
+// The test vectors of RFC 8032, section 7.1. Their secret keys are published in the RFC
+// so anyone can check an implementation: they protect nothing. gitleaks allows them in
+// this one file (.gitleaks.toml), and each line tells Semgrep the same.
 const VECTORS = [
   {
     name: "TEST 1",
-    secret: "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60",
+    secret: "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60", // nosemgrep: generic.secrets.security.detected-generic-secret.detected-generic-secret
     public: "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a",
     message: "",
     signature:
@@ -16,7 +19,7 @@ const VECTORS = [
   },
   {
     name: "TEST 2",
-    secret: "4ccd089b28ff96da9db6c346ec114e0f5b8a319f35aba624da8cf6ed4fb8a6fb",
+    secret: "4ccd089b28ff96da9db6c346ec114e0f5b8a319f35aba624da8cf6ed4fb8a6fb", // nosemgrep: generic.secrets.security.detected-generic-secret.detected-generic-secret
     public: "3d4017c3e843895a92b70aa74d1b7ebc9c982ccf2ec4968cc0cd55f12af4660c",
     message: "72",
     signature:
@@ -25,7 +28,7 @@ const VECTORS = [
   },
   {
     name: "TEST 3",
-    secret: "c5aa8df43f9f837bedb7442f31dcb7b166d38535076f094b85ce3a2e0b4458f7",
+    secret: "c5aa8df43f9f837bedb7442f31dcb7b166d38535076f094b85ce3a2e0b4458f7", // nosemgrep: generic.secrets.security.detected-generic-secret.detected-generic-secret
     public: "fc51cd8e6218a1a38da47ed00230f0580816ed13ba3303ac5deb911548908025",
     message: "af82",
     signature:
@@ -34,7 +37,7 @@ const VECTORS = [
   },
   {
     name: "TEST SHA(abc)",
-    secret: "833fe62409237b9d62ec77587520911e9a759cec1d19755b7da901b96dca3d42",
+    secret: "833fe62409237b9d62ec77587520911e9a759cec1d19755b7da901b96dca3d42", // nosemgrep: generic.secrets.security.detected-generic-secret.detected-generic-secret
     public: "ec172b93ad5e563bf4932c70e1245034c35467ef2efd4d64ebf819683467e2bf",
     message:
       "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a" +
