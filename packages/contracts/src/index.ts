@@ -93,4 +93,4 @@ export {
   type VerifySignInRequest,
   verifySignInRequest,
 } from "./staff-api.ts";
-export { bytesToUuid, uuidToBytes } from "./uuid.ts";
+export { bytesToUuid, uuidToBytes, uuidv7 } from "./uuid.ts";

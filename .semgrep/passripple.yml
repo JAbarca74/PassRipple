@@ -25,6 +25,7 @@ rules:
         - "/packages/pricing/"
         - "/packages/tax/"
         - "/packages/bank-parsers/"
+        - "/packages/outbox/"
       # Tests are not the package: they may use WebCrypto to check signature compatibility.
       exclude:
         - "*.test.ts"
