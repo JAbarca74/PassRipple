@@ -2,7 +2,7 @@
 
 **Fraud-proof event ticketing for Costa Rica.** Device-bound QR tickets, offline-first gate validation, SINPE Móvil payments and verifiable payouts to organizers.
 
-> **Status:** pre-alpha. Phase 0 is complete: the database enforces invariants I1–I5 and Row Level Security, and runs on Neon. Phase 1 is next.
+> **Status:** pre-alpha. Phases 0 and 1 are complete: the database enforces invariants I1–I5 and Row Level Security on Neon, and tickets carry device-bound credentials that no gate device can forge (I7). Phase 2 is next.
 
 ---
 
@@ -128,7 +128,7 @@ Found a vulnerability? Read [`SECURITY.md`](SECURITY.md) and report it privately
 ## Roadmap
 
 - [x] **Phase 0** — Foundations: schema, Row Level Security, invariants I1–I5 under test, Neon
-- [ ] **Phase 1** — Cryptography: device-bound credentials (I7)
+- [x] **Phase 1** — Cryptography: device-bound credentials (I7), human codes, device binding
 - [ ] **Phase 2** — API on Cloudflare Workers with Hyperdrive, single-gate offline validator, Play Store closed testing, iOS build tested in the simulator
 - [ ] **Phase 3** — Three-tap checkout, SINPE collection and reconciliation
 - [ ] **Phase 4** — Dashboard, ledger and verifiable payouts (I9)
