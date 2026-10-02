@@ -25,6 +25,10 @@ Shared vocabulary for the whole system: Zod schemas, TypeScript types, the domai
 
 `src/credential-format.ts` encodes and decodes the device-bound credential shown as a QR code: the server's certificate (62 signed bytes and the server's signature) followed by a 30-second time window and the device's signature, 194 bytes in all, as Base45 text (`src/base45.ts`, RFC 9285). Decoding accepts only canonical bytes and rejects unknown versions, wrong lengths, trailing bytes and reserved flag bits. It checks the format only: verifying the signatures is the job of `@passripple/crypto`.
 
+## Gate manifest
+
+`src/gate-manifest.ts` describes the package a gate device downloads before an event: the server keys it trusts, and for each ticket its type, entry mode, status, whether it was redeemed, its device key, key version and fallback code. It holds no secret (invariant I7). It is a draft: Phase 2 builds it from the database and decides how it travels.
+
 ## Depends on
 
 Nothing.

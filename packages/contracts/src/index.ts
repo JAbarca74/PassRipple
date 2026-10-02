@@ -43,4 +43,10 @@ export type {
   TicketTransferred,
   TicketVoided,
 } from "./domain-events.ts";
+export {
+  GATE_MANIFEST_VERSION,
+  type GateManifest,
+  type ManifestServerKey,
+  type ManifestTicket,
+} from "./gate-manifest.ts";
 export { bytesToUuid, uuidToBytes } from "./uuid.ts";
