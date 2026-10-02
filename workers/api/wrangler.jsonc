@@ -1,0 +1,24 @@
+// Cloudflare configuration of the API Worker. No secrets here: they are set with
+// `wrangler secret put` in production and read from `.dev.vars` locally (see
+// `.dev.vars.example`). Account-specific ids are not secret, but they only exist once the
+// Cloudflare account does: replace the placeholders then.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "passripple-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  // Postgres.js needs Node's net, tls and crypto APIs.
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      // Placeholder: the id printed by `wrangler hyperdrive create passripple-db` (db/README.md).
+      "id": "00000000000000000000000000000000",
+      // `wrangler dev` connects here instead: the local Docker database, as passripple_api.
+      // Run `pnpm db:api-login` once so that role may log in locally. Wrangler requires a
+      // password in the URL; the local database trusts local connections and ignores it.
+      "localConnectionString": "postgres://passripple_api:unused@localhost:54329/passripple"
+    }
+  ]
+}

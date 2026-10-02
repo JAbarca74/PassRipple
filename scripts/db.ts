@@ -3,6 +3,8 @@
 //   node scripts/db.ts migrate   apply bootstrap SQL, then each module's new migrations,
 //                                each one as the module's owner role (rule R1)
 //   node scripts/db.ts test      run db/tests and every module's db/tests with pgTAP
+//   node scripts/db.ts api-login let passripple_api log in to the local database, so
+//                                `wrangler dev` can reach it (local only, never Neon)
 //
 // Connects with DATABASE_URL (default: the local database from db/compose.yaml).
 // Requires the psql client on PATH.
@@ -144,12 +146,26 @@ function test(): void {
   console.log(`\nAll ${files.length} test file(s) passed.`);
 }
 
+// Hosts of the local Docker database: from this machine, or from a disposable container.
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "host.docker.internal"]);
+
+function apiLogin(): void {
+  // The local database trusts every connection from this machine, so the role needs no
+  // password. On Neon the role logs in with a secret password set by hand (db/README.md).
+  if (!LOCAL_HOSTS.has(new URL(DATABASE_URL).hostname)) {
+    throw new Error("api-login only runs against the local database.");
+  }
+  psql("ALTER ROLE passripple_api LOGIN;\n");
+  console.log("passripple_api can log in to the local database.");
+}
+
 const command = process.argv[2];
 try {
   if (command === "migrate") migrate();
   else if (command === "test") test();
+  else if (command === "api-login") apiLogin();
   else {
-    console.error("usage: node scripts/db.ts <migrate|test>");
+    console.error("usage: node scripts/db.ts <migrate|test|api-login>");
     process.exit(2);
   }
 } catch (error) {

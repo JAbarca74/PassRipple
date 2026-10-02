@@ -110,6 +110,9 @@ pnpm db:up           # start the local database (Docker)
 pnpm db:migrate      # apply migrations in module dependency order
 pnpm db:test         # run every pgTAP test
 pnpm db:down         # stop the database and delete its data
+
+pnpm db:api-login    # once: let the API role log in to the local database
+pnpm dev:api         # API Worker on http://localhost:8787 (wrangler dev)
 ```
 
 ## Security

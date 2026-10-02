@@ -11,11 +11,12 @@
     "dev:app": "pnpm --filter @passripple/app dev",
     "dev:site": "pnpm --filter @passripple/site dev",
     "dev:coming-soon": "pnpm --filter @passripple/site dev:coming-soon",
+    "dev:api": "pnpm --filter @passripple/worker-api dev",
     "build": "pnpm -r --if-present build",
     "build:coming-soon": "pnpm --filter @passripple/site build:coming-soon",
     "lint": "biome check .",
     "format": "biome check --write .",
-    "typecheck": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json && tsc -p workers/api/tsconfig.json",
     "test": "vitest run",
     "test:cov": "vitest run --coverage",
     "check:boundaries": "node scripts/check-boundaries.ts",
@@ -23,7 +24,8 @@
     "db:up": "docker compose -f db/compose.yaml up -d --build --wait",
     "db:down": "docker compose -f db/compose.yaml down -v",
     "db:migrate": "node scripts/db.ts migrate",
-    "db:test": "node scripts/db.ts test"
+    "db:test": "node scripts/db.ts test",
+    "db:api-login": "node scripts/db.ts api-login"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
