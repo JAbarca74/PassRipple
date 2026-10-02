@@ -22,7 +22,7 @@ PostgreSQL. Production runs on Neon; `compose.yaml` here is for local developmen
 
 `pnpm db:migrate` prepares each module's role before its migrations (`migrations.prepare_module`), then runs every migration as that role. A migration that creates objects in another schema, or reads a schema its module does not depend on, fails when it is applied. Read access is synced on every run, so removing a dependency from `package.json` also revokes it.
 
-The runner's own session is a superuser, so this catches mistakes, not malice: migrations are reviewed code.
+The runner connects as an administrative role: the superuser locally, Neon's owner role in production. On Neon that role is not a superuser, and since PostgreSQL 16 creating a role does not let its creator act as it, so `prepare_module` makes the migration role a member of each module role (`SET` to run migrations as it, `INHERIT` to grant on its objects). Either way the runner's session can leave a module role again, so this catches mistakes, not malice: migrations are reviewed code. The API role is never a member of a module role.
 
 ## Session actor
 
