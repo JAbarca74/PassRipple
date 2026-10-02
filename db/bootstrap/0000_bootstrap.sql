@@ -165,6 +165,14 @@ BEGIN
 END
 $$;
 
+-- True when the query runs as a module role: inside a module's SECURITY DEFINER function,
+-- or a migration. Policies use it to let module roles read every row of the tables they
+-- were granted (their own and their dependencies'), while the API stays filtered by the
+-- session actor. Which tables a module role may read is decided by its grants.
+CREATE OR REPLACE FUNCTION app.is_module_role() RETURNS boolean
+LANGUAGE sql STABLE PARALLEL SAFE
+AS $$ SELECT pg_catalog.starts_with(current_user::text, 'passripple_owner_') $$;
+
 -- Trigger for append-only tables (ledger, consents, redemptions): attach it to
 -- BEFORE UPDATE OR DELETE (FOR EACH ROW) and BEFORE TRUNCATE (FOR EACH STATEMENT).
 CREATE OR REPLACE FUNCTION app.reject_mutation() RETURNS trigger

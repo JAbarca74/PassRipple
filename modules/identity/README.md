@@ -10,6 +10,14 @@ Accounts for staff, organizers, municipal inspectors and administrators; organiz
 
 The `identity` database schema. No other module writes to it (rule R1).
 
+- `identity.organizations`: organizations, with `verified_at` set only by an administrator through `identity.set_organization_verified`. Publishing an event requires it.
+- `identity.users`: accounts. No personal data yet.
+- `identity.memberships`: which users act for which organization.
+
+## Session actor
+
+The API starts every transaction with `identity.set_actor(actor_id, actor_role, org_id)` instead of setting `app.*` itself. It rejects an unknown role, a disabled or unknown user, an administrator role for a user who is not one, and an organization the user is not an active member of. Buyers and the system role act with no account and no organization; only organizers act for an organization.
+
 ## Depends on
 
 - `@passripple/contracts`
