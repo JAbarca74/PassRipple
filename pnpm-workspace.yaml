@@ -10,3 +10,7 @@ packages:
 minimumReleaseAge: 10080
 trustPolicy: no-downgrade
 blockExoticSubdeps: true
+# Exceptions to the trust policy, each one checked by hand. semver@6.3.1 (2023, used by
+# Babel through Expo) predates npm provenance, so it looks weaker than semver 7.
+trustPolicyExclude:
+  - semver@6.3.1

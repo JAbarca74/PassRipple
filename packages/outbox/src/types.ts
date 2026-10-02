@@ -62,7 +62,7 @@ export type ItemStatus = "applied" | "duplicate" | "rejected";
 export interface ItemResult {
   readonly id: string;
   readonly status: ItemStatus;
-  readonly error?: string;
+  readonly error?: string | undefined;
 }
 
 /**

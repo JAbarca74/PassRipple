@@ -16,7 +16,7 @@
     "build:coming-soon": "pnpm --filter @passripple/site build:coming-soon",
     "lint": "biome check .",
     "format": "biome check --write .",
-    "typecheck": "tsc -p tsconfig.json && tsc -p workers/api/tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json && tsc -p workers/api/tsconfig.json && tsc -p apps/scanner/tsconfig.json",
     "test": "vitest run",
     "test:cov": "vitest run --coverage",
     "check:boundaries": "node scripts/check-boundaries.ts",
@@ -31,9 +31,14 @@
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
     "@types/node": "26.6.3",
+    "@types/qrcode": "1.5.6",
     "@vitest/coverage-v8": "5.0.3",
     "fast-check": "4.10.2",
+    "qrcode": "1.5.4",
     "typescript": "7.0.2",
     "vitest": "5.0.3"
+  },
+  "op-sqlite": {
+    "sqlcipher": true
   }
 }

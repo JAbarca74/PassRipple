@@ -55,3 +55,6 @@ desktop.ini
 *.log
 npm-debug.log*
 pnpm-debug.log*
+
+# Local development fixtures: QR images and codes of fictitious test tickets
+.dev-fixtures/
