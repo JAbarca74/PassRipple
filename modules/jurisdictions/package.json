@@ -1,17 +1,17 @@
 {
-  "name": "@passwave/jurisdictions",
+  "name": "@passripple/jurisdictions",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
-  "passwave": {
+  "passripple": {
     "kind": "module",
     "level": 1,
     "schema": "jurisdictions"
   },
   "dependencies": {
-    "@passwave/contracts": "workspace:*"
+    "@passripple/contracts": "workspace:*"
   }
 }

@@ -1,4 +1,4 @@
-# @passwave/staff
+# @passripple/staff
 
 **Kind:** module · **Level:** 2 (composite domain)
 
@@ -12,9 +12,9 @@ The `staff` database schema. No other module writes to it (rule R1).
 
 ## Depends on
 
-- `@passwave/contracts`
-- `@passwave/identity`
-- `@passwave/events`
+- `@passripple/contracts`
+- `@passripple/identity`
+- `@passripple/events`
 
 ## Does not
 

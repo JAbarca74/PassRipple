@@ -1,4 +1,4 @@
-# @passwave/privacy
+# @passripple/privacy
 
 **Kind:** module · **Level:** 1 (base domain)
 
@@ -12,8 +12,8 @@ The `privacy` database schema. No other module writes to it (rule R1).
 
 ## Depends on
 
-- `@passwave/contracts`
-- `@passwave/identity`
+- `@passripple/contracts`
+- `@passripple/identity`
 
 ## Emits
 

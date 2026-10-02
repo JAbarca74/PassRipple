@@ -1,4 +1,4 @@
-# @passwave/catalog
+# @passripple/catalog
 
 **Kind:** module · **Level:** 1 (base domain)
 
@@ -12,8 +12,8 @@ The `catalog` database schema. No other module writes to it (rule R1).
 
 ## Depends on
 
-- `@passwave/contracts`
-- `@passwave/events`
+- `@passripple/contracts`
+- `@passripple/events`
 
 ## Does not
 

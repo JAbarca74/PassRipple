@@ -1,19 +1,19 @@
 {
-  "name": "@passwave/inventory",
+  "name": "@passripple/inventory",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
-  "passwave": {
+  "passripple": {
     "kind": "module",
     "level": 2,
     "schema": "inventory"
   },
   "dependencies": {
-    "@passwave/contracts": "workspace:*",
-    "@passwave/events": "workspace:*",
-    "@passwave/catalog": "workspace:*"
+    "@passripple/contracts": "workspace:*",
+    "@passripple/events": "workspace:*",
+    "@passripple/catalog": "workspace:*"
   }
 }

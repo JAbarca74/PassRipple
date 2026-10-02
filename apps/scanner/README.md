@@ -4,7 +4,8 @@ Native app for event staff: ticket validation, door sales, supervisor and inspec
 
 - Built with Expo (React Native).
 - Stores public keys only (invariant I7).
-- Distributed through the Play Store.
+- Built for Android and iOS from the start. Every native dependency must support both.
+- Distributed through the Play Store. The iOS build is kept working and tested in the iOS simulator, but there is no App Store release yet.
 
 **Status:** placeholder. Scaffolded in Phase 2.
 

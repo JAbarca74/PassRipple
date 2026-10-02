@@ -1,4 +1,4 @@
-# @passwave/manifest
+# @passripple/manifest
 
 **Kind:** module · **Level:** 3 (transactional)
 
@@ -12,12 +12,12 @@ The `manifest` database schema. No other module writes to it (rule R1).
 
 ## Depends on
 
-- `@passwave/contracts`
-- `@passwave/crypto`
-- `@passwave/ticketing`
-- `@passwave/inventory`
-- `@passwave/courtesy`
-- `@passwave/staff`
+- `@passripple/contracts`
+- `@passripple/crypto`
+- `@passripple/ticketing`
+- `@passripple/inventory`
+- `@passripple/courtesy`
+- `@passripple/staff`
 
 ## Guarantees
 

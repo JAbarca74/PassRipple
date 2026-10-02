@@ -1,22 +1,22 @@
 {
-  "name": "@passwave/settlement",
+  "name": "@passripple/settlement",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
-  "passwave": {
+  "passripple": {
     "kind": "module",
     "level": 4,
     "schema": "settlement"
   },
   "dependencies": {
-    "@passwave/contracts": "workspace:*",
-    "@passwave/pricing": "workspace:*",
-    "@passwave/identity": "workspace:*",
-    "@passwave/events": "workspace:*",
-    "@passwave/orders": "workspace:*",
-    "@passwave/payments": "workspace:*"
+    "@passripple/contracts": "workspace:*",
+    "@passripple/pricing": "workspace:*",
+    "@passripple/identity": "workspace:*",
+    "@passripple/events": "workspace:*",
+    "@passripple/orders": "workspace:*",
+    "@passripple/payments": "workspace:*"
   }
 }

@@ -1,4 +1,4 @@
-# @passwave/events
+# @passripple/events
 
 **Kind:** module · **Level:** 1 (base domain)
 
@@ -12,9 +12,9 @@ The `events` database schema. No other module writes to it (rule R1).
 
 ## Depends on
 
-- `@passwave/contracts`
-- `@passwave/identity`
-- `@passwave/jurisdictions`
+- `@passripple/contracts`
+- `@passripple/identity`
+- `@passripple/jurisdictions`
 
 ## Does not
 

@@ -1,4 +1,4 @@
-# @passwave/payments
+# @passripple/payments
 
 **Kind:** module · **Level:** 3 (transactional)
 
@@ -12,9 +12,9 @@ The `payments` database schema. No other module writes to it (rule R1).
 
 ## Depends on
 
-- `@passwave/contracts`
-- `@passwave/bank-parsers`
-- `@passwave/orders`
+- `@passripple/contracts`
+- `@passripple/bank-parsers`
+- `@passripple/orders`
 
 ## Emits
 

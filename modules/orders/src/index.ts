@@ -1,3 +1,3 @@
-// Public API of @passwave/orders.
+// Public API of @passripple/orders.
 // Only what is exported here may be used by other packages.
 export {};

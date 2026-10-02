@@ -1,4 +1,4 @@
-# @passwave/seo
+# @passripple/seo
 
 **Kind:** module · **Level:** 4 (consumer)
 
@@ -12,9 +12,9 @@ The `seo` database schema. No other module writes to it (rule R1).
 
 ## Depends on
 
-- `@passwave/contracts`
-- `@passwave/events`
-- `@passwave/catalog`
+- `@passripple/contracts`
+- `@passripple/events`
+- `@passripple/catalog`
 
 ## Does not
 

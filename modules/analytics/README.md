@@ -1,4 +1,4 @@
-# @passwave/analytics
+# @passripple/analytics
 
 **Kind:** module · **Level:** 4 (consumer)
 
@@ -12,8 +12,8 @@ The `analytics` database schema. No other module writes to it (rule R1).
 
 ## Depends on
 
-- `@passwave/contracts`
-- `@passwave/privacy`
+- `@passripple/contracts`
+- `@passripple/privacy`
 
 ## Guarantees
 

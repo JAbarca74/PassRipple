@@ -1,4 +1,4 @@
-# @passwave/tax
+# @passripple/tax
 
 **Kind:** core · **Level:** 0 (core)
 
@@ -8,7 +8,7 @@ Municipal tax base, deductible complimentary tickets and tax amount, from canton
 
 ## Depends on
 
-- `@passwave/contracts`
+- `@passripple/contracts`
 
 ## Does not
 

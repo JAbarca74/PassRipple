@@ -1,4 +1,4 @@
-# @passwave/redemption
+# @passripple/redemption
 
 **Kind:** module · **Level:** 3 (transactional)
 
@@ -12,10 +12,10 @@ The `redemption` database schema. No other module writes to it (rule R1).
 
 ## Depends on
 
-- `@passwave/contracts`
-- `@passwave/crypto`
-- `@passwave/ticketing`
-- `@passwave/staff`
+- `@passripple/contracts`
+- `@passripple/crypto`
+- `@passripple/ticketing`
+- `@passripple/staff`
 
 ## Guarantees
 

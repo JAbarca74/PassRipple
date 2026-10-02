@@ -1,17 +1,17 @@
 {
-  "name": "@passwave/notifications",
+  "name": "@passripple/notifications",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
-  "passwave": {
+  "passripple": {
     "kind": "module",
     "level": 4,
     "schema": "notifications"
   },
   "dependencies": {
-    "@passwave/contracts": "workspace:*"
+    "@passripple/contracts": "workspace:*"
   }
 }

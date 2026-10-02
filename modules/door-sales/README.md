@@ -1,4 +1,4 @@
-# @passwave/door-sales
+# @passripple/door-sales
 
 **Kind:** module · **Level:** 3 (transactional)
 
@@ -12,10 +12,10 @@ The `door_sales` database schema. No other module writes to it (rule R1).
 
 ## Depends on
 
-- `@passwave/contracts`
-- `@passwave/inventory`
-- `@passwave/ticketing`
-- `@passwave/staff`
+- `@passripple/contracts`
+- `@passripple/inventory`
+- `@passripple/ticketing`
+- `@passripple/staff`
 
 ## Does not
 

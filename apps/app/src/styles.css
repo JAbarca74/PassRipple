@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+/*
+ * PassRipple design tokens. The same tokens live in apps/site/src/styles.css: change both.
+ * Palette values come from the brand files in brand/ and the status colors of the design system.
+ */
+@theme {
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --color-ink: #0f172a;
+  --color-canvas: #f8fafc;
+  --color-line: #e2e8f0;
+  --color-brand: #5b1fe0;
+  --color-brand-soft: #efe9fd;
+  --color-wave: #00e5d8;
+
+  --color-valid: #16a34a;
+  --color-rejected: #dc2626;
+  --color-verify: #d97706;
+  --color-info: #2563eb;
+}
+
+@layer base {
+  body {
+    @apply bg-canvas text-ink antialiased;
+  }
+
+  button,
+  a,
+  input,
+  select {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand;
+  }
+}

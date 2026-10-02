@@ -1,3 +1,3 @@
-// Public API of @passwave/redemption.
+// Public API of @passripple/redemption.
 // Only what is exported here may be used by other packages.
 export {};

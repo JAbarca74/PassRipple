@@ -1,9 +1,9 @@
 {
-  "name": "@passwave/worker-api",
+  "name": "@passripple/worker-api",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "passwave": {
+  "passripple": {
     "kind": "worker"
   }
 }

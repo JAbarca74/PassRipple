@@ -1,4 +1,4 @@
-# @passwave/settlement
+# @passripple/settlement
 
 **Kind:** module · **Level:** 4 (consumer)
 
@@ -12,12 +12,12 @@ The `settlement` database schema. No other module writes to it (rule R1).
 
 ## Depends on
 
-- `@passwave/contracts`
-- `@passwave/pricing`
-- `@passwave/identity`
-- `@passwave/events`
-- `@passwave/orders`
-- `@passwave/payments`
+- `@passripple/contracts`
+- `@passripple/pricing`
+- `@passripple/identity`
+- `@passripple/events`
+- `@passripple/orders`
+- `@passripple/payments`
 
 ## Guarantees
 

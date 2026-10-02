@@ -1,4 +1,4 @@
-# @passwave/courtesy
+# @passripple/courtesy
 
 **Kind:** module · **Level:** 2 (composite domain)
 
@@ -12,9 +12,9 @@ The `courtesy` database schema. No other module writes to it (rule R1).
 
 ## Depends on
 
-- `@passwave/contracts`
-- `@passwave/events`
-- `@passwave/ticketing`
+- `@passripple/contracts`
+- `@passripple/events`
+- `@passripple/ticketing`
 
 ## Guarantees
 

@@ -1,4 +1,4 @@
-# Passwave
+# PassRipple
 
 **Fraud-proof event ticketing for Costa Rica.** Device-bound QR tickets, offline-first gate validation, SINPE Móvil payments and verifiable payouts to organizers.
 
@@ -6,11 +6,11 @@
 
 ---
 
-## Why Passwave
+## Why PassRipple
 
 Organizers of mass events in Costa Rica sell paper tickets that get reprinted and resold as originals. At the gate, the copy looks exactly like the real one, and the fraud is only discovered when more people are inside than tickets were sold.
 
-Passwave starts from one idea:
+PassRipple starts from one idea:
 
 > **The paper is not the ticket. The database record is.**
 
@@ -48,7 +48,7 @@ The rules the system must never break. They live in the database and in the cryp
 
 A **modular monolith**: domain modules with enforced boundaries, each owning its own database schema. The full design is in [`docs/architecture.md`](docs/architecture.md), and the reasons behind each decision are in [`docs/adr/`](docs/adr/).
 
-> **Note:** `docs/` is kept private and is not part of this repository, so links to it do not resolve here. To work on the code, use [`CLAUDE.md`](CLAUDE.md) and each package's `README.md`, which hold the commands and the rules.
+> **Note:** `docs/` is kept private and is not part of this repository, so links to it do not resolve here. To work on the code, use this file and each package's `README.md`, which hold the commands and the rules.
 
 | Layer | Technology |
 |---|---|
@@ -104,6 +104,7 @@ pre-commit install   # scan every commit for secrets
 pnpm install
 
 pnpm verify          # lint, type check, module boundaries and unit tests
+pnpm test:cov        # Vitest unit tests with coverage
 
 pnpm db:up           # start the local database (Docker)
 pnpm db:migrate      # apply migrations in module dependency order
@@ -113,7 +114,7 @@ pnpm db:down         # stop the database and delete its data
 
 ## Security
 
-Passwave handles money and personal data, so security is designed in, not added on:
+PassRipple handles money and personal data, so security is designed in, not added on:
 
 - Gate devices store **public keys only**. Extracting a gate device's data cannot produce a valid ticket.
 - Payments are confirmed **only** by the bank's notice, parsed deterministically. Screenshots never approve a payment, and no AI model decides one.
@@ -128,7 +129,7 @@ Found a vulnerability? Read [`SECURITY.md`](SECURITY.md) and report it privately
 
 - [ ] **Phase 0** — Foundations: schema, Row Level Security, invariants I1–I5 under test
 - [ ] **Phase 1** — Cryptography: device-bound credentials (I7)
-- [ ] **Phase 2** — Single-gate offline validator, Play Store closed testing
+- [ ] **Phase 2** — Single-gate offline validator, Play Store closed testing, iOS build tested in the simulator
 - [ ] **Phase 3** — Three-tap checkout, SINPE collection and reconciliation
 - [ ] **Phase 4** — Dashboard, ledger and verifiable payouts (I9)
 - [ ] **Phase 5** — Public site, SEO and analytics
@@ -136,7 +137,7 @@ Found a vulnerability? Read [`SECURITY.md`](SECURITY.md) and report it privately
 - [ ] **Phase 7** — Age ratings, complimentary tickets, door sales
 - [ ] **Phase 8** — Municipal oversight portal
 - [ ] **Phase 9** — Multi-gate events
-- [ ] **Phase 10** — Cards, iOS gate app, e-invoicing
+- [ ] **Phase 10** — Cards, e-invoicing
 
 ## License
 

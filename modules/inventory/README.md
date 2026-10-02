@@ -1,4 +1,4 @@
-# @passwave/inventory
+# @passripple/inventory
 
 **Kind:** module · **Level:** 2 (composite domain)
 
@@ -12,9 +12,9 @@ The `inventory` database schema. No other module writes to it (rule R1).
 
 ## Depends on
 
-- `@passwave/contracts`
-- `@passwave/events`
-- `@passwave/catalog`
+- `@passripple/contracts`
+- `@passripple/events`
+- `@passripple/catalog`
 
 ## Guarantees
 
