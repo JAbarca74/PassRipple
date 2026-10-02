@@ -284,6 +284,13 @@ describe("encoding rejects values outside the format", () => {
     expect(() => encodeQrPayload({ ...PAYLOAD, holderSig: short })).toThrow(RangeError);
   });
 
+  test("success paths", () => {
+    expect(encodeCertificate(PAYLOAD.certificate)).toBeInstanceOf(Uint8Array);
+    expect(encodeTimeWindow(PAYLOAD.timeWindow)).toBeInstanceOf(Uint8Array);
+    expect(encodeQrPayload(PAYLOAD)).toBeInstanceOf(Uint8Array);
+    expect(typeof encodeQr(PAYLOAD)).toBe("string");
+  });
+
   test("time windows outside 32 bits", () => {
     for (const timeWindow of [-1, 2 ** 32, 0.5]) {
       expect(() => encodeTimeWindow(timeWindow)).toThrow(RangeError);

@@ -13,6 +13,11 @@ const RFC_9285 = [
 ];
 
 describe("RFC 9285 examples", () => {
+  test("empty bytes", () => {
+    expect(encodeBase45(new Uint8Array(0))).toBe("");
+    expect(decodeBase45("")).toEqual(new Uint8Array(0));
+  });
+
   test.each(RFC_9285)("$text ↔ $base45", ({ text, base45 }) => {
     expect(encodeBase45(utf8(text))).toBe(base45);
     expect(decodeBase45(base45)).toEqual(utf8(text));
