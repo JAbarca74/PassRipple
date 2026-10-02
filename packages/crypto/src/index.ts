@@ -17,4 +17,12 @@ export {
   WINDOW_MS,
   WINDOW_TOLERANCE,
 } from "./credential.ts";
+export {
+  formatHumanCode,
+  HUMAN_CODE_ENTROPY_BYTES,
+  HUMAN_CODE_LENGTH,
+  humanCode,
+  normalizeHumanCode,
+  validateHumanCode,
+} from "./human-code.ts";
 export type { ServerKeyRing, ServerSigner, Signer } from "./signer.ts";
