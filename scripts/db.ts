@@ -116,7 +116,8 @@ function migrate(): void {
 }
 
 function test(): void {
-  psql("CREATE EXTENSION IF NOT EXISTS pgtap;\n");
+  // dblink opens second connections for concurrency tests (ADR 0011).
+  psql("CREATE EXTENSION IF NOT EXISTS pgtap;\nCREATE EXTENSION IF NOT EXISTS dblink;\n");
   const files = [
     ...sqlFiles(join(ROOT, "db", "tests")),
     ...modulesInOrder().flatMap((mod) => sqlFiles(join(mod.dir, "db", "tests"))),
