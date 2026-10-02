@@ -61,7 +61,7 @@ pnpm db:down      # stop it and delete its data
 
 Production runs on Neon, with one branch for production and one for development. The API connects through Cloudflare Hyperdrive as `passripple_api`; nothing else connects to the database.
 
-1. **Create the project** with PostgreSQL 17, the version of the local image, in the region closest to the Workers. Create a `dev` branch from `main`.
+1. **Create the project** with PostgreSQL 18, the version of the local image (`db/Dockerfile`), in the region closest to the Workers. Create a `dev` branch from `main`.
 2. **Check the module roles first, on `dev`.** Neon's administrative role is not a true superuser. Migrations create one role per module and run each migration as that role (`SET ROLE`), and the bootstrap alters `passripple_api`. Run the migrations once on `dev` and confirm they apply cleanly before touching `main`.
 3. **Apply the migrations**, exporting the connection only for that command:
 
