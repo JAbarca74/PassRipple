@@ -28,6 +28,12 @@ const SQLSTATE: Readonly<Record<string, Mapped>> = {
   "42501": { status: 403, code: "forbidden", message: "Not allowed for this actor." },
   "28000": { status: 401, code: "unauthorized", message: "Not signed in." },
   P0002: { status: 404, code: "not_found", message: "Not found." },
+  // A phone of the account is still enrolled and may hold scans to upload.
+  "55006": {
+    status: 409,
+    code: "device_enrolled",
+    message: "A phone of this account is still enrolled. Sign out of the event in the app first.",
+  },
   // Raised by module functions that limit how often something may happen.
   PR429: { status: 429, code: "rate_limited", message: "Too many attempts. Try again later." },
   "22023": { status: 400, code: "invalid_request", message: "Invalid request." },

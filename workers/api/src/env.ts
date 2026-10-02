@@ -19,6 +19,12 @@ export interface Env {
    */
   readonly SERVER_PUBLIC_KEYS?: string;
 
+  /**
+   * Browser origins allowed to call sign-in and account erasure, comma-separated: the
+   * public site (for /eliminar-datos). Empty allows none.
+   */
+  readonly ALLOWED_ORIGINS?: string;
+
   /** `ses` in production. `log` prints messages to the console, and only works on localhost. */
   readonly MAIL_PROVIDER?: string;
   readonly MAIL_FROM_ADDRESS?: string;

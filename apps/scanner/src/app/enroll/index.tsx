@@ -51,6 +51,12 @@ export default function EnrollEmail() {
         disabled={!email.includes("@")}
         onPress={() => void submit()}
       />
+      <Button
+        testID="open-delete-account"
+        label="Eliminar mi cuenta"
+        kind="secondary"
+        onPress={() => router.push("/delete-account")}
+      />
     </Screen>
   );
 }

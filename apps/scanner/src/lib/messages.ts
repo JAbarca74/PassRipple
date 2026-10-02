@@ -9,6 +9,9 @@ export function failureText(error: unknown): string {
     if (error.status === 429) return "Demasiados intentos. Espere unos minutos.";
     if (error.status === 401) return "El código es incorrecto, ya se usó o venció.";
     if (error.status === 404) return "El código de staff no es válido, venció o ya se usó.";
+    if (error.code === "device_enrolled") {
+      return "Otro teléfono suyo sigue unido a un evento. Salga del evento en ese teléfono primero.";
+    }
   }
   return "Algo salió mal. Intente de nuevo.";
 }

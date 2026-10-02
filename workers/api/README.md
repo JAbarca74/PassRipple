@@ -39,10 +39,13 @@ Every response carries the server's clock in `X-Server-Time` (milliseconds), whi
 | `POST /v1/staff/enroll` | person, as staff | Enrolls a phone with a staff code; returns the device token (`prd_…`) |
 | `GET /v1/gate/session` | device | The device's status (`active`, `revoked`, `expired`) and the server clock |
 | `GET /v1/gate/manifest[?since=cursor]` | active device | The event's gate manifest (`@passripple/contracts`), whole or only what changed since a cursor |
+| `DELETE /v1/account` | person | Erases the account (design 14.7): devices revoked, email, codes, sessions and memberships erased. `409 device_enrolled` while a phone of the account is still enrolled and may hold scans to upload |
 | `POST /v1/gate/batches` | any device | Uploads 1 to 100 offline operations to `redemption.apply_batch`. Always `200` with one result per operation; revoked and expired devices may upload too (I6) |
 | `POST /v1/gate/sign-out` | device | Signs the device out for good |
 
 Organizers send their organization in `X-Org-Id`; `identity.set_actor` checks the membership.
+
+The public site calls `/v1/auth/*` and `/v1/account` from the browser for `/eliminar-datos`; only the origins in `ALLOWED_ORIGINS` may (CORS). No other route answers cross-origin.
 
 ## Tokens and codes
 

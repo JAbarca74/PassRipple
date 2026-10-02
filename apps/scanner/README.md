@@ -12,7 +12,8 @@ Native app for event staff to validate tickets at the gate, on their personal ph
 4. **Manual entry** (6.7): the 10-character code when the camera cannot read the QR. The operator sees the ticket type and confirms. Five failures lock entry for a minute, doubling each time, and report a `manual_entry_locked` incident.
 5. **Durable queue** (8.6 to 8.9): every admission is marked locally and queued in one SQLite transaction (WAL, `synchronous = FULL`), before the screen turns green. A forced power-off loses nothing. The queue (`@passripple/outbox`) drains every two minutes, on returning to the foreground and when the network comes back, in batches with a 4-second timeout, backoff and a circuit breaker. The manifest updates every minute while active.
 6. **State on screen** (8.10): pending operations, last sync, connection (circuit breaker), quarantine, manifest age and clock correction.
-7. **The end** (8.3, 8.9, 11.2): when the event's window or the device's validity ends, or the organizer revokes the device, the phone stops validating, uploads what is left and deletes the event's data. Signing out or deleting the event is impossible while anything waits to be uploaded.
+7. **Account deletion** (14.7): Cuenta → Eliminar mi cuenta, also from the first screen. The person confirms with an email code; an enrolled phone signs out of the event first, which needs an empty queue. The same deletion is on the public site at `/eliminar-datos`.
+8. **The end** (8.3, 8.9, 11.2): when the event's window or the device's validity ends, or the organizer revokes the device, the phone stops validating, uploads what is left and deletes the event's data. Signing out or deleting the event is impossible while anything waits to be uploaded.
 
 The screen stays on in the gate screens, and the app works in the foreground: iOS does not promise background work (8.8).
 

@@ -16,14 +16,14 @@ pnpm dev:site   # http://localhost:5173
 | `/` | Home |
 | `/eventos/<slug>` | Event page; `?estado=sold-out` or `?estado=cancelled` previews those variants |
 | `/organizadores/<slug>` | Organizer page |
-| `/privacidad`, `/terminos` | Legal template (text pending legal review) |
-| `/eliminar-datos` | Data deletion request |
+| `/privacidad`, `/terminos` | Legal documents. The privacy policy covers the gate app's staff (data, providers, retention, deletion); the rest is pending legal review |
+| `/eliminar-datos` | Account deletion for staff, organizers and inspectors: email, code, done. Calls the API (`VITE_API_URL`), whose origin joins the CSP's `connect-src` at build time |
 
 `VITE_APP_URL` sets the app origin that the "Comprar" button opens (default `http://localhost:5174`). The variables are listed in [`.env.example`](.env.example); copy it to `.env`.
 
 ## Coming-soon mode
 
-While the platform is being built, the deployed site is a single holding page, [`coming-soon.html`](coming-soon.html). The `coming-soon` mode builds only that page, as `dist/index.html`, so every path shows it. Its styles and script are bundled files, so the same `_headers` CSP applies.
+While the platform is being built, the deployed site is a single holding page, [`coming-soon.html`](coming-soon.html). The `coming-soon` mode builds that page as `dist/index.html`, so every path shows it, except `/privacidad`, `/terminos` and `/eliminar-datos`, which Google Play links to: they are built into `dist/site.html` and `_redirects` rewrites them there. Its styles and script are bundled files, so the same `_headers` CSP applies.
 
 ```bash
 pnpm dev:coming-soon     # http://localhost:5173

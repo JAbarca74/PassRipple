@@ -57,6 +57,12 @@ export default function Account() {
         disabled={waiting > 0}
         onPress={() => void signOut()}
       />
+      <Button
+        testID="open-delete-account"
+        label="Eliminar mi cuenta"
+        kind="secondary"
+        onPress={() => router.push("/delete-account")}
+      />
       <Button label="Volver" kind="secondary" onPress={() => router.back()} />
     </Screen>
   );

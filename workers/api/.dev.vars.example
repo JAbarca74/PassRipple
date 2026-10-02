@@ -11,6 +11,10 @@ SIGN_IN_PEPPER=
 # development key, which signs the fixture tickets.
 SERVER_PUBLIC_KEYS=[]
 
+# Browser origins allowed to call sign-in and account erasure (the public site's
+# /eliminar-datos page), comma-separated. Locally, the site's dev server.
+ALLOWED_ORIGINS=http://localhost:5173
+
 # `log` prints emails to the wrangler console and only works on localhost.
 # Production uses `ses`.
 MAIL_PROVIDER=log

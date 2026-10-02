@@ -177,6 +177,11 @@ export class Api {
     return body.results;
   }
 
+  /** Erases the signed-in person's account (design 14.7). */
+  async deleteAccount(userToken: string): Promise<void> {
+    await this.call("/v1/account", { method: "DELETE", token: userToken });
+  }
+
   async signOutDevice(deviceToken: string): Promise<void> {
     await this.call("/v1/gate/sign-out", { method: "POST", token: deviceToken });
   }
