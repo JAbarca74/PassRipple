@@ -59,17 +59,17 @@ pnpm db:down      # stop it and delete its data
 
 ## Production database (Neon)
 
-Production runs on Neon, with one branch for production and one for development. The API connects through Cloudflare Hyperdrive as `passripple_api`; nothing else connects to the database.
+Production runs on Neon, with a `production` branch and a `dev` branch. The API connects through Cloudflare Hyperdrive as `passripple_api`; nothing else connects to the database.
 
-1. **Create the project** with PostgreSQL 18, the version of the local image (`db/Dockerfile`), in the region closest to the Workers. Create a `dev` branch from `main`.
-2. **Check the module roles first, on `dev`.** Neon's administrative role is not a true superuser. Migrations create one role per module and run each migration as that role (`SET ROLE`), and the bootstrap alters `passripple_api`. Run the migrations once on `dev` and confirm they apply cleanly before touching `main`.
+1. **Create the project** with PostgreSQL 18, the version of the local image (`db/Dockerfile`), in the region closest to the Workers. Create a `dev` branch from the default branch, `production`.
+2. **Check the module roles first, on `dev`.** Neon's administrative role is not a true superuser. Migrations create one role per module and run each migration as that role (`SET ROLE`), and the bootstrap alters `passripple_api`. Run the migrations once on `dev` and confirm they apply cleanly before touching `production`.
 3. **Apply the migrations**, exporting the connection only for that command:
 
    ```bash
    DATABASE_URL='<dev branch connection string>' pnpm db:migrate
    ```
 
-   Run `pnpm db:test` only against `dev`: the tests create the pgTAP and dblink extensions, and concurrency tests commit data. Then migrate `main` the same way.
+   Run `pnpm db:test` only against `dev`: the tests create the pgTAP and dblink extensions, and concurrency tests commit data. Then migrate `production` the same way.
 4. **Let the API log in.** Locally `passripple_api` cannot log in. On each Neon branch, once, by hand (never in a migration, because the password is a secret):
 
    ```sql
