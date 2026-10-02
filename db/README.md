@@ -69,7 +69,7 @@ Production runs on Neon, with a `production` branch and a `dev` branch. The API 
    DATABASE_URL='<dev branch connection string>' pnpm db:migrate
    ```
 
-   Run `pnpm db:test` only against `dev`: the tests create the pgTAP and dblink extensions, and concurrency tests commit data. Then migrate `production` the same way.
+   Then migrate `production` the same way. `pnpm db:test` runs against the local database and in CI, never against Neon: the concurrency tests open extra passwordless local connections with dblink and commit data of their own.
 4. **Let the API log in.** Locally `passripple_api` cannot log in. On each Neon branch, once, by hand (never in a migration, because the password is a secret):
 
    ```sql
