@@ -10,6 +10,10 @@ Append-only ledger per event, payout statements, payout records and organizer co
 
 The `settlement` database schema. No other module writes to it (rule R1).
 
+- `settlement.ledger_entries`: every movement of an event's money (`payment_in`, `door_sale`, `fee`, `fee_tax`, `refund`, `adjustment`, `payout`), signed and non-zero. Append-only: no role, the owner included, updates, deletes or truncates it. A mistake is corrected with an adjustment, which must state its reason.
+
+`settlement.record_entry(event, kind, amount, reference, reason)` records an entry: the system records movements, and only an administrator records adjustments. Organizers read their organization's events. Payout statements and invariant I9 arrive in Phase 4.
+
 ## Depends on
 
 - `@passripple/contracts`
