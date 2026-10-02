@@ -1,0 +1,174 @@
+name: scanner
+
+# Native builds of the gate app (ADR 0006, ADR 0023). macOS minutes cost ten times Linux
+# minutes, so this runs only when the app or something it bundles changes, and on demand.
+on:
+  pull_request:
+    paths:
+      - "apps/scanner/**"
+      - "packages/contracts/**"
+      - "packages/crypto/**"
+      - "packages/outbox/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/scanner.yml"
+  push:
+    branches: [main]
+    paths:
+      - "apps/scanner/**"
+      - "packages/contracts/**"
+      - "packages/crypto/**"
+      - "packages/outbox/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/scanner.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scanner-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # The iOS build, tested in the simulator: the only way to run it without a Mac or a paid
+  # Apple account. The simulator has no camera, so UI-test builds feed QR text through a
+  # hidden field (EXPO_PUBLIC_E2E).
+  ios-simulator:
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      CI: "true"
+      EXPO_PUBLIC_E2E: "1"
+      # The UI flows' API, started below when apps/scanner/e2e provides one.
+      EXPO_PUBLIC_API_URL: http://localhost:8787
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: lts/*
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Xcode
+        run: xcodebuild -version
+
+      - name: Generate the iOS project
+        working-directory: apps/scanner
+        run: pnpm exec expo prebuild --platform ios --no-install --clean
+
+      - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: |
+            apps/scanner/ios/Pods
+            ~/Library/Caches/CocoaPods
+          key: pods-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'apps/scanner/app.config.ts', 'package.json') }}
+
+      - name: Install pods
+        working-directory: apps/scanner/ios
+        run: pod install
+
+      - name: Check that SQLCipher is enabled
+        working-directory: apps/scanner/ios
+        run: grep -q "OP_SQLITE_USE_SQLCIPHER=1" Pods/Target\ Support\ Files/op-sqlite/*.xcconfig
+
+      - name: Build for the simulator
+        working-directory: apps/scanner/ios
+        run: |
+          workspace=$(ls -d *.xcworkspace | head -1)
+          scheme=$(basename "$workspace" .xcworkspace)
+          set -o pipefail
+          xcodebuild -workspace "$workspace" -scheme "$scheme" -configuration Release \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO | tee xcodebuild.log | grep -E "error:|warning: .*deprecated|BUILD" || true
+          test -d build/Build/Products/Release-iphonesimulator/*.app
+
+      - name: Boot a simulator and install the app
+        run: |
+          device=$(xcrun simctl list devices available -j | node -e '
+            const list = JSON.parse(require("fs").readFileSync(0, "utf8")).devices;
+            const phones = Object.entries(list).filter(([rt]) => rt.includes("iOS")).flatMap(([, ds]) => ds)
+              .filter((d) => d.name.startsWith("iPhone"));
+            process.stdout.write(phones.at(-1).udid);')
+          echo "SIMULATOR=$device" >> "$GITHUB_ENV"
+          xcrun simctl boot "$device"
+          xcrun simctl install "$device" apps/scanner/ios/build/Build/Products/Release-iphonesimulator/*.app
+
+      # The gate-flow UI tests (Maestro) live in apps/scanner/e2e. Until they exist, the job
+      # stops at a build that installs.
+      - name: Gate-flow UI tests
+        run: |
+          if ! ls apps/scanner/e2e/*.yaml >/dev/null 2>&1; then
+            echo "No UI flows in apps/scanner/e2e yet."
+            exit 0
+          fi
+          # Homebrew checks the formula's checksum of what it downloads.
+          brew install mobile-dev-inc/tap/maestro
+          if [ -f apps/scanner/e2e/mock-api.ts ]; then
+            node apps/scanner/e2e/mock-api.ts > mock-api.log 2>&1 &
+            for i in $(seq 1 30); do curl -sf http://localhost:8787/v1/health && break; sleep 1; done
+          fi
+          maestro --device "$SIMULATOR" test apps/scanner/e2e --format junit --output maestro-report.xml
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: ios-simulator
+          path: |
+            apps/scanner/ios/xcodebuild.log
+            maestro-report.xml
+            mock-api.log
+            ~/.maestro/tests
+          if-no-files-found: ignore
+
+  # The Android build, on Linux, where minutes are cheap: it checks that native modules
+  # link with pnpm and that SQLCipher is compiled in.
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CI: "true"
+      EXPO_PUBLIC_API_URL: http://10.0.2.2:8787
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: lts/*
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate the Android project
+        working-directory: apps/scanner
+        run: pnpm exec expo prebuild --platform android --no-install --clean
+
+      - name: Build the release APK
+        working-directory: apps/scanner/android
+        run: |
+          export JAVA_HOME="$JAVA_HOME_17_X64"
+          ./gradlew assembleRelease --no-daemon 2>&1 | tee gradle.log | grep -E "OP-SQLITE|BUILD|FAILURE|error:" || true
+          grep -q "using sqlcipher" gradle.log
+          test -f app/build/outputs/apk/release/app-release.apk
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: android
+          path: apps/scanner/android/gradle.log
+          if-no-files-found: ignore
