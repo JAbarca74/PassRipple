@@ -32,3 +32,9 @@ keywords = ["cr"]
 [[allowlists]]
 description = "Anonymized bank notice fixtures"
 paths = ['''packages/bank-parsers/fixtures/anonymized/''']
+
+# The Ed25519 test vectors of RFC 8032 (section 7.1) are published secret keys, used to
+# prove that our signatures are standard. Only this one test file may hold them.
+[[allowlists]]
+description = "RFC 8032 Ed25519 test vectors"
+paths = ['''(^|/)packages/crypto/src/rfc8032\.test\.ts$''']

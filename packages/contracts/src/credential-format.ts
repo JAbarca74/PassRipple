@@ -20,6 +20,7 @@
 // Decoding checks the format only: whether the signatures hold is for crypto to say.
 
 import { decodeBase45, encodeBase45 } from "./base45.ts";
+import { bytesToUuid, uuidToBytes } from "./uuid.ts";
 
 export const CREDENTIAL_FORMAT_VERSION = 1;
 /** Bytes 0-61: what the server signs. */
@@ -89,8 +90,6 @@ const FLAG_NAMED = 0b1000;
 const AGE_SHIFT = 1;
 const AGE_MASK = 0b0110;
 const RESERVED_MASK = 0xf0;
-
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 // ── Encoding ─────────────────────────────────────────────────────────────────
 // Encoding a value outside the format is a programming error, so it throws.
@@ -167,16 +166,6 @@ function checkLength(name: string, bytes: Uint8Array, length: number): Uint8Arra
   return bytes;
 }
 
-function uuidToBytes(uuid: string): Uint8Array {
-  if (!UUID_PATTERN.test(uuid)) throw new RangeError(`ticketId: expected a lowercase UUID`);
-  const hex = uuid.replaceAll("-", "");
-  const bytes = new Uint8Array(TICKET_ID_LENGTH);
-  for (let i = 0; i < TICKET_ID_LENGTH; i++) {
-    bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
-  }
-  return bytes;
-}
-
 // ── Decoding ─────────────────────────────────────────────────────────────────
 // Decoded byte fields are copies, never views of the input.
 
@@ -243,9 +232,4 @@ function readCertificate(bytes: Uint8Array): DecodeResult<Certificate> {
       serverSig: bytes.slice(62, 126),
     },
   };
-}
-
-function bytesToUuid(bytes: Uint8Array): string {
-  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }

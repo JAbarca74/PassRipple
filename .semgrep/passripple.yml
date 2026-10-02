@@ -9,8 +9,9 @@ rules:
 
   - id: passripple-pure-packages-no-io
     message: >-
-      Pure packages must not perform I/O or read the clock (architecture rule R4).
-      Receive the time or the data as a parameter instead.
+      Pure packages must not perform I/O, read the clock or the environment, draw
+      randomness or use platform keys (architecture rule R4). Receive the time, the
+      random bytes, a signer or the data as a parameter instead.
     severity: ERROR
     languages: [typescript, javascript]
     paths:
@@ -20,11 +21,18 @@ rules:
         - "/packages/pricing/"
         - "/packages/tax/"
         - "/packages/bank-parsers/"
+      # Tests are not the package: they may use WebCrypto to check signature compatibility.
+      exclude:
+        - "*.test.ts"
     pattern-either:
       - pattern: fetch(...)
       - pattern: Date.now()
       - pattern: new Date()
+      - pattern: performance.now()
       - pattern: process.env.$X
+      - pattern: crypto.getRandomValues(...)
+      - pattern: crypto.randomUUID()
+      - pattern: crypto.subtle.$F(...)
 
   - id: passripple-no-sql-string-building
     message: >-

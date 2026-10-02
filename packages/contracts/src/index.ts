@@ -41,3 +41,4 @@ export type {
   TicketIssued,
   TicketVoided,
 } from "./domain-events.ts";
+export { bytesToUuid, uuidToBytes } from "./uuid.ts";
