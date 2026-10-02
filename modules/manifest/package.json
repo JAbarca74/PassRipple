@@ -14,9 +14,12 @@
   "dependencies": {
     "@passripple/contracts": "workspace:*",
     "@passripple/crypto": "workspace:*",
+    "@passripple/events": "workspace:*",
+    "@passripple/catalog": "workspace:*",
     "@passripple/ticketing": "workspace:*",
     "@passripple/inventory": "workspace:*",
     "@passripple/courtesy": "workspace:*",
-    "@passripple/staff": "workspace:*"
+    "@passripple/staff": "workspace:*",
+    "@passripple/redemption": "workspace:*"
   }
 }

@@ -25,7 +25,8 @@
     "db:down": "docker compose -f db/compose.yaml down -v",
     "db:migrate": "node scripts/db.ts migrate",
     "db:test": "node scripts/db.ts test",
-    "db:api-login": "node scripts/db.ts api-login"
+    "db:api-login": "node scripts/db.ts api-login",
+    "dev:fixtures": "node scripts/dev-fixtures.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",

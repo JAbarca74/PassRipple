@@ -27,7 +27,7 @@ Shared vocabulary for the whole system: Zod schemas, TypeScript types, the domai
 
 ## Gate manifest
 
-`src/gate-manifest.ts` describes the package a gate device downloads before an event: the server keys it trusts, and for each ticket its type, entry mode, status, whether it was redeemed, its device key, key version and fallback code. It holds no secret (invariant I7). It is a draft: Phase 2 builds it from the database and decides how it travels.
+`src/gate-manifest.ts` describes the package a gate device downloads before an event: the event and its window, the server keys it trusts, the ticket types, and for each ticket its type, entry mode, status, whether it was redeemed, its device key, key version and fallback code. It holds no secret (invariant I7). It travels as JSON with bytes in base64url (`src/base64url.ts`, canonical), whole the first time (`GateManifest`) and as deltas after that (`GateManifestDelta`), with a cursor and the server clock. `decodeGateManifest`, `decodeGateManifestDelta` and `decodeServerKeys` validate untrusted JSON.
 
 ## API wire format
 

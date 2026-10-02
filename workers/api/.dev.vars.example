@@ -6,6 +6,11 @@
 # Use a different value in every environment. Secret.
 SIGN_IN_PEPPER=
 
+# The server's public key ring, sent to gate devices in every manifest. Public, not secret.
+# For local development, `node scripts/dev-fixtures.ts seed` prints the ring of its
+# development key, which signs the fixture tickets.
+SERVER_PUBLIC_KEYS=[]
+
 # `log` prints emails to the wrangler console and only works on localhost.
 # Production uses `ses`.
 MAIL_PROVIDER=log

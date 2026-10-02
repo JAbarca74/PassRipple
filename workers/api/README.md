@@ -38,6 +38,7 @@ Every response carries the server's clock in `X-Server-Time` (milliseconds), whi
 | `POST /v1/staff/devices/:id/revoke` | organizer | The device becomes drain-only: it may upload, not validate |
 | `POST /v1/staff/enroll` | person, as staff | Enrolls a phone with a staff code; returns the device token (`prd_…`) |
 | `GET /v1/gate/session` | device | The device's status (`active`, `revoked`, `expired`) and the server clock |
+| `GET /v1/gate/manifest[?since=cursor]` | active device | The event's gate manifest (`@passripple/contracts`), whole or only what changed since a cursor |
 | `POST /v1/gate/sign-out` | device | Signs the device out for good |
 
 Organizers send their organization in `X-Org-Id`; `identity.set_actor` checks the membership.
@@ -63,6 +64,8 @@ pnpm db:migrate
 pnpm db:api-login     # once: lets passripple_api log in to the local database
 pnpm dev:api          # wrangler dev on http://localhost:8787
 ```
+
+For a gate to try, seed the development event (`pnpm dev:fixtures seed`) and put the `SERVER_PUBLIC_KEYS` line it prints in `.dev.vars`. `pnpm dev:fixtures qr <n>` prints a QR valid now for fixture ticket `n`; set `DB_CONTAINER=passripple-db` if `psql` is not on PATH.
 
 `wrangler dev` connects to the local database through the Hyperdrive binding's `localConnectionString`. Secrets come from `.dev.vars` (never committed), copied from `.dev.vars.example`.
 

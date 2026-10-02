@@ -12,6 +12,13 @@ export interface Env {
    */
   readonly SIGN_IN_PEPPER?: string;
 
+  /**
+   * The server's public key ring, as JSON: `[{"id":1,"publicKey":"<base64url>"}]`. Public,
+   * not secret: gate devices receive it in every manifest. Only keys still valid belong
+   * here; retiring a key means removing it (ADR 0014).
+   */
+  readonly SERVER_PUBLIC_KEYS?: string;
+
   /** `ses` in production. `log` prints messages to the console, and only works on localhost. */
   readonly MAIL_PROVIDER?: string;
   readonly MAIL_FROM_ADDRESS?: string;

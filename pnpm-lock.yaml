@@ -188,6 +188,9 @@ importers:
 
   modules/manifest:
     dependencies:
+      '@passripple/catalog':
+        specifier: workspace:*
+        version: link:../catalog
       '@passripple/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
@@ -197,9 +200,15 @@ importers:
       '@passripple/crypto':
         specifier: workspace:*
         version: link:../../packages/crypto
+      '@passripple/events':
+        specifier: workspace:*
+        version: link:../events
       '@passripple/inventory':
         specifier: workspace:*
         version: link:../inventory
+      '@passripple/redemption':
+        specifier: workspace:*
+        version: link:../redemption
       '@passripple/staff':
         specifier: workspace:*
         version: link:../staff
@@ -398,6 +407,9 @@ importers:
       '@passripple/crypto':
         specifier: workspace:*
         version: link:../../packages/crypto
+      '@passripple/manifest':
+        specifier: workspace:*
+        version: link:../../modules/manifest
       aws4fetch:
         specifier: 1.0.20
         version: 1.0.20

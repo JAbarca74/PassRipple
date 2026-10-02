@@ -1,6 +1,7 @@
 // Public API of @passripple/contracts.
 // Only what is exported here may be used by other packages.
 export { decodeBase45, encodeBase45 } from "./base45.ts";
+export { decodeBase64url, encodeBase64url } from "./base64url.ts";
 export {
   type AgeRating,
   CERTIFICATE_BODY_LENGTH,
@@ -44,10 +45,20 @@ export type {
   TicketVoided,
 } from "./domain-events.ts";
 export {
+  decodeGateManifest,
+  decodeGateManifestDelta,
+  decodeServerKeys,
+  encodeGateManifest,
+  encodeGateManifestDelta,
   GATE_MANIFEST_VERSION,
   type GateManifest,
+  type GateManifestDelta,
+  type ManifestEvent,
   type ManifestServerKey,
   type ManifestTicket,
+  type ManifestTicketType,
+  manifestCursor,
+  type TicketAudience,
 } from "./gate-manifest.ts";
 export {
   type ApiErrorBody,

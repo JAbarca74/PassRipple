@@ -5,12 +5,27 @@
 import {
   DEVICE_STATUSES,
   type DeviceStatus,
+  decodeServerKeys,
+  encodeGateManifest,
+  encodeGateManifestDelta,
   type GateSessionResponse,
+  type ManifestServerKey,
+  manifestCursor,
 } from "@passripple/contracts";
+import {
+  buildGateManifest,
+  buildGateManifestDelta,
+  type GateEventRow,
+  type GateTicketRow,
+  type GateTicketTypeRow,
+} from "@passripple/manifest";
 import { type Context, Hono } from "hono";
 import type { AppEnv } from "../app.ts";
 import { type AuthenticatedDevice, deviceActor, gateDeviceView } from "../auth.ts";
 import type { Tx } from "../db.ts";
+import { type Env, required } from "../env.ts";
+import { ApiError } from "../errors.ts";
+import { param } from "../validation.ts";
 
 /** Runs `work` for the device behind the request's token, if its status is allowed. */
 export async function forDevice<T>(
@@ -28,11 +43,55 @@ export async function forDevice<T>(
   });
 }
 
+function serverKeys(env: Env): ManifestServerKey[] {
+  let json: unknown;
+  try {
+    json = JSON.parse(required(env, "SERVER_PUBLIC_KEYS"));
+  } catch {
+    json = null;
+  }
+  const keys = decodeServerKeys(json);
+  if (keys === null) throw new Error("SERVER_PUBLIC_KEYS is not a valid key ring");
+  return keys;
+}
+
 export const gateRoutes = new Hono<AppEnv>()
   // The device's status and the server clock. Every status may ask.
   .get("/session", async (c) => {
     const device = await forDevice(c, DEVICE_STATUSES, async (found) => found);
     const body: GateSessionResponse = { device: gateDeviceView(device), serverTime: Date.now() };
+    return c.json(body);
+  })
+
+  // The event's manifest: whole, or what changed since a cursor (design 8.3). Active
+  // devices only: revoked and expired devices get no manifest (ADR 0018).
+  .get("/manifest", async (c) => {
+    const sinceText = c.req.query("since");
+    const since = sinceText === undefined ? null : param(sinceText, manifestCursor);
+    const keys = serverKeys(c.env);
+    const body = await forDevice(c, ["active"], async (device, tx) => {
+      // The cursor first: anything changed after it is read now or sent next time.
+      const [cursorRow] = await tx<{ cursor: string }[]>`SELECT manifest.cursor()::text AS cursor`;
+      const [event] = await tx<
+        GateEventRow[]
+      >`SELECT * FROM manifest.gate_event(${device.deviceId})`;
+      const ticketTypes = await tx<GateTicketTypeRow[]>`
+        SELECT * FROM manifest.gate_ticket_types(${device.deviceId})`;
+      const tickets = await tx<GateTicketRow[]>`
+        SELECT * FROM manifest.gate_tickets(${device.deviceId}, ${since}::xid8)`;
+      if (!cursorRow || !event) throw new ApiError(404, "not_found", "Not found.");
+      const input = {
+        event,
+        serverKeys: keys,
+        ticketTypes,
+        tickets,
+        cursor: cursorRow.cursor,
+        serverTime: Date.now(),
+      };
+      return since === null
+        ? encodeGateManifest(buildGateManifest(input))
+        : encodeGateManifestDelta(buildGateManifestDelta({ ...input, since }));
+    });
     return c.json(body);
   })
 
