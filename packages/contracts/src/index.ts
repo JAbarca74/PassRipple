@@ -6,4 +6,5 @@ export type {
   EventCancelled,
   EventPublished,
   EventUpdated,
+  PaymentSucceeded,
 } from "./domain-events.ts";

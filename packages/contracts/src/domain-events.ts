@@ -28,8 +28,18 @@ export interface EventCancelled {
   occurredAt: string;
 }
 
+/** A bank notice became the payment of an order, and the order is paid. */
+export interface PaymentSucceeded {
+  type: "payment.succeeded";
+  paymentId: string;
+  orderId: string;
+  eventId: string;
+  amountCrc: number;
+  occurredAt: string;
+}
+
 /** Every domain event in the catalog. */
-export type DomainEvent = EventPublished | EventUpdated | EventCancelled;
+export type DomainEvent = EventPublished | EventUpdated | EventCancelled | PaymentSucceeded;
 
 /** The `type` of every domain event. */
 export type DomainEventType = DomainEvent["type"];
