@@ -19,6 +19,10 @@ Shared vocabulary for the whole system: Zod schemas, TypeScript types, the domai
 | `ticket.issued` | `ticketing` | A ticket was issued |
 | `ticket.voided` | `ticketing` | A ticket was voided |
 
+## Credential QR format
+
+`src/credential-format.ts` encodes and decodes the device-bound credential shown as a QR code: the server's certificate (62 signed bytes and the server's signature) followed by a 30-second time window and the device's signature, 194 bytes in all, as Base45 text (`src/base45.ts`, RFC 9285). Decoding accepts only canonical bytes and rejects unknown versions, wrong lengths, trailing bytes and reserved flag bits. It checks the format only: verifying the signatures is the job of `@passripple/crypto`.
+
 ## Depends on
 
 Nothing.

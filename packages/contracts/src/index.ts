@@ -1,5 +1,36 @@
 // Public API of @passripple/contracts.
 // Only what is exported here may be used by other packages.
+export { decodeBase45, encodeBase45 } from "./base45.ts";
+export {
+  type AgeRating,
+  CERTIFICATE_BODY_LENGTH,
+  CERTIFICATE_LENGTH,
+  type Certificate,
+  type CertificateFields,
+  CREDENTIAL_FORMAT_VERSION,
+  type DecodeError,
+  type DecodeResult,
+  decodeCertificate,
+  decodeQr,
+  decodeQrPayload,
+  type EntryMode,
+  EVENT_REF_LENGTH,
+  encodeCertificate,
+  encodeCertificateBody,
+  encodeQr,
+  encodeQrPayload,
+  encodeTimeWindow,
+  MAX_KEY_VERSION,
+  MAX_SERVER_KEY_ID,
+  MAX_TIME_WINDOW,
+  MAX_TYPE_REF,
+  MIN_KEY_VERSION,
+  PUBLIC_KEY_LENGTH,
+  QR_PAYLOAD_LENGTH,
+  type QrPayload,
+  SIGNATURE_LENGTH,
+  TICKET_ID_LENGTH,
+} from "./credential-format.ts";
 export type {
   DomainEvent,
   DomainEventType,

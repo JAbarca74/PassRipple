@@ -15,6 +15,7 @@ rules:
     languages: [typescript, javascript]
     paths:
       include:
+        - "/packages/contracts/"
         - "/packages/crypto/"
         - "/packages/pricing/"
         - "/packages/tax/"
