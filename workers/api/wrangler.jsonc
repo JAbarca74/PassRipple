@@ -1,7 +1,6 @@
 // Cloudflare configuration of the API Worker. No secrets here: they are set with
 // `wrangler secret put` in production and read from `.dev.vars` locally (see
-// `.dev.vars.example`). Account-specific ids are not secret, but they only exist once the
-// Cloudflare account does: replace the placeholders then.
+// `.dev.vars.example`). Account-specific ids, like the Hyperdrive id, are not secret.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "passripple-api",
@@ -13,8 +12,9 @@
   "hyperdrive": [
     {
       "binding": "HYPERDRIVE",
-      // Placeholder: the id printed by `wrangler hyperdrive create passripple-db` (db/README.md).
-      "id": "00000000000000000000000000000000",
+      // The Hyperdrive configuration `passripple-db` (db/README.md), with caching disabled:
+      // every read depends on the session's actor and on the moment.
+      "id": "77a197abf8914c408db6d7549d672d47",
       // `wrangler dev` connects here instead: the local Docker database, as passripple_api.
       // Run `pnpm db:api-login` once so that role may log in locally. Wrangler requires a
       // password in the URL; the local database trusts local connections and ignores it.

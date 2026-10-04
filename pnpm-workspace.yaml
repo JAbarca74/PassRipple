@@ -14,3 +14,9 @@ blockExoticSubdeps: true
 # Babel through Expo) predates npm provenance, so it looks weaker than semver 7.
 trustPolicyExclude:
   - semver@6.3.1
+
+# Dependencies allowed to run install scripts: esbuild and workerd fetch their platform
+# binaries for wrangler. Every other install script stays blocked.
+onlyBuiltDependencies:
+  - esbuild
+  - workerd
