@@ -3,10 +3,12 @@ import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite";
 
 const COMING_SOON_PAGE = "coming-soon.html";
+/** Served by the static assets, with status 404, for every path that is not a file. */
+const NOT_FOUND_PAGE = "404.html";
 
 /**
- * Serves and builds the holding page as the whole site, at `/`.
- * Cloudflare Pages then answers every other path with that same page.
+ * Serves and builds the holding page as the whole site, at `/`. Every other path gets the
+ * not-found page (404.html) with status 404, so search engines index only the home page.
  */
 function comingSoon(): Plugin {
   return {
@@ -30,7 +32,7 @@ export default defineConfig(({ mode }) => {
   const isComingSoon = mode === "coming-soon";
   return {
     plugins: isComingSoon ? [comingSoon()] : [react(), tailwindcss()],
-    build: isComingSoon ? { rollupOptions: { input: COMING_SOON_PAGE } } : {},
+    build: isComingSoon ? { rollupOptions: { input: [COMING_SOON_PAGE, NOT_FOUND_PAGE] } } : {},
     server: { port: 5173, strictPort: true },
     preview: { port: 5173, strictPort: true },
   };

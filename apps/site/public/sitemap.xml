@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The holding page is the only public page for now; event pages join when they exist. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://passripple.com/</loc>
+    <lastmod>2026-10-04</lastmod>
+  </url>
+</urlset>
