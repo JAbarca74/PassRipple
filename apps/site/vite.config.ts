@@ -6,13 +6,15 @@ import { defineConfig, loadEnv, type Plugin } from "vite";
 
 const COMING_SOON_PAGE = "coming-soon.html";
 const SITE_PAGE = "site.html";
+/** Served by the static assets, with status 404, for every path that is not a file. */
+const NOT_FOUND_PAGE = "404.html";
 /** Pages that must be public even while the site is "coming soon": Play Store links (14.5, 14.7). */
 const ALWAYS_PUBLIC = ["/privacidad", "/terminos", "/eliminar-datos"];
 
 /**
  * Serves and builds the holding page as the whole site, at `/`, except the legal pages,
  * which the static assets rewrite to the full site (`_redirects`). Every other path gets
- * the holding page.
+ * the not-found page (404.html) with status 404, so search engines index only real pages.
  */
 function comingSoon(): Plugin {
   return {
@@ -65,7 +67,9 @@ export default defineConfig(({ mode }) => {
   const plugins = [react(), tailwindcss(), apiOriginCsp(env.VITE_API_URL)];
   return {
     plugins: isComingSoon ? [...plugins, comingSoon()] : plugins,
-    build: isComingSoon ? { rollupOptions: { input: [COMING_SOON_PAGE, "index.html"] } } : {},
+    build: isComingSoon
+      ? { rollupOptions: { input: [COMING_SOON_PAGE, NOT_FOUND_PAGE, "index.html"] } }
+      : {},
     server: { port: 5173, strictPort: true },
     preview: { port: 5173, strictPort: true },
   };

@@ -1,0 +1,6 @@
+# Everything on passripple.com may be crawled. The app (app.passripple.com) keeps itself out
+# of search results with X-Robots-Tag: noindex instead (design 13.5).
+User-agent: *
+Allow: /
+
+Sitemap: https://passripple.com/sitemap.xml

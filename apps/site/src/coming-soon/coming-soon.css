@@ -465,6 +465,59 @@ h1 {
   }
 }
 
+/* ── Not found page (404.html) ───────────────────────── */
+/* The code takes the place of the hero word, larger. */
+.hero-code {
+  font-size: clamp(4.5rem, 24vw, 10rem);
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+
+.home-button {
+  margin-top: 2.5rem;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.875rem 1.75rem;
+  border-radius: 9999px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  position: relative;
+  z-index: 1;
+  opacity: 0;
+  /* Opacity only, so the hover lift below can still move it. */
+  animation: fade-in 1s 1.3s ease forwards;
+  transition:
+    background-color 0.3s ease,
+    box-shadow 0.3s ease,
+    transform 0.3s ease;
+}
+
+.home-button:hover {
+  background: var(--brand-deep);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(91, 31, 224, 0.3);
+}
+
+.home-button:active {
+  transform: none;
+  box-shadow: none;
+}
+
+.home-button:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 3px;
+}
+
+@keyframes fade-in {
+  to {
+    opacity: 1;
+  }
+}
+
 /* ── Section: Qué es ─────────────────────────────────── */
 .section {
   padding: 6rem 2rem;
@@ -659,15 +712,20 @@ footer {
   .hero-wave path,
   .hero-sub,
   .scroll-hint,
-  .scroll-line {
+  .scroll-line,
+  .home-button {
     animation: none;
   }
   body,
   nav,
   .theme-toggle,
   .scroll-hint span,
+  .home-button,
   .reveal > * {
     transition: none;
+  }
+  .home-button:hover {
+    transform: none;
   }
   .theme-toggle:hover {
     transform: translateY(-50%);
@@ -683,6 +741,7 @@ footer {
   .hero-wave,
   .hero-sub,
   .scroll-hint,
+  .home-button,
   .reveal > * {
     opacity: 1;
     transform: none;
