@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="44" viewBox="0 0 120 44" aria-hidden="true">
+  <!-- The four-crest wave of the brand (brand/passripple-logo.svg), tiled: bright cyan on violet. -->
+  <rect width="120" height="44" fill="#5B1FE0"/>
+  <g fill="none" stroke="#00E5D8" stroke-width="5">
+    <path d="M0 12q15-14 30 0t30 0t30 0t30 0"/>
+    <path d="M0 34q15-14 30 0t30 0t30 0t30 0"/>
+  </g>
+</svg>
