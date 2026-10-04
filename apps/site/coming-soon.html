@@ -70,7 +70,9 @@
       </g>
     </svg>
 
-    <p class="hero-label">Próximamente en Costa Rica</p>
+    <!-- Split into letters by src/coming-soon/reveal-word.ts; without it the word shows whole. -->
+    <p class="hero-word" data-reveal-word>Próximamente</p>
+    <p class="hero-label">en Costa Rica</p>
 
     <h1>Entradas digitales a prueba de fraude</h1>
 
@@ -142,6 +144,7 @@
     <p class="footer-text">© 2026 PassRipple · Todos los derechos reservados</p>
   </footer>
 
+  <script type="module" src="/src/coming-soon/reveal-word.ts"></script>
   <script type="module" src="/src/coming-soon/reveal.ts"></script>
   <script type="module" src="/src/coming-soon/theme.ts"></script>
 
