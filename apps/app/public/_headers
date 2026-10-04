@@ -1,4 +1,4 @@
-# Cloudflare Pages response headers for app.<domain>.
+# Response headers for app.<domain>, applied by Cloudflare Workers static assets (ADR 0026).
 # Invariant I8: no third-party script may run where the buyer's keys and personal data live,
 # so every source is limited to this origin. Add the API origin to connect-src when it exists.
 /*

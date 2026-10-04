@@ -11,7 +11,7 @@ const ALWAYS_PUBLIC = ["/privacidad", "/terminos", "/eliminar-datos"];
 
 /**
  * Serves and builds the holding page as the whole site, at `/`, except the legal pages,
- * which Cloudflare Pages rewrites to the full site (`_redirects`). Every other path gets
+ * which the static assets rewrite to the full site (`_redirects`). Every other path gets
  * the holding page.
  */
 function comingSoon(): Plugin {

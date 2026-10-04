@@ -1,4 +1,4 @@
-# Cloudflare Pages response headers for the public site.
+# Response headers for the public site, applied by Cloudflare Workers static assets (ADR 0026).
 # The API origin placeholder in connect-src is replaced at build time with the origin of
 # VITE_API_URL (vite.config.ts).
 # Analytics may run here only after consent; widen script-src and connect-src for those

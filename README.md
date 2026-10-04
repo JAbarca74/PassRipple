@@ -55,7 +55,7 @@ A **modular monolith**: domain modules with enforced boundaries, each owning its
 | Language | TypeScript everywhere; SQL for invariants |
 | Database | PostgreSQL on Neon, with Row Level Security |
 | API and jobs | Cloudflare Workers, Hyperdrive, Queues, Cron Triggers |
-| Web (checkout, wallet, dashboard) | Vite + React PWA on Cloudflare Pages |
+| Web (site, checkout, wallet, dashboard) | Vite + React, served as Cloudflare Workers static assets |
 | Gate app | Expo (React Native) with encrypted SQLite |
 | Cryptography | Ed25519 and HMAC via `@noble/curves` and `@noble/hashes` |
 | Tooling | pnpm workspaces, Biome, Vitest, pgTAP |
