@@ -7,18 +7,57 @@
   box-sizing: border-box;
 }
 
+/*
+ * Theme tokens. Light is the default; dark applies when the system asks for it and the
+ * visitor has not chosen light, or when the visitor chose dark (data-theme, theme.ts).
+ * Logo colors follow brand/README.md: violet with cyan on light, white with bright cyan
+ * on dark. Bright cyan is also used on the violet banner in both themes.
+ */
 :root {
+  color-scheme: light;
   --brand: #5b1fe0;
-  --brand-soft: #ede7fb;
-  --brand-deep: #3a0ca3;
-  --wave: #00e5d8;
-  --wave-soft: #e0fbf9;
+  --accent-text: #5b1fe0;
+  --wave: #00d1c7;
+  --wave-on-brand: #00e5d8;
+  --logo-letters: #5b1fe0;
+  --logo-wave: #00d1c7;
   --bg: #faf9f6;
+  --nav-bg: rgba(250, 249, 246, 0.85);
+  --line: rgba(26, 26, 26, 0.12);
   --text: #1a1a1a;
-  --text-soft: #6b6b6b;
-  --text-faint: #999999;
-  --accent-bg: #f0ede8;
+  --text-soft: #5f5f5f;
+  --text-faint: #6f6f6f;
   --font-display: "Iowan Old Style", Georgia, "Times New Roman", serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --accent-text: #b39dfa;
+    --wave: #00e5d8;
+    --logo-letters: #ffffff;
+    --logo-wave: #00e5d8;
+    --bg: #0f172a;
+    --nav-bg: rgba(15, 23, 42, 0.85);
+    --line: rgba(248, 250, 252, 0.16);
+    --text: #f8fafc;
+    --text-soft: #cbd5e1;
+    --text-faint: #94a3b8;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --accent-text: #b39dfa;
+  --wave: #00e5d8;
+  --logo-letters: #ffffff;
+  --logo-wave: #00e5d8;
+  --bg: #0f172a;
+  --nav-bg: rgba(15, 23, 42, 0.85);
+  --line: rgba(248, 250, 252, 0.16);
+  --text: #f8fafc;
+  --text-soft: #cbd5e1;
+  --text-faint: #94a3b8;
 }
 
 html {
@@ -32,6 +71,24 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
+
+/* ── Wordmark ─────────────────────────────────────────── */
+/* 36 px tall keeps it at the brand minimum of about 120 px wide (brand/README.md). */
+.wordmark {
+  height: 36px;
+  width: auto;
+}
+
+.wordmark-letters {
+  stroke: var(--logo-letters);
+}
+
+.wordmark-wave {
+  stroke: var(--logo-wave);
 }
 
 /* ── Nav ──────────────────────────────────────────────── */
@@ -44,17 +101,77 @@ nav {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1.75rem 2rem;
-  background: rgba(250, 249, 246, 0.85);
+  padding: 1.25rem 2rem;
+  background: var(--nav-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
-nav svg {
-  height: 24px;
-  width: auto;
+nav .wordmark {
   opacity: 0;
   animation: appear 1s 0.2s ease forwards;
+}
+
+/* ── Theme switch ─────────────────────────────────────── */
+.theme-toggle {
+  position: absolute;
+  right: 1.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.theme-toggle:hover {
+  border-color: var(--accent-text);
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 2px;
+}
+
+.theme-toggle svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The moon offers dark mode; the sun offers light mode. */
+.theme-toggle .icon-sun {
+  display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .theme-toggle .icon-sun {
+    display: block;
+  }
+  :root:not([data-theme="light"]) .theme-toggle .icon-moon {
+    display: none;
+  }
+}
+
+:root[data-theme="dark"] .theme-toggle .icon-sun {
+  display: block;
+}
+
+:root[data-theme="dark"] .theme-toggle .icon-moon {
+  display: none;
 }
 
 /* ── Hero ─────────────────────────────────────────────── */
@@ -67,6 +184,8 @@ nav svg {
   padding: 7rem 2rem 5rem;
   text-align: center;
   position: relative;
+  /* The rings below grow past the screen on phones: clip them, or the page scrolls sideways. */
+  overflow: hidden;
 }
 
 /* Subtle ripple rings in the background */
@@ -79,7 +198,7 @@ nav svg {
   height: 700px;
   transform: translate(-50%, -50%);
   border-radius: 50%;
-  border: 1px solid rgba(91, 31, 224, 0.04);
+  border: 1px solid rgba(91, 31, 224, 0.08);
   pointer-events: none;
   animation: ripple-expand 6s ease-in-out infinite;
 }
@@ -93,7 +212,7 @@ nav svg {
   height: 500px;
   transform: translate(-50%, -50%);
   border-radius: 50%;
-  border: 1px solid rgba(0, 229, 216, 0.05);
+  border: 1px solid rgba(0, 209, 199, 0.1);
   pointer-events: none;
   animation: ripple-expand 6s 1.5s ease-in-out infinite;
 }
@@ -123,11 +242,11 @@ nav svg {
 }
 
 .hero-label {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 500;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--brand);
+  color: var(--accent-text);
   margin-bottom: 2rem;
   position: relative;
   z-index: 1;
@@ -203,7 +322,7 @@ h1 {
 }
 
 .scroll-hint span {
-  font-size: 0.65rem;
+  font-size: 0.7rem;
   font-weight: 500;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -225,26 +344,9 @@ h1 {
     transform: scaleY(0);
   }
   100% {
-    opacity: 0.5;
+    opacity: 0.6;
     transform: scaleY(1);
   }
-}
-
-/* ── Wave divider ────────────────────────────────────── */
-.wave-divider {
-  width: 100%;
-  overflow: hidden;
-  line-height: 0;
-}
-
-.wave-divider svg {
-  width: 100%;
-  height: 40px;
-  display: block;
-}
-
-.wave-divider.flip {
-  transform: scaleY(-1);
 }
 
 /* ── Section: Qué es ─────────────────────────────────── */
@@ -257,11 +359,11 @@ h1 {
 }
 
 .section-label {
-  font-size: 0.65rem;
+  font-size: 0.7rem;
   font-weight: 500;
   letter-spacing: 0.25em;
   text-transform: uppercase;
-  color: var(--brand);
+  color: var(--accent-text);
   margin-bottom: 2rem;
 }
 
@@ -288,166 +390,12 @@ h1 {
   fill: none;
 }
 
-.section p {
+.section-copy {
   font-size: 1rem;
   font-weight: 300;
   line-height: 1.85;
   color: var(--text-soft);
   max-width: 500px;
-}
-
-/* ── How it works strip ───────────────────────────────── */
-.how-strip {
-  background: var(--brand-soft);
-  padding: 5rem 2rem;
-}
-
-.how-inner {
-  max-width: 1000px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3.5rem;
-}
-
-.how-label {
-  font-size: 0.65rem;
-  font-weight: 500;
-  letter-spacing: 0.25em;
-  text-transform: uppercase;
-  color: var(--brand);
-}
-
-.how-steps {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 2.5rem;
-  width: 100%;
-}
-
-.step {
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-}
-
-.step-num {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: var(--brand);
-  color: #fff;
-  font-family: var(--font-display);
-  font-size: 1.2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.step h3 {
-  font-family: var(--font-display);
-  font-size: 1.2rem;
-  font-weight: 400;
-}
-
-.step p {
-  font-size: 0.9rem;
-  font-weight: 300;
-  line-height: 1.7;
-  color: var(--text-soft);
-}
-
-/* connector wave between steps */
-.step-connector {
-  display: none;
-}
-
-/* ── Features grid ───────────────────────────────────── */
-.features {
-  padding: 5rem 2rem;
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-.features-head {
-  text-align: center;
-  margin-bottom: 3rem;
-}
-
-.features-head p {
-  font-size: 0.65rem;
-  font-weight: 500;
-  letter-spacing: 0.25em;
-  text-transform: uppercase;
-  color: var(--brand);
-  margin-bottom: 1rem;
-}
-
-.features-head h2 {
-  font-family: var(--font-display);
-  font-size: clamp(1.5rem, 4vw, 2.25rem);
-  font-weight: 400;
-  line-height: 1.2;
-}
-
-.features-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1px;
-  background: var(--accent-bg);
-  border: 1px solid var(--accent-bg);
-}
-
-.feat {
-  background: var(--bg);
-  padding: 2.75rem 2.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-}
-
-.feat-icon {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.feat-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.feat-dot.purple {
-  background: var(--brand);
-}
-.feat-dot.teal {
-  background: var(--wave);
-}
-
-.feat-number {
-  font-size: 0.6rem;
-  font-weight: 500;
-  letter-spacing: 0.2em;
-  color: var(--text-faint);
-}
-
-.feat h3 {
-  font-family: var(--font-display);
-  font-size: 1.3rem;
-  font-weight: 400;
-  line-height: 1.3;
-}
-
-.feat p {
-  font-size: 0.88rem;
-  font-weight: 300;
-  line-height: 1.7;
-  color: var(--text-soft);
 }
 
 /* ── Coming soon banner ──────────────────────────────── */
@@ -499,7 +447,7 @@ h1 {
 }
 
 .banner-wave-icon path {
-  stroke: var(--wave);
+  stroke: var(--wave-on-brand);
   stroke-width: 3;
   stroke-linecap: round;
   fill: none;
@@ -518,7 +466,7 @@ h1 {
   font-size: 1rem;
   font-weight: 300;
   line-height: 1.7;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.85);
   max-width: 440px;
   position: relative;
   z-index: 1;
@@ -536,11 +484,6 @@ h1 {
   background: #fff;
   position: relative;
   z-index: 1;
-  transition: transform 0.25s ease;
-}
-
-.banner-flag:hover {
-  transform: translateY(-1px);
 }
 
 /* ── Footer ──────────────────────────────────────────── */
@@ -549,34 +492,8 @@ footer {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1.25rem;
   text-align: center;
-}
-
-.footer-logo {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.footer-logo svg {
-  height: 19px;
-  width: auto;
-  opacity: 0.35;
-}
-
-.footer-wave {
-  width: 50px;
-  height: 10px;
-}
-
-.footer-wave path {
-  stroke: var(--wave);
-  stroke-width: 2;
-  stroke-linecap: round;
-  fill: none;
-  opacity: 0.4;
 }
 
 .footer-cr {
@@ -586,7 +503,7 @@ footer {
 }
 
 .footer-text {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 400;
   letter-spacing: 0.05em;
   color: var(--text-faint);
@@ -618,28 +535,63 @@ footer {
   }
 }
 
+/* ── Reduced motion: everything shows at once, nothing moves ── */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  nav .wordmark,
+  .hero-icon,
+  .hero-label,
+  h1,
+  .hero-wave,
+  .hero-wave path,
+  .hero-sub,
+  .scroll-hint,
+  .scroll-line {
+    animation: none;
+  }
+  body,
+  .theme-toggle,
+  .reveal {
+    transition: none;
+  }
+  nav .wordmark,
+  .hero-icon,
+  .hero-label,
+  h1,
+  .hero-wave,
+  .hero-sub,
+  .scroll-hint,
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+  .scroll-line {
+    opacity: 0.6;
+  }
+  .hero-wave path {
+    stroke-dashoffset: 0;
+  }
+  .hero::before,
+  .hero::after,
+  .banner-ripple {
+    display: none;
+  }
+}
+
 /* ── Responsive ──────────────────────────────────────── */
 @media (max-width: 640px) {
-  .features-grid {
-    grid-template-columns: 1fr;
-  }
-  .feat {
-    padding: 2rem 1.5rem;
-  }
-  .how-steps {
-    grid-template-columns: 1fr;
-    gap: 2rem;
-  }
   nav {
-    padding: 1.25rem 1.5rem;
+    padding: 1rem 1.5rem;
+  }
+  .theme-toggle {
+    right: 1rem;
   }
   .hero {
     padding: 6rem 1.5rem 4rem;
   }
   .section {
     padding: 4rem 1.5rem;
-  }
-  .how-strip {
-    padding: 3.5rem 1.5rem;
   }
 }

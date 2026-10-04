@@ -3,11 +3,27 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#FAF9F6" />
-  <meta name="description" content="PassRipple — Entradas digitales que no se pueden copiar, para eventos en Costa Rica. Próximamente." />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#FAF9F6" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0F172A" media="(prefers-color-scheme: dark)" />
+  <meta name="description" content="PassRipple: entradas digitales que no se pueden copiar, para eventos en Costa Rica. Próximamente." />
+  <link rel="canonical" href="https://passripple.com/" />
   <link rel="icon" type="image/svg+xml" href="../../brand/passripple-icon.svg" />
+  <link rel="apple-touch-icon" href="../../brand/png/apple-touch-icon-180.png" />
+
+  <!-- Link previews (WhatsApp, Facebook, X) -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="PassRipple" />
+  <meta property="og:locale" content="es_CR" />
+  <meta property="og:url" content="https://passripple.com/" />
+  <meta property="og:title" content="PassRipple · Próximamente" />
+  <meta property="og:description" content="Entradas digitales a prueba de fraude, para eventos en Costa Rica." />
+  <meta name="twitter:card" content="summary" />
+
   <title>PassRipple · Próximamente</title>
 
+  <!-- Applies the saved theme before the first paint: a classic script, so it blocks. -->
+  <script src="/coming-soon-theme.js"></script>
   <link rel="stylesheet" href="/src/coming-soon/coming-soon.css" />
 </head>
 
@@ -15,21 +31,33 @@
 
   <!-- Nav -->
   <nav>
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="-6 -16 444 133" role="img" aria-label="PassRipple">
+    <svg class="wordmark" xmlns="http://www.w3.org/2000/svg" viewBox="-6 -16 444 133" role="img" aria-label="PassRipple">
       <g fill="none" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M0 60V-10H12A20 20 0 0 1 12 30H0" stroke="#1A1A1A"/>
-        <path d="M89 20V60M49 40a20 20 0 1 0 40 0a20 20 0 1 0-40 0" stroke="#1A1A1A"/>
-        <path d="M129.8 25.8A13 10 0 1 0 118 40A13 10 0 1 1 106.2 54.2" stroke="#1A1A1A"/>
-        <path d="M171.8 25.8A13 10 0 1 0 160 40A13 10 0 1 1 148.2 54.2" stroke="#1A1A1A"/>
-        <path d="M189 60V-10H201A20 20 0 0 1 201 30H189M203 30L223 60" stroke="#1A1A1A"/>
-        <path d="M241 20V60M241 0v0" stroke="#1A1A1A"/>
-        <path d="M261 20V80M261 40a20 20 0 1 0 40 0a20 20 0 1 0-40 0" stroke="#1A1A1A"/>
-        <path d="M318 20V80M318 40a20 20 0 1 0 40 0a20 20 0 1 0-40 0" stroke="#1A1A1A"/>
-        <path d="M375 -10V60" stroke="#1A1A1A"/>
-        <path d="M392 40H432A20 20 0 1 0 428.4 51.5" stroke="#1A1A1A"/>
-        <path d="M156 104q15-14 30 0t30 0t30 0t30 0" stroke="#00E5D8"/>
+        <path class="wordmark-letters" d="M0 60V-10H12A20 20 0 0 1 12 30H0"/>
+        <path class="wordmark-letters" d="M89 20V60M49 40a20 20 0 1 0 40 0a20 20 0 1 0-40 0"/>
+        <path class="wordmark-letters" d="M129.8 25.8A13 10 0 1 0 118 40A13 10 0 1 1 106.2 54.2"/>
+        <path class="wordmark-letters" d="M171.8 25.8A13 10 0 1 0 160 40A13 10 0 1 1 148.2 54.2"/>
+        <path class="wordmark-letters" d="M189 60V-10H201A20 20 0 0 1 201 30H189M203 30L223 60"/>
+        <path class="wordmark-letters" d="M241 20V60M241 0v0"/>
+        <path class="wordmark-letters" d="M261 20V80M261 40a20 20 0 1 0 40 0a20 20 0 1 0-40 0"/>
+        <path class="wordmark-letters" d="M318 20V80M318 40a20 20 0 1 0 40 0a20 20 0 1 0-40 0"/>
+        <path class="wordmark-letters" d="M375 -10V60"/>
+        <path class="wordmark-letters" d="M392 40H432A20 20 0 1 0 428.4 51.5"/>
+        <path class="wordmark-wave" d="M156 104q15-14 30 0t30 0t30 0t30 0"/>
       </g>
     </svg>
+
+    <button class="theme-toggle" type="button" aria-label="Activar modo oscuro">
+      <!-- Moon: shown in light mode -->
+      <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"/>
+      </svg>
+      <!-- Sun: shown in dark mode -->
+      <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="4.5"/>
+        <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
+      </svg>
+    </button>
   </nav>
 
   <!-- Hero -->
@@ -57,7 +85,7 @@
     </p>
 
     <div class="scroll-hint">
-      <span>Descubrí más</span>
+      <span>Descubra más</span>
       <div class="scroll-line"></div>
     </div>
   </section>
@@ -69,78 +97,12 @@
     <svg class="section-wave" aria-hidden="true" viewBox="0 0 80 14">
       <path d="M5 7q8-7 16 0t16 0t16 0t16 0t7 0" />
     </svg>
-    <p>
-      Tu entrada vive en tu teléfono. Se renueva cada 30 segundos
-      con una firma criptográfica. Una captura de pantalla caduca antes
-      de llegar a la puerta. Copiar una entrada es inútil.
+    <p class="section-copy">
+      Su entrada vive en su teléfono y queda ligada a ese dispositivo.
+      El código QR lleva una firma que se renueva cada 30 segundos, y en la
+      puerta cada entrada se acepta una sola vez. Copiar una entrada no sirve de nada.
     </p>
   </section>
-
-  <!-- How it works -->
-  <section class="how-strip reveal">
-    <div class="how-inner">
-      <p class="how-label">Cómo funciona</p>
-      <div class="how-steps">
-        <div class="step">
-          <div class="step-num">1</div>
-          <h3>Abrí el enlace del evento</h3>
-          <p>Seleccioná tus entradas. No necesitás descargar nada ni crear una cuenta.</p>
-        </div>
-        <div class="step">
-          <div class="step-num">2</div>
-          <h3>Pagá con SINPE Móvil</h3>
-          <p>Un toque. Tu entrada se guarda en tu teléfono al instante, vinculada a tu dispositivo.</p>
-        </div>
-        <div class="step">
-          <div class="step-num">3</div>
-          <h3>Mostrá tu QR en la puerta</h3>
-          <p>El código se verifica en menos de un segundo. Funciona incluso si no hay internet.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Features -->
-  <div class="features reveal">
-    <div class="features-head">
-      <p>Lo que nos hace diferentes</p>
-      <h2>Seguridad desde el diseño</h2>
-    </div>
-    <div class="features-grid">
-      <div class="feat">
-        <div class="feat-icon">
-          <span class="feat-dot purple"></span>
-          <span class="feat-number">01</span>
-        </div>
-        <h3>Entradas no copiables</h3>
-        <p>Cada boleto está vinculado al dispositivo del comprador. Un QR que se renueva constantemente hace que las copias caduquen en segundos.</p>
-      </div>
-      <div class="feat">
-        <div class="feat-icon">
-          <span class="feat-dot teal"></span>
-          <span class="feat-number">02</span>
-        </div>
-        <h3>Pago con SINPE Móvil</h3>
-        <p>Comprá en tres toques: abrí el enlace, seleccioná tus entradas, pagá con SINPE. Sin crear cuenta, sin contraseñas.</p>
-      </div>
-      <div class="feat">
-        <div class="feat-icon">
-          <span class="feat-dot teal"></span>
-          <span class="feat-number">03</span>
-        </div>
-        <h3>Validación offline</h3>
-        <p>Los dispositivos de puerta verifican entradas localmente con llaves públicas. Funcionan toda la noche sin señal y sincronizan cuando pueden.</p>
-      </div>
-      <div class="feat">
-        <div class="feat-icon">
-          <span class="feat-dot purple"></span>
-          <span class="feat-number">04</span>
-        </div>
-        <h3>Pagos verificables</h3>
-        <p>Cada colón queda registrado en un libro de contabilidad verificable. Los organizadores ven cada venta en tiempo real.</p>
-      </div>
-    </div>
-  </div>
 
   <!-- Coming soon banner -->
   <section class="banner reveal">
@@ -152,40 +114,36 @@
       <path d="M5 9q12-9 24 0t24 0t24 0t24 0t15 0" />
     </svg>
 
-    <h2>Vuelve pronto</h2>
+    <h2>Vuelva pronto</h2>
 
-    <p>Estamos construyendo algo que va a cambiar la boletería de eventos en Costa Rica. Muy pronto vas a poder probarlo.</p>
+    <p>Estamos construyendo algo que va a cambiar la boletería de eventos en Costa Rica. Muy pronto va a poder probarlo.</p>
 
     <span class="banner-flag">Hecho en Costa Rica</span>
   </section>
 
   <!-- Footer -->
   <footer>
-    <div class="footer-logo">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="-6 -16 444 133" role="img" aria-label="PassRipple">
-        <g fill="none" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M0 60V-10H12A20 20 0 0 1 12 30H0" stroke="#999"/>
-          <path d="M89 20V60M49 40a20 20 0 1 0 40 0a20 20 0 1 0-40 0" stroke="#999"/>
-          <path d="M129.8 25.8A13 10 0 1 0 118 40A13 10 0 1 1 106.2 54.2" stroke="#999"/>
-          <path d="M171.8 25.8A13 10 0 1 0 160 40A13 10 0 1 1 148.2 54.2" stroke="#999"/>
-          <path d="M189 60V-10H201A20 20 0 0 1 201 30H189M203 30L223 60" stroke="#999"/>
-          <path d="M241 20V60M241 0v0" stroke="#999"/>
-          <path d="M261 20V80M261 40a20 20 0 1 0 40 0a20 20 0 1 0-40 0" stroke="#999"/>
-          <path d="M318 20V80M318 40a20 20 0 1 0 40 0a20 20 0 1 0-40 0" stroke="#999"/>
-          <path d="M375 -10V60" stroke="#999"/>
-          <path d="M392 40H432A20 20 0 1 0 428.4 51.5" stroke="#999"/>
-          <path d="M156 104q15-14 30 0t30 0t30 0t30 0" stroke="#00E5D8"/>
-        </g>
-      </svg>
-      <svg class="footer-wave" aria-hidden="true" viewBox="0 0 50 10">
-        <path d="M3 5q5-5 10 0t10 0t10 0t10 0" />
-      </svg>
-    </div>
+    <svg class="wordmark" xmlns="http://www.w3.org/2000/svg" viewBox="-6 -16 444 133" role="img" aria-label="PassRipple">
+      <g fill="none" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+        <path class="wordmark-letters" d="M0 60V-10H12A20 20 0 0 1 12 30H0"/>
+        <path class="wordmark-letters" d="M89 20V60M49 40a20 20 0 1 0 40 0a20 20 0 1 0-40 0"/>
+        <path class="wordmark-letters" d="M129.8 25.8A13 10 0 1 0 118 40A13 10 0 1 1 106.2 54.2"/>
+        <path class="wordmark-letters" d="M171.8 25.8A13 10 0 1 0 160 40A13 10 0 1 1 148.2 54.2"/>
+        <path class="wordmark-letters" d="M189 60V-10H201A20 20 0 0 1 201 30H189M203 30L223 60"/>
+        <path class="wordmark-letters" d="M241 20V60M241 0v0"/>
+        <path class="wordmark-letters" d="M261 20V80M261 40a20 20 0 1 0 40 0a20 20 0 1 0-40 0"/>
+        <path class="wordmark-letters" d="M318 20V80M318 40a20 20 0 1 0 40 0a20 20 0 1 0-40 0"/>
+        <path class="wordmark-letters" d="M375 -10V60"/>
+        <path class="wordmark-letters" d="M392 40H432A20 20 0 1 0 428.4 51.5"/>
+        <path class="wordmark-wave" d="M156 104q15-14 30 0t30 0t30 0t30 0"/>
+      </g>
+    </svg>
     <p class="footer-cr">Hecho con orgullo en Costa Rica</p>
     <p class="footer-text">© 2026 PassRipple · Todos los derechos reservados</p>
   </footer>
 
   <script type="module" src="/src/coming-soon/reveal.ts"></script>
+  <script type="module" src="/src/coming-soon/theme.ts"></script>
 
 </body>
 </html>
