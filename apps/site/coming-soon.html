@@ -20,6 +20,33 @@
   <meta property="og:description" content="Entradas digitales a prueba de fraude, para eventos en Costa Rica." />
   <meta name="twitter:card" content="summary" />
 
+  <!-- Structured data for search engines: a JSON data block, never run, so the CSP
+       (script-src 'self') does not apply to it. -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://passripple.com/#organization",
+        "name": "PassRipple",
+        "url": "https://passripple.com/",
+        "logo": "https://passripple.com/passripple-logo-512.png",
+        "description": "Entradas digitales a prueba de fraude, para eventos en Costa Rica.",
+        "areaServed": { "@type": "Country", "name": "Costa Rica" }
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://passripple.com/#website",
+        "name": "PassRipple",
+        "url": "https://passripple.com/",
+        "inLanguage": "es-CR",
+        "publisher": { "@id": "https://passripple.com/#organization" }
+      }
+    ]
+  }
+  </script>
+
   <title>PassRipple · Próximamente</title>
 
   <!-- Applies the saved theme before the first paint: a classic script, so it blocks. -->
