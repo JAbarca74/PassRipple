@@ -6,8 +6,10 @@
   "compatibility_date": "2026-10-01",
   "assets": {
     "directory": "./dist",
-    // Every path that is not a file gets index.html: the holding page in coming-soon mode.
-    "not_found_handling": "single-page-application"
+    // Every path that is not a file gets 404.html with status 404, so search engines index
+    // only real pages. The full site's client-side routes need "single-page-application"
+    // back until its pages are pre-rendered (Phase 5).
+    "not_found_handling": "404-page"
   },
   "workers_dev": false,
   "preview_urls": false,
