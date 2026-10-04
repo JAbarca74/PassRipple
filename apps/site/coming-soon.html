@@ -70,7 +70,9 @@
       </g>
     </svg>
 
-    <p class="hero-label">Próximamente en Costa Rica</p>
+    <!-- Split into letters by src/coming-soon/reveal-word.ts; without it the word shows whole. -->
+    <p class="hero-word" data-reveal-word>Próximamente</p>
+    <p class="hero-label">en Costa Rica</p>
 
     <h1>Entradas digitales a prueba de fraude</h1>
 
@@ -84,14 +86,14 @@
       Sin papel. Sin copias. Sin fraude.
     </p>
 
-    <div class="scroll-hint">
+    <a class="scroll-hint" href="#que-es">
       <span>Descubra más</span>
       <div class="scroll-line"></div>
-    </div>
+    </a>
   </section>
 
   <!-- What is it -->
-  <section class="section reveal">
+  <section class="section reveal" id="que-es">
     <p class="section-label">Qué es PassRipple</p>
     <h2>Boletería digital diseñada para que cada entrada sea&nbsp;única</h2>
     <svg class="section-wave" aria-hidden="true" viewBox="0 0 80 14">
@@ -106,10 +108,6 @@
 
   <!-- Coming soon banner -->
   <section class="banner reveal">
-    <div class="banner-ripple"></div>
-    <div class="banner-ripple"></div>
-    <div class="banner-ripple"></div>
-
     <svg class="banner-wave-icon" aria-hidden="true" viewBox="0 0 120 18">
       <path d="M5 9q12-9 24 0t24 0t24 0t24 0t15 0" />
     </svg>
@@ -142,6 +140,7 @@
     <p class="footer-text">© 2026 PassRipple · Todos los derechos reservados</p>
   </footer>
 
+  <script type="module" src="/src/coming-soon/reveal-word.ts"></script>
   <script type="module" src="/src/coming-soon/reveal.ts"></script>
   <script type="module" src="/src/coming-soon/theme.ts"></script>
 
