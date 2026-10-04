@@ -12,6 +12,8 @@ const config: ExpoConfig = {
   version: "0.1.0",
   orientation: "portrait",
   userInterfaceStyle: "automatic",
+  // Brand icons, exported from the SVG sources in brand/ (brand/README.md).
+  icon: "../../brand/png/app-icon-1024.png",
   ios: {
     bundleIdentifier: appId,
     supportsTablet: false,
@@ -22,6 +24,11 @@ const config: ExpoConfig = {
   },
   android: {
     package: appId,
+    adaptiveIcon: {
+      foregroundImage: "../../brand/png/adaptive-icon-foreground.png",
+      monochromeImage: "../../brand/png/adaptive-icon-monochrome.png",
+      backgroundColor: "#5B1FE0",
+    },
     // The encrypted event database and its key must never leave the phone in a backup.
     allowBackup: false,
     blockedPermissions: ["android.permission.RECORD_AUDIO"],
