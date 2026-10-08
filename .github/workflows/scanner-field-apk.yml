@@ -1,0 +1,63 @@
+# A release APK of the gate app for the field test on a real Android phone (Phase 2). Run it
+# by hand from the Actions tab and give it the address of the API the phone will reach, for
+# example http://192.168.1.50:8787 (the PC's address on the Wi-Fi). It allows plain HTTP, so it
+# is for testing only and is never a build that ships (see apps/scanner/app.config.ts).
+name: scanner-field-apk
+
+on:
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: API address as the phone sees it, for example http://192.168.1.50:8787
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CI: "true"
+      EXPO_PUBLIC_API_URL: ${{ inputs.api_url }}
+      SCANNER_FIELD_BUILD: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: lts/*
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate the Android project
+        working-directory: apps/scanner
+        run: pnpm exec expo prebuild --platform android --no-install --clean
+
+      - name: Check that plain HTTP is allowed for this build only
+        working-directory: apps/scanner/android
+        run: grep -q 'usesCleartextTraffic="true"' app/src/main/AndroidManifest.xml
+
+      - name: Build the release APK
+        working-directory: apps/scanner/android
+        run: |
+          export JAVA_HOME="$JAVA_HOME_17_X64"
+          set -o pipefail
+          ./gradlew assembleRelease --no-daemon 2>&1 | tee gradle.log | grep -E "OP-SQLITE|BUILD|FAILURE|error:"
+          grep -q "using sqlcipher" gradle.log
+          test -f app/build/outputs/apk/release/app-release.apk
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: passripple-gate-field-apk
+          path: apps/scanner/android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 7
+          if-no-files-found: error

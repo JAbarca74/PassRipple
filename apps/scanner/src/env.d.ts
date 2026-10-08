@@ -5,6 +5,7 @@ declare const process: {
     readonly EXPO_PUBLIC_E2E?: string;
     /** Read by app.config.ts at build time only. */
     readonly SCANNER_APP_ID?: string;
+    readonly SCANNER_FIELD_BUILD?: string;
   };
 };
 

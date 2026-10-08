@@ -2,6 +2,7 @@
 // `expo prebuild` (Continuous Native Generation) and never committed. Nothing here is a
 // secret; the API address comes from the environment (`.env`, from `.env.example`).
 import type { ExpoConfig } from "expo/config";
+import { withAndroidManifest } from "expo/config-plugins";
 
 const appId = process.env.SCANNER_APP_ID ?? "com.passripple.scanner";
 
@@ -51,4 +52,15 @@ const config: ExpoConfig = {
   },
 };
 
-export default config;
+// Field-test builds only (SCANNER_FIELD_BUILD=1, set by the "scanner-field-apk" workflow): the
+// phone talks to an API on the developer's Wi-Fi over plain HTTP, which a release build
+// blocks by default. A build that ships never sets it.
+const fieldBuild = process.env.SCANNER_FIELD_BUILD === "1";
+
+export default fieldBuild
+  ? withAndroidManifest(config, (modConfig) => {
+      const application = modConfig.modResults.manifest.application?.[0];
+      if (application) application.$["android:usesCleartextTraffic"] = "true";
+      return modConfig;
+    })
+  : config;
