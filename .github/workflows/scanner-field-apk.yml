@@ -4,7 +4,12 @@
 # is for testing only and is never a build that ships (see apps/scanner/app.config.ts).
 name: scanner-field-apk
 
+# GitHub only lets you run a workflow by hand once it is on the default branch. Until Phase 2
+# reaches main, a push that changes this file builds it with the default address below.
 on:
+  push:
+    branches: [Phase-Gate]
+    paths: [.github/workflows/scanner-field-apk.yml]
   workflow_dispatch:
     inputs:
       api_url:
@@ -21,7 +26,7 @@ jobs:
     timeout-minutes: 45
     env:
       CI: "true"
-      EXPO_PUBLIC_API_URL: ${{ inputs.api_url }}
+      EXPO_PUBLIC_API_URL: ${{ inputs.api_url || 'http://172.20.10.2:8787' }}
       SCANNER_FIELD_BUILD: "1"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
