@@ -20,3 +20,18 @@ trustPolicyExclude:
 onlyBuiltDependencies:
   - esbuild
   - workerd
+
+# Security fixes for build-time tools. Every one lives in a dev or build tool (wrangler's
+# miniflare, React Native's devtools), never in the Worker bundle or the app binary.
+overrides:
+  undici@>=7.0.0 <7.29.1: "^7.29.1"
+  sharp@<0.35.5: ">=0.35.5"
+  shell-quote@>=1.8.4 <1.11.0: ">=1.11.0"
+
+# No patched version exists yet for these two. Both are reachable only through the Expo CLI
+# on a developer machine or in CI (node-forge for its dev HTTPS certificates, braces for
+# file globbing during bundling); neither is in the app. Revisit when a patch is published.
+auditConfig:
+  ignoreGhsas:
+    - GHSA-86w9-cpqp-85rv
+    - GHSA-vfj7-8cjw-p6xm
