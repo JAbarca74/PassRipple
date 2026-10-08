@@ -302,7 +302,14 @@ async function qr(index: number): Promise<void> {
   console.log(text);
 }
 
-const escapeHtml = (text: string) => text.replaceAll("&", "&amp;").replaceAll("<", "&lt;");
+const HTML_ESCAPES: Readonly<Record<string, string>> = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;",
+};
+const escapeHtml = (text: string) => text.replace(/[&<>"']/g, (char) => HTML_ESCAPES[char] ?? char);
 
 async function page(): Promise<string> {
   const cards: string[] = [];
