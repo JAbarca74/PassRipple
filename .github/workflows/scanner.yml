@@ -60,8 +60,13 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      # Expo SDK 57 resolves Swift packages that need Swift tools 6.2, which ships with
+      # Xcode 26. The macos-15 image defaults to Xcode 16.4 (Swift 6.1).
       - name: Xcode
-        run: xcodebuild -version
+        run: |
+          sudo xcode-select -s /Applications/Xcode_26.3.app
+          xcodebuild -version
+          swift --version
 
       - name: Generate the iOS project
         working-directory: apps/scanner
@@ -90,7 +95,7 @@ jobs:
           set -o pipefail
           xcodebuild -workspace "$workspace" -scheme "$scheme" -configuration Release \
             -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
-            -derivedDataPath build CODE_SIGNING_ALLOWED=NO | tee xcodebuild.log | grep -E "error:|warning: .*deprecated|BUILD" || true
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO | tee xcodebuild.log | grep -E "error:|warning: .*deprecated|BUILD"
           test -d build/Build/Products/Release-iphonesimulator/*.app
 
       - name: Boot a simulator and install the app
