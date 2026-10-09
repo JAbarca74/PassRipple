@@ -1,6 +1,12 @@
-import { describe, expect, test, vi } from "vitest";
 import type { Context } from "hono";
-import { bearer, deviceActor, gateDeviceView, userActor, type AuthenticatedDevice } from "./auth.ts";
+import { describe, expect, test, vi } from "vitest";
+import {
+  type AuthenticatedDevice,
+  bearer,
+  deviceActor,
+  gateDeviceView,
+  userActor,
+} from "./auth.ts";
 import { DEVICE_TOKEN_PREFIX, tokenHash, USER_TOKEN_PREFIX } from "./secrets.ts";
 
 function mockContext(authHeader?: string, orgHeader?: string): Context {
@@ -23,45 +29,50 @@ describe("bearer", () => {
 
   test("throws 401 if missing authorization", () => {
     const ctx = mockContext(undefined);
-    expect(() => bearer(ctx, USER_TOKEN_PREFIX)).toThrow(/unauthorized/);
+    expect(() => bearer(ctx, USER_TOKEN_PREFIX)).toThrow(/Sign in again/);
   });
 
   test("throws 401 if wrong prefix", () => {
     const ctx = mockContext(`Bearer wrong_prefix_123`);
-    expect(() => bearer(ctx, USER_TOKEN_PREFIX)).toThrow(/unauthorized/);
+    expect(() => bearer(ctx, USER_TOKEN_PREFIX)).toThrow(/Sign in again/);
   });
 
   test("throws 401 if token is too long", () => {
     const long = USER_TOKEN_PREFIX + "a".repeat(150);
     const ctx = mockContext(`Bearer ${long}`);
-    expect(() => bearer(ctx, USER_TOKEN_PREFIX)).toThrow(/unauthorized/);
+    expect(() => bearer(ctx, USER_TOKEN_PREFIX)).toThrow(/Sign in again/);
   });
 });
 
 describe("userActor", () => {
   test("returns an actor resolver that calls authenticate_session", async () => {
-    const ctx = mockContext(`Bearer ${USER_TOKEN_PREFIX}123`, "00000000-0000-0000-0000-000000000001");
+    const ctx = mockContext(
+      `Bearer ${USER_TOKEN_PREFIX}123`,
+      "00000000-0000-0000-0000-000000000001",
+    );
     const resolver = await userActor(ctx, "organizer");
-    
+
     const tx = vi.fn().mockResolvedValue([{ user_id: "00000000-0000-0000-0000-000000000002" }]);
     const actor = await resolver(tx as any);
-    
+
     expect(actor).toEqual({
       id: "00000000-0000-0000-0000-000000000002",
       role: "organizer",
       orgId: "00000000-0000-0000-0000-000000000001",
     });
-    
+
     const hash = await tokenHash(`${USER_TOKEN_PREFIX}123`);
-    expect(tx.mock.calls[0][1]).toEqual(hash); // First argument is query parts, second is substitution
+    const call0 = tx.mock.calls[0];
+    if (!call0) throw new Error("mock call missing");
+    expect(call0[1]).toEqual(hash); // First argument is query parts, second is substitution
   });
 
   test("throws 401 if session is not found", async () => {
     const ctx = mockContext(`Bearer ${USER_TOKEN_PREFIX}123`);
     const resolver = await userActor(ctx, "staff");
-    
+
     const tx = vi.fn().mockResolvedValue([]);
-    await expect(resolver(tx as any)).rejects.toThrow(/unauthorized/);
+    await expect(resolver(tx as any)).rejects.toThrow(/Sign in again/);
   });
 
   test("throws 400 if x-org-id is invalid for organizer", async () => {
@@ -87,10 +98,10 @@ describe("deviceActor", () => {
     const ctx = mockContext(`Bearer ${DEVICE_TOKEN_PREFIX}123`);
     const found = vi.fn();
     const resolver = await deviceActor(ctx, ["active"], found);
-    
+
     const tx = vi.fn().mockResolvedValue([row]);
     const actor = await resolver(tx as any);
-    
+
     expect(actor).toEqual({ id: "usr1", role: "staff", orgId: null });
     expect(found).toHaveBeenCalledWith({
       deviceId: "dev1",
@@ -108,17 +119,17 @@ describe("deviceActor", () => {
   test("throws 403 if status is not allowed", async () => {
     const ctx = mockContext(`Bearer ${DEVICE_TOKEN_PREFIX}123`);
     const resolver = await deviceActor(ctx, ["revoked"], vi.fn());
-    
+
     const tx = vi.fn().mockResolvedValue([row]);
-    await expect(resolver(tx as any)).rejects.toThrow(/device_active/);
+    await expect(resolver(tx as any)).rejects.toThrow(/This device is/);
   });
 
   test("throws 401 if device not found", async () => {
     const ctx = mockContext(`Bearer ${DEVICE_TOKEN_PREFIX}123`);
     const resolver = await deviceActor(ctx, ["active"], vi.fn());
-    
+
     const tx = vi.fn().mockResolvedValue([]);
-    await expect(resolver(tx as any)).rejects.toThrow(/unauthorized/);
+    await expect(resolver(tx as any)).rejects.toThrow(/Sign in again/);
   });
 });
 
@@ -135,7 +146,7 @@ describe("gateDeviceView", () => {
       revokedAt: null, // should be omitted
       status: "active",
     };
-    
+
     const view = gateDeviceView(dev);
     expect(view).toEqual({
       deviceId: "dev1",

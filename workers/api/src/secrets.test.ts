@@ -1,15 +1,14 @@
 import { describe, expect, test } from "vitest";
 import {
-  USER_TOKEN_PREFIX,
+  canonicalStaffCode,
   DEVICE_TOKEN_PREFIX,
-  sha256,
-  newToken,
-  tokenHash,
   newSignInCode,
   newStaffCode,
-  canonicalStaffCode,
+  newToken,
   signInCodeHash,
   staffCodeHash,
+  tokenHash,
+  USER_TOKEN_PREFIX,
 } from "./secrets.ts";
 
 describe("tokens", () => {
@@ -27,10 +26,10 @@ describe("tokens", () => {
     const hash = await tokenHash("test");
     expect(hash).toBeInstanceOf(Uint8Array);
     expect(hash.length).toBe(32);
-    
+
     const hash2 = await tokenHash("test");
     expect(hash).toEqual(hash2);
-    
+
     const hash3 = await tokenHash("other");
     expect(hash).not.toEqual(hash3);
   });
@@ -50,7 +49,7 @@ describe("sign in codes", () => {
     const h2 = await signInCodeHash(pepper, "test@example.com", "123456");
     const h3 = await signInCodeHash(pepper, "other@example.com", "123456");
     const h4 = await signInCodeHash(pepper, "test@example.com", "999999");
-    
+
     expect(h1).toBeInstanceOf(Uint8Array);
     expect(h1.length).toBe(32);
     expect(h1).toEqual(h2);
@@ -59,7 +58,7 @@ describe("sign in codes", () => {
   });
 
   test("signInCodeHash throws if pepper is < 32 bytes", async () => {
-    await expect(signInCodeHash("short", "a", "1")).rejects.toThrow(/at least 32 bytes/);
+    await expect(signInCodeHash("c2hvcnQ=", "a", "1")).rejects.toThrow(/at least 32 bytes/);
   });
 });
 
@@ -82,7 +81,7 @@ describe("staff codes", () => {
     const h1 = await staffCodeHash(pepper, "ABC");
     const h2 = await staffCodeHash(pepper, "ABC");
     const h3 = await staffCodeHash(pepper, "DEF");
-    
+
     expect(h1).toBeInstanceOf(Uint8Array);
     expect(h1.length).toBe(32);
     expect(h1).toEqual(h2);
