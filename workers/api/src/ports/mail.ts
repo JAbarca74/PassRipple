@@ -17,12 +17,22 @@ export interface MailSender {
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
+/** A private-network IPv4 address (RFC 1918): a phone on the developer's Wi-Fi reaches the local API through one. */
+const PRIVATE_IPV4 =
+  /^(10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})$/;
+
+function isLocalHost(hostname: string): boolean {
+  return LOCAL_HOSTS.has(hostname) || PRIVATE_IPV4.test(hostname);
+}
+
 /** Prints messages instead of sending them. Local development only. */
 export function consoleMailSender(requestUrl: string): MailSender {
   return {
     async send(message) {
-      if (!LOCAL_HOSTS.has(new URL(requestUrl).hostname)) {
-        throw new Error("the console mail sender only runs on localhost");
+      if (!isLocalHost(new URL(requestUrl).hostname)) {
+        throw new Error(
+          "the console mail sender only runs on localhost or a private network address",
+        );
       }
       console.log(`[mail] to ${message.to}: ${message.subject}\n${message.text}`);
     },
