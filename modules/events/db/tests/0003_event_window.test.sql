@@ -3,15 +3,15 @@ BEGIN;
 SELECT no_plan();
 
 -- Create a mock organization and user
-INSERT INTO public.users (id, email) VALUES ('00000000-0000-0000-0000-000000000001', 'org@example.com');
-INSERT INTO directory.organizations (id, name, owner_id) VALUES ('00000000-0000-0000-0000-000000000002', 'Org', '00000000-0000-0000-0000-000000000001');
-INSERT INTO directory.memberships (org_id, user_id, role) VALUES ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'organizer');
+INSERT INTO identity.users (id, email) VALUES ('00000000-0000-0000-0000-000000000001', 'org@example.com');
+INSERT INTO identity.organizations (id, name) VALUES ('00000000-0000-0000-0000-000000000002', 'Org');
+INSERT INTO identity.memberships (org_id, user_id) VALUES ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001');
 
 SET SESSION AUTHORIZATION passripple_api;
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000001","org":"00000000-0000-0000-0000-000000000002"}', true);
 
 -- Un evento insertado sin ends_at recibe starts_at + 12 h
-INSERT INTO events.events (id, org_id, name, starts_at) 
+INSERT INTO events.events (id, org_id, name, starts_at, age_rating) 
 VALUES ('00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000002', 'Ev1', '2024-01-01 10:00:00+00');
 
 SELECT results_eq(
@@ -21,8 +21,7 @@ SELECT results_eq(
 );
 
 -- Con ends_at explícito lo conserva
-INSERT INTO events.events (id, org_id, name, starts_at, ends_at) 
-VALUES ('00000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000002', 'Ev2', '2024-01-02 10:00:00+00', '2024-01-02 15:00:00+00');
+INSERT INTO events.events (id, org_id, name, starts_at, ends_at, age_rating) VALUES ('00000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000002', 'Ev2', '2024-01-02 10:00:00+00', '2024-01-02 15:00:00+00', 'all_ages');
 
 SELECT results_eq(
     'SELECT ends_at FROM events.events WHERE id = ''00000000-0000-0000-0000-000000000004''',
@@ -32,14 +31,14 @@ SELECT results_eq(
 
 -- ends_at <= starts_at viola events_window
 SELECT throws_ok(
-    $$INSERT INTO events.events (id, org_id, name, starts_at, ends_at) VALUES ('00000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000002', 'Ev3', '2024-01-03 10:00:00+00', '2024-01-03 09:00:00+00')$$,
+    $$INSERT INTO events.events (id, org_id, name, starts_at, ends_at, age_rating) VALUES ('00000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000002', 'Ev3', '2024-01-03 10:00:00+00', '2024-01-03 09:00:00+00', 'all_ages')$$,
     '23514',
     NULL,
     'ends_at < starts_at violates CHECK constraint'
 );
 
 SELECT throws_ok(
-    $$INSERT INTO events.events (id, org_id, name, starts_at, ends_at) VALUES ('00000000-0000-0000-0000-000000000006', '00000000-0000-0000-0000-000000000002', 'Ev3', '2024-01-03 10:00:00+00', '2024-01-03 10:00:00+00')$$,
+    $$INSERT INTO events.events (id, org_id, name, starts_at, ends_at, age_rating) VALUES ('00000000-0000-0000-0000-000000000006', '00000000-0000-0000-0000-000000000002', 'Ev3', '2024-01-03 10:00:00+00', '2024-01-03 10:00:00+00', 'all_ages')$$,
     '23514',
     NULL,
     'ends_at = starts_at violates CHECK constraint'
@@ -74,7 +73,7 @@ SELECT throws_ok(
 );
 
 SELECT throws_ok(
-    $$INSERT INTO events.events (id, org_id, name, starts_at) VALUES ('00000000-0000-0000-0000-000000000007', '00000000-0000-0000-0000-000000000002', 'Ev3', '2024-01-03 10:00:00+00')$$,
+    $$INSERT INTO events.events (id, org_id, name, starts_at, age_rating) VALUES ('00000000-0000-0000-0000-000000000007', '00000000-0000-0000-0000-000000000002', 'Ev3', '2024-01-03 10:00:00+00')$$,
     '42501',
     NULL,
     'non-organizer cannot insert events'
@@ -83,3 +82,8 @@ SELECT throws_ok(
 SELECT * FROM finish();
 
 ROLLBACK;
+
+
+
+
+

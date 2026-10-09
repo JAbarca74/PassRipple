@@ -7,24 +7,23 @@ INSERT INTO identity.users (id, email) VALUES
 ('00000000-0000-0000-0000-000000000002', 'other@example.com'),
 ('00000000-0000-0000-0000-000000000003', 'staff@example.com');
 
-INSERT INTO directory.organizations (id, name, owner_id) VALUES 
-('00000000-0000-0000-0000-000000000010', 'Org 1', '00000000-0000-0000-0000-000000000001'),
-('00000000-0000-0000-0000-000000000011', 'Org 2', '00000000-0000-0000-0000-000000000002');
+INSERT INTO identity.organizations (id, name) VALUES 
+('00000000-0000-0000-0000-000000000010', 'Org 1'),
+('00000000-0000-0000-0000-000000000011', 'Org 2');
 
-INSERT INTO directory.memberships (org_id, user_id, role) VALUES 
-('00000000-0000-0000-0000-000000000010', '00000000-0000-0000-0000-000000000001', 'organizer'),
-('00000000-0000-0000-0000-000000000011', '00000000-0000-0000-0000-000000000002', 'organizer'),
+INSERT INTO identity.memberships (org_id, user_id) VALUES 
+('00000000-0000-0000-0000-000000000010', '00000000-0000-0000-0000-000000000001'),
+('00000000-0000-0000-0000-000000000011', '00000000-0000-0000-0000-000000000002'),
 ('00000000-0000-0000-0000-000000000010', '00000000-0000-0000-0000-000000000003', 'staff');
 
 INSERT INTO jurisdictions.jurisdictions (canton_code, name, tax_rate_bps, courtesy_deduct_bps, settlement_rule)
 VALUES ('TEST-01', 'Test', 0, '{}', 'next_business_day');
 
-INSERT INTO events.events (id, org_id, canton_code, name, venue_name, starts_at, ends_at) VALUES 
-('00000000-0000-0000-0000-000000000020', '00000000-0000-0000-0000-000000000010', 'TEST-01', 'Event 1', 'V', now(), now() + interval '1 day'),
+INSERT INTO events.events (id, org_id, canton_code, name, venue_name, starts_at, ends_at, age_rating) VALUES ('00000000-0000-0000-0000-000000000020', '00000000-0000-0000-0000-000000000010', 'TEST-01', 'Event 1', 'V', now(), 'all_ages', now() + interval '1 day'),
 ('00000000-0000-0000-0000-000000000021', '00000000-0000-0000-0000-000000000011', 'TEST-01', 'Event 2', 'V', now(), now() + interval '1 day');
 
 -- create_code
-SELECT app.set_actor('00000000-0000-0000-0000-000000000001', 'organizer');
+SELECT identity.set_actor('00000000-0000-0000-0000-000000000001', 'organizer');
 
 SELECT lives_ok(
     $$SELECT staff.create_code('00000000-0000-0000-0000-000000000020', 'gate', NULL, now(), now() + interval '1 day', 10, '\x0100000000000000000000000000000000000000000000000000000000000000'::bytea)$$,
@@ -52,7 +51,7 @@ SELECT throws_ok(
 );
 
 -- check other org organizer
-SELECT app.set_actor('00000000-0000-0000-0000-000000000002', 'organizer');
+SELECT identity.set_actor('00000000-0000-0000-0000-000000000002', 'organizer');
 SELECT throws_ok(
     $$SELECT staff.create_code('00000000-0000-0000-0000-000000000020', 'gate', NULL, now(), now() + interval '1 day', 10, '\x0300000000000000000000000000000000000000000000000000000000000000'::bytea)$$,
     '42501',
@@ -61,7 +60,7 @@ SELECT throws_ok(
 );
 
 -- check staff
-SELECT app.set_actor('00000000-0000-0000-0000-000000000003', 'staff');
+SELECT identity.set_actor('00000000-0000-0000-0000-000000000003', 'staff');
 SELECT throws_ok(
     $$SELECT staff.create_code('00000000-0000-0000-0000-000000000020', 'gate', NULL, now(), now() + interval '1 day', 10, '\x0400000000000000000000000000000000000000000000000000000000000000'::bytea)$$,
     '42501',
@@ -70,7 +69,7 @@ SELECT throws_ok(
 );
 
 -- revoke_code
-SELECT app.set_actor('00000000-0000-0000-0000-000000000001', 'organizer');
+SELECT identity.set_actor('00000000-0000-0000-0000-000000000001', 'organizer');
 DO $$
 DECLARE v_id uuid;
 BEGIN
@@ -104,7 +103,7 @@ END $$;
 SELECT staff.create_code('00000000-0000-0000-0000-000000000020', 'gate', 'Zone A', now() + interval '1 hour', now() + interval '1 day', 2, '\x0500000000000000000000000000000000000000000000000000000000000000'::bytea);
 
 -- must be staff
-SELECT app.set_actor('00000000-0000-0000-0000-000000000001', 'organizer');
+SELECT identity.set_actor('00000000-0000-0000-0000-000000000001', 'organizer');
 SELECT throws_ok(
     $$SELECT staff.enroll('\x0500000000000000000000000000000000000000000000000000000000000000'::bytea, '\x1000000000000000000000000000000000000000000000000000000000000000'::bytea)$$,
     'P0001',
@@ -112,7 +111,7 @@ SELECT throws_ok(
     'only staff can enroll'
 );
 
-SELECT app.set_actor('00000000-0000-0000-0000-000000000003', 'staff');
+SELECT identity.set_actor('00000000-0000-0000-0000-000000000003', 'staff');
 -- enrolls even before valid_from
 SELECT isnt(
     (SELECT staff.enroll('\x0500000000000000000000000000000000000000000000000000000000000000'::bytea, '\x1100000000000000000000000000000000000000000000000000000000000000'::bytea)),
@@ -151,9 +150,9 @@ SELECT throws_ok(
 );
 
 -- expired code gives P0002
-SELECT app.set_actor('00000000-0000-0000-0000-000000000001', 'organizer');
+SELECT identity.set_actor('00000000-0000-0000-0000-000000000001', 'organizer');
 SELECT staff.create_code('00000000-0000-0000-0000-000000000020', 'gate', NULL, now() - interval '2 days', now() - interval '1 day', 2, '\x0600000000000000000000000000000000000000000000000000000000000000'::bytea);
-SELECT app.set_actor('00000000-0000-0000-0000-000000000003', 'staff');
+SELECT identity.set_actor('00000000-0000-0000-0000-000000000003', 'staff');
 SELECT throws_ok(
     $$SELECT staff.enroll('\x0600000000000000000000000000000000000000000000000000000000000000'::bytea, '\x1500000000000000000000000000000000000000000000000000000000000000'::bytea)$$,
     'P0002',
@@ -162,7 +161,7 @@ SELECT throws_ok(
 );
 
 -- dblink race
-SELECT app.set_actor('00000000-0000-0000-0000-000000000001', 'organizer');
+SELECT identity.set_actor('00000000-0000-0000-0000-000000000001', 'organizer');
 SELECT staff.create_code('00000000-0000-0000-0000-000000000020', 'gate', NULL, now(), now() + interval '1 day', 1, '\x0700000000000000000000000000000000000000000000000000000000000000'::bytea);
 
 CREATE FUNCTION pg_temp.cleanup_staff() RETURNS text LANGUAGE sql AS $f$
@@ -178,7 +177,7 @@ SELECT dblink_connect(name, format('dbname=%s user=%s', current_database(), (SEL
 SELECT pg_temp.cleanup_staff();
 
 SELECT dblink_exec(name, 'BEGIN'), dblink_exec(name, 'SET SESSION AUTHORIZATION passripple_api') FROM unnest(ARRAY['a', 'b']) AS name;
-SELECT dblink_exec(name, $$SELECT app.set_actor('00000000-0000-0000-0000-000000000003', 'staff')$$) FROM unnest(ARRAY['a', 'b']) AS name;
+SELECT dblink_exec(name, $$SELECT identity.set_actor('00000000-0000-0000-0000-000000000003', 'staff')$$) FROM unnest(ARRAY['a', 'b']) AS name;
 
 SELECT dblink_send_query('a', $$SELECT staff.enroll('\x0700000000000000000000000000000000000000000000000000000000000000'::bytea, '\x2000000000000000000000000000000000000000000000000000000000000000'::bytea)$$);
 SELECT pg_sleep(0.3);
@@ -216,7 +215,7 @@ SELECT is(
 );
 
 -- sign_out_device
-SELECT app.set_actor('00000000-0000-0000-0000-000000000003', 'staff');
+SELECT identity.set_actor('00000000-0000-0000-0000-000000000003', 'staff');
 SELECT lives_ok(
     $$SELECT staff.sign_out_device('\x1200000000000000000000000000000000000000000000000000000000000000'::bytea)$$,
     'staff owner can sign out device'
@@ -252,7 +251,7 @@ SELECT throws_ok(
 
 -- un organizador ve los códigos de sus eventos y no los de otra organización.
 RESET SESSION AUTHORIZATION;
-SELECT app.set_actor('00000000-0000-0000-0000-000000000001', 'organizer');
+SELECT identity.set_actor('00000000-0000-0000-0000-000000000001', 'organizer');
 SELECT results_eq(
     $$SELECT event_id FROM staff.staff_codes$$,
     ARRAY['00000000-0000-0000-0000-000000000020'::uuid, '00000000-0000-0000-0000-000000000020'::uuid, '00000000-0000-0000-0000-000000000020'::uuid, '00000000-0000-0000-0000-000000000020'::uuid],
@@ -261,3 +260,8 @@ SELECT results_eq(
 
 SELECT * FROM finish();
 ROLLBACK;
+
+
+
+
+

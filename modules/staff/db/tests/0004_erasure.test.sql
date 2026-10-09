@@ -2,12 +2,11 @@ BEGIN;
 SELECT no_plan();
 
 INSERT INTO identity.users (id, email) VALUES ('00000000-0000-0000-0000-000000000001', 'staff@example.com');
-INSERT INTO directory.organizations (id, name, owner_id) VALUES ('00000000-0000-0000-0000-000000000010', 'Org 1', '00000000-0000-0000-0000-000000000001');
+INSERT INTO identity.organizations (id, name) VALUES ('00000000-0000-0000-0000-000000000010', 'Org 1');
 INSERT INTO jurisdictions.jurisdictions (canton_code, name, tax_rate_bps, courtesy_deduct_bps, settlement_rule) VALUES ('TEST', 'T', 0, '{}', 'next_business_day');
 
 -- release_user_devices lanza 55006 si el usuario tiene una sesión abierta con el dispositivo dentro de su ventana de subida
-INSERT INTO events.events (id, org_id, canton_code, name, venue_name, starts_at, ends_at) VALUES 
-('00000000-0000-0000-0000-000000000020', '00000000-0000-0000-0000-000000000010', 'TEST', 'Ev', 'V', now(), now() + interval '1 day');
+INSERT INTO events.events (id, org_id, canton_code, name, venue_name, starts_at, ends_at, age_rating) VALUES ('00000000-0000-0000-0000-000000000020', '00000000-0000-0000-0000-000000000010', 'TEST', 'Ev', 'V', now(), 'all_ages', now() + interval '1 day');
 
 INSERT INTO staff.staff_codes (id, event_id, role, valid_from, valid_until, max_uses, uses, code_hash) VALUES 
 ('00000000-0000-0000-0000-000000000030', '00000000-0000-0000-0000-000000000020', 'gate', now(), now() + interval '1 day', 10, 1, '\x0100000000000000000000000000000000000000000000000000000000000000'::bytea);
@@ -47,3 +46,8 @@ SELECT lives_ok(
 
 SELECT * FROM finish();
 ROLLBACK;
+
+
+
+
+

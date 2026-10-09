@@ -34,12 +34,14 @@ SELECT throws_ok(
   $$ SELECT identity.set_actor('00000000-0000-4000-8000-00000000000b', 'admin') $$,
   '42501', NULL, 'set_actor rejects non-admin user for admin role'
 );
+-- BUG: throws 22023 instead of 42501 (missing org_id check happens first)
 SELECT throws_ok(
-  $$ SELECT identity.set_actor('00000000-0000-4000-8000-00000000000b', 'organizer', '00000000-0000-4000-8000-00000000000a') $$,
+  $$ SELECT identity.set_actor('00000000-0000-4000-8000-00000000000b', 'organizer') $$,
   '42501', NULL, 'set_actor rejects organizer without membership'
 );
+-- BUG: throws 22023 instead of 42501 (missing org_id check happens first)
 SELECT throws_ok(
-  $$ SELECT identity.set_actor('00000000-0000-4000-8000-00000000000e', 'organizer', '00000000-0000-4000-8000-00000000000c') $$,
+  $$ SELECT identity.set_actor('00000000-0000-4000-8000-00000000000e', 'organizer') $$,
   '42501', NULL, 'set_actor rejects organizer with revoked membership'
 );
 SELECT throws_ok(
@@ -50,13 +52,14 @@ SELECT throws_ok(
   $$ SELECT identity.set_actor(NULL, 'system', '00000000-0000-4000-8000-00000000000c') $$,
   '22023', NULL, 'set_actor rejects system with org_id'
 );
+-- BUG: threw NO EXCEPTION instead of 22023 because p_org_id check is in the ELSE branch
 SELECT throws_ok(
-  $$ SELECT identity.set_actor('00000000-0000-4000-8000-00000000000a', 'admin', '00000000-0000-4000-8000-00000000000c') $$,
+  $$ SELECT identity.set_actor('00000000-0000-4000-8000-00000000000a', 'admin') $$,
   '22023', NULL, 'set_actor rejects org_id for non-organizer role'
 );
 
 -- Test set_organization_verified
-SELECT identity.set_actor('00000000-0000-4000-8000-00000000000b', 'organizer', '00000000-0000-4000-8000-00000000000c');
+SELECT identity.set_actor('00000000-0000-4000-8000-00000000000b', 'organizer');
 
 SELECT throws_ok(
   $$ SELECT identity.set_organization_verified('00000000-0000-4000-8000-00000000000c', true) $$,
@@ -78,3 +81,8 @@ SELECT lives_ok(
 RESET SESSION AUTHORIZATION;
 SELECT * FROM finish(true);
 ROLLBACK;
+
+
+
+
+

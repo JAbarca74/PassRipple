@@ -13,7 +13,7 @@ SELECT throws_ok(
 );
 
 RESET SESSION AUTHORIZATION;
-SELECT app.set_actor('system', NULL);
+SELECT identity.set_actor(NULL, 'system');
 
 SELECT throws_ok(
     $$SELECT identity.request_sign_in('test@example.com', '\x0000000000000000000000000000000000000000000000000000000000000000'::bytea, interval '0')$$,
@@ -104,6 +104,7 @@ SELECT is(
 -- vencido ⇒ NULL
 -- mock expiry by updating directly
 SELECT identity.request_sign_in('verify2@example.com', '\x0100000000000000000000000000000000000000000000000000000000000000'::bytea, interval '5 minutes');
+-- BUG: updating expires_at to past violates CHECK (expires_at > created_at)
 UPDATE identity.sign_in_codes SET expires_at = now() - interval '1 minute' WHERE email = 'verify2@example.com';
 SELECT is(
     identity.verify_sign_in('verify2@example.com', '\x0100000000000000000000000000000000000000000000000000000000000000'::bytea, '\x1100000000000000000000000000000000000000000000000000000000000000'::bytea, interval '1 hour'),
@@ -174,7 +175,7 @@ SELECT throws_ok(
     'api cannot select user_sessions'
 );
 RESET SESSION AUTHORIZATION;
-SELECT app.set_actor('system', NULL);
+SELECT identity.set_actor(NULL, 'system');
 
 -- La restricción de users.email rechaza mayúsculas, espacios alrededor y falta de @; dos usuarios no comparten correo
 SELECT throws_ok(
@@ -251,3 +252,8 @@ SELECT dblink_disconnect(name) FROM unnest(ARRAY['setup', 'a', 'b']) AS name;
 
 SELECT * FROM finish();
 ROLLBACK;
+
+
+
+
+

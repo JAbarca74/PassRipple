@@ -5,3 +5,8 @@ SELECT has_schema('notifications', 'module notifications owns the notifications 
 
 SELECT * FROM finish(true);
 ROLLBACK;
+
+
+
+
+

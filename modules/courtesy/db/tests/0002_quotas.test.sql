@@ -23,7 +23,7 @@ INSERT INTO events.events (id, org_id, canton_code, name, venue_name, starts_at,
 
 -- ── API actions ──────────────────────────────────────────────────────────────
 SET LOCAL SESSION AUTHORIZATION passripple_api;
-SELECT identity.set_actor('00000000-0000-4000-8000-00000000000c', 'organizer', '00000000-0000-4000-8000-00000000000a');
+SELECT identity.set_actor('00000000-0000-4000-8000-00000000000c', 'organizer');
 
 -- direct DML
 SELECT throws_ok(
@@ -72,7 +72,7 @@ SELECT throws_ok(
 );
 
 -- other organizer
-SELECT identity.set_actor('00000000-0000-4000-8000-00000000000d', 'organizer', '00000000-0000-4000-8000-00000000000b');
+SELECT identity.set_actor('00000000-0000-4000-8000-00000000000d', 'organizer');
 SELECT throws_ok(
   $$ SELECT courtesy.declare_quota('00000000-0000-4000-8000-000000000010', 10) $$,
   '42501', NULL, 'other organizer cannot declare quota'
@@ -110,3 +110,8 @@ RESET ROLE;
 
 SELECT * FROM finish(true);
 ROLLBACK;
+
+
+
+
+

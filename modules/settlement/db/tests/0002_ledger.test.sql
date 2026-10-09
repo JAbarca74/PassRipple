@@ -28,7 +28,7 @@ INSERT INTO settlement.ledger_entries (id, event_id, kind, amount_crc) VALUES
 -- ── API actions ──────────────────────────────────────────────────────────────
 SET LOCAL SESSION AUTHORIZATION passripple_api;
 
-SELECT identity.set_actor('00000000-0000-4000-8000-00000000000d', 'organizer', '00000000-0000-4000-8000-00000000000b');
+SELECT identity.set_actor('00000000-0000-4000-8000-00000000000d', 'organizer');
 SELECT is((SELECT count(*)::int FROM settlement.ledger_entries WHERE id = '00000000-0000-4000-8000-000000000020'), 0, 'organizer cannot see ledger of another org');
 
 SELECT identity.set_actor(NULL, 'system');
@@ -73,3 +73,8 @@ RESET ROLE;
 
 SELECT * FROM finish(true);
 ROLLBACK;
+
+
+
+
+

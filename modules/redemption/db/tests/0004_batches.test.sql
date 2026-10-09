@@ -4,10 +4,10 @@ SELECT no_plan();
 INSERT INTO identity.users (id, email) VALUES 
 ('00000000-0000-0000-0000-000000000001', 'batch1@example.com'),
 ('00000000-0000-0000-0000-000000000002', 'batch2@example.com');
-INSERT INTO directory.organizations (id, name, owner_id) VALUES ('00000000-0000-0000-0000-000000000010', 'Org 1', '00000000-0000-0000-0000-000000000001');
+INSERT INTO identity.organizations (id, name) VALUES ('00000000-0000-0000-0000-000000000010', 'Org 1');
 INSERT INTO jurisdictions.jurisdictions (canton_code, name, tax_rate_bps, courtesy_deduct_bps, settlement_rule) VALUES ('TEST', 'T', 0, '{}', 'next_business_day');
-INSERT INTO events.events (id, org_id, canton_code, name, venue_name, starts_at, ends_at) VALUES ('00000000-0000-0000-0000-000000000020', '00000000-0000-0000-0000-000000000010', 'TEST', 'Ev', 'V', now(), now() + interval '1 day');
-INSERT INTO events.events (id, org_id, canton_code, name, venue_name, starts_at, ends_at) VALUES ('00000000-0000-0000-0000-000000000021', '00000000-0000-0000-0000-000000000010', 'TEST', 'Ev2', 'V', now(), now() + interval '1 day');
+INSERT INTO events.events (id, org_id, canton_code, name, venue_name, starts_at, ends_at, age_rating) VALUES ('00000000-0000-0000-0000-000000000020', '00000000-0000-0000-0000-000000000010', 'TEST', 'Ev', 'V', now(), 'all_ages', now() + interval '1 day');
+INSERT INTO events.events (id, org_id, canton_code, name, venue_name, starts_at, ends_at, age_rating) VALUES ('00000000-0000-0000-0000-000000000021', '00000000-0000-0000-0000-000000000010', 'TEST', 'Ev2', 'V', now(), 'all_ages', now() + interval '1 day');
 
 INSERT INTO catalog.ticket_types (id, event_id, name, price_crc, audience) VALUES ('00000000-0000-0000-0000-000000000030', '00000000-0000-0000-0000-000000000020', 'P', 1000, 'public');
 INSERT INTO inventory.event_capacity (event_id, permitted_capacity, committed) VALUES ('00000000-0000-0000-0000-000000000020', 10, 2);
@@ -30,7 +30,7 @@ INSERT INTO staff.device_sessions (token_hash, device_id, event_id, user_id, rol
 
 -- System u otro staff => 42501
 SET SESSION AUTHORIZATION passripple_api;
-SELECT app.set_actor('system', NULL);
+SELECT identity.set_actor(NULL, 'system');
 
 SELECT throws_ok(
     $$SELECT redemption.push_batch('{"id": "00000000-0000-0000-0000-000000000070", "cursor": "0", "scans": []}'::jsonb)$$,
@@ -39,7 +39,7 @@ SELECT throws_ok(
     'system cannot push_batch'
 );
 
-SELECT app.set_actor('00000000-0000-0000-0000-000000000002', 'staff');
+SELECT identity.set_actor('00000000-0000-0000-0000-000000000002', 'staff');
 PERFORM set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000002","dev":"\x0400000000000000000000000000000000000000000000000000000000000000"}', true);
 -- It should fail if device does not match jwt or something, but let's test if we can push. We CAN push if we are the device owner.
 -- The prompt says: "push_batch como el staff del dispositivo; system u otro staff ⇒ 42501."
@@ -53,7 +53,7 @@ SELECT throws_ok(
 );
 
 -- set correct owner
-SELECT app.set_actor('00000000-0000-0000-0000-000000000001', 'staff');
+SELECT identity.set_actor('00000000-0000-0000-0000-000000000001', 'staff');
 PERFORM set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000001","dev":"\x0300000000000000000000000000000000000000000000000000000000000000"}', true);
 
 -- push valid scan. Ticket change_xid should be known.
@@ -128,3 +128,8 @@ SELECT throws_ok(
 
 SELECT * FROM finish();
 ROLLBACK;
+
+
+
+
+

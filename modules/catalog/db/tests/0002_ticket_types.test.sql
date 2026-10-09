@@ -29,7 +29,7 @@ INSERT INTO catalog.ticket_types (id, event_id, name, price_crc, audience) VALUE
 -- ── API actions ──────────────────────────────────────────────────────────────
 SET LOCAL SESSION AUTHORIZATION passripple_api;
 
-SELECT identity.set_actor('00000000-0000-4000-8000-00000000000d', 'organizer', '00000000-0000-4000-8000-00000000000b');
+SELECT identity.set_actor('00000000-0000-4000-8000-00000000000d', 'organizer');
 
 SELECT is((SELECT count(*)::int FROM catalog.ticket_types WHERE id = '00000000-0000-4000-8000-000000000020'), 0, 'organizer cannot see draft ticket type of another org');
 
@@ -41,7 +41,7 @@ SELECT throws_ok(
 WITH updated AS (UPDATE catalog.ticket_types SET price_crc = 0 WHERE id = '00000000-0000-4000-8000-000000000020' RETURNING 1)
 SELECT is((SELECT count(*)::int FROM updated), 0, 'organizer cannot update ticket type of another org');
 
-SELECT identity.set_actor('00000000-0000-4000-8000-00000000000c', 'organizer', '00000000-0000-4000-8000-00000000000a');
+SELECT identity.set_actor('00000000-0000-4000-8000-00000000000c', 'organizer');
 
 -- Row Level Security filters the row out instead of raising: nothing is deleted.
 WITH deleted AS (DELETE FROM catalog.ticket_types WHERE id = '00000000-0000-4000-8000-000000000021' RETURNING 1)
@@ -65,3 +65,8 @@ SELECT is((SELECT count(*)::int FROM catalog.ticket_types WHERE id = '00000000-0
 RESET SESSION AUTHORIZATION;
 SELECT * FROM finish(true);
 ROLLBACK;
+
+
+
+
+

@@ -183,3 +183,8 @@ SELECT dblink_disconnect(name) FROM unnest(ARRAY['setup', 'a', 'b']) AS name;
 
 SELECT * FROM finish(true);
 ROLLBACK;
+
+
+
+
+

@@ -4,10 +4,9 @@ SELECT no_plan();
 INSERT INTO identity.users (id, email) VALUES 
 ('00000000-0000-0000-0000-000000000001', 'manifest1@example.com'),
 ('00000000-0000-0000-0000-000000000002', 'manifest2@example.com');
-INSERT INTO directory.organizations (id, name, owner_id) VALUES ('00000000-0000-0000-0000-000000000010', 'Org 1', '00000000-0000-0000-0000-000000000001');
+INSERT INTO identity.organizations (id, name) VALUES ('00000000-0000-0000-0000-000000000010', 'Org 1');
 INSERT INTO jurisdictions.jurisdictions (canton_code, name, tax_rate_bps, courtesy_deduct_bps, settlement_rule) VALUES ('TEST', 'T', 0, '{}', 'next_business_day');
-INSERT INTO events.events (id, org_id, canton_code, name, venue_name, starts_at, ends_at) VALUES 
-('00000000-0000-0000-0000-000000000020', '00000000-0000-0000-0000-000000000010', 'TEST', 'Ev1', 'V', now(), now() + interval '1 day'),
+INSERT INTO events.events (id, org_id, canton_code, name, venue_name, starts_at, ends_at, age_rating) VALUES ('00000000-0000-0000-0000-000000000020', '00000000-0000-0000-0000-000000000010', 'TEST', 'Ev1', 'V', now(), 'all_ages', now() + interval '1 day'),
 ('00000000-0000-0000-0000-000000000021', '00000000-0000-0000-0000-000000000010', 'TEST', 'Ev2', 'V', now(), now() + interval '1 day');
 
 INSERT INTO catalog.ticket_types (id, event_id, name, price_crc, audience, zone) VALUES 
@@ -46,24 +45,24 @@ INSERT INTO staff.device_sessions (token_hash, device_id, event_id, user_id, rol
 
 -- Solo un dispositivo activo del staff que actúa obtiene datos
 SET SESSION AUTHORIZATION passripple_api;
-SELECT app.set_actor('00000000-0000-0000-0000-000000000002', 'staff');
+SELECT identity.set_actor('00000000-0000-0000-0000-000000000002', 'staff');
 -- device belongs to user 1, so user 2 cannot read
 PERFORM set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000002","dev":"\x0200000000000000000000000000000000000000000000000000000000000000"}', true);
 SELECT throws_ok($$SELECT manifest.gate_event()$$, '42501', NULL, 'another staff device throws');
 
-SELECT app.set_actor('00000000-0000-0000-0000-000000000001', 'staff');
+SELECT identity.set_actor('00000000-0000-0000-0000-000000000001', 'staff');
 PERFORM set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000001","dev":"\x0300000000000000000000000000000000000000000000000000000000000000"}', true);
 SELECT throws_ok($$SELECT manifest.gate_event()$$, '42501', NULL, 'revoked device throws');
 
 PERFORM set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000001","dev":"\x0400000000000000000000000000000000000000000000000000000000000000"}', true);
 SELECT throws_ok($$SELECT manifest.gate_event()$$, '42501', NULL, 'expired device throws');
 
-SELECT app.set_actor('00000000-0000-0000-0000-000000000001', 'organizer');
+SELECT identity.set_actor('00000000-0000-0000-0000-000000000001', 'organizer');
 PERFORM set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000001","dev":"\x0200000000000000000000000000000000000000000000000000000000000000"}', true);
 SELECT throws_ok($$SELECT manifest.gate_event()$$, '42501', NULL, 'organizer throws');
 
 -- active device works
-SELECT app.set_actor('00000000-0000-0000-0000-000000000001', 'staff');
+SELECT identity.set_actor('00000000-0000-0000-0000-000000000001', 'staff');
 PERFORM set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000001","dev":"\x0200000000000000000000000000000000000000000000000000000000000000"}', true);
 
 SELECT isnt((SELECT event_id FROM manifest.gate_event()), NULL, 'active device can read gate_event');
@@ -148,7 +147,7 @@ SELECT pg_temp.cleanup_cur();
 SELECT dblink_exec('a', 'BEGIN');
 SELECT dblink_exec('b', 'BEGIN');
 SELECT dblink_exec('b', 'SET SESSION AUTHORIZATION passripple_api');
-SELECT dblink_exec('b', $$SELECT app.set_actor('00000000-0000-0000-0000-000000000001', 'staff')$$);
+SELECT dblink_exec('b', $$SELECT identity.set_actor('00000000-0000-0000-0000-000000000001', 'staff')$$);
 SELECT dblink_exec('b', $$SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000001","dev":"\x0200000000000000000000000000000000000000000000000000000000000000"}', true)$$);
 
 -- A inserts a ticket
@@ -190,3 +189,8 @@ SELECT results_eq(
 
 SELECT * FROM finish();
 ROLLBACK;
+
+
+
+
+

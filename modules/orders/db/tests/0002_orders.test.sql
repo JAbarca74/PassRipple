@@ -108,7 +108,7 @@ SELECT is(
 );
 
 -- organizer tests
-SELECT identity.set_actor('00000000-0000-4000-8000-00000000000d', 'organizer', '00000000-0000-4000-8000-00000000000b');
+SELECT identity.set_actor('00000000-0000-4000-8000-00000000000d', 'organizer');
 SELECT is(
   (SELECT count(*)::int FROM orders.orders WHERE id = '00000000-0000-4000-8000-000000000040'),
   0,
@@ -135,3 +135,8 @@ RESET ROLE;
 
 SELECT * FROM finish(true);
 ROLLBACK;
+
+
+
+
+

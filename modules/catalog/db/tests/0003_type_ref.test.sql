@@ -115,3 +115,8 @@ ALTER TABLE catalog.ticket_types ENABLE TRIGGER ticket_types_assign_ref;
 
 SELECT * FROM finish(true);
 ROLLBACK;
+
+
+
+
+
