@@ -1,6 +1,6 @@
 import fc from "fast-check";
-import { describe, expect, test, vi } from "vitest";
-import { createOutbox, DEFAULT_CONFIG } from "./outbox.ts";
+import { beforeEach, describe, expect, test, vi } from "vitest";
+import { createOutbox } from "./outbox.ts";
 import type {
   Clock,
   ItemResult,
@@ -16,7 +16,7 @@ class FakeStore implements OutboxStore<string, unknown> {
   entries: OutboxEntry<string>[] = [];
   seq = 1;
 
-  async append(operation: NewOperation<string>, tx?: unknown): Promise<OutboxEntry<string>> {
+  async append(operation: NewOperation<string>, _tx?: unknown): Promise<OutboxEntry<string>> {
     const entry: OutboxEntry<string> = {
       ...operation,
       deviceSeq: this.seq++,
@@ -37,15 +37,21 @@ class FakeStore implements OutboxStore<string, unknown> {
 
   async markSending(ids: readonly string[]): Promise<void> {
     for (const id of ids) {
-      const e = this.entries.find((x) => x.id === id);
-      if (e) e.state = "sending";
+      const index = this.entries.findIndex((x) => x.id === id);
+      if (index >= 0) {
+        const current = this.entries[index];
+        if (current) this.entries[index] = { ...current, state: "sending" };
+      }
     }
   }
 
   async markAcked(ids: readonly string[]): Promise<void> {
     for (const id of ids) {
-      const e = this.entries.find((x) => x.id === id);
-      if (e) e.state = "acked";
+      const index = this.entries.findIndex((x) => x.id === id);
+      if (index >= 0) {
+        const current = this.entries[index];
+        if (current) this.entries[index] = { ...current, state: "acked" };
+      }
     }
   }
 
@@ -53,10 +59,12 @@ class FakeStore implements OutboxStore<string, unknown> {
     for (const id of ids) {
       const index = this.entries.findIndex((x) => x.id === id);
       if (index >= 0) {
+        const current = this.entries[index];
+        if (!current) throw new Error("Entry not found despite valid index");
         this.entries[index] = {
-          ...this.entries[index]!,
+          ...current,
           state: "pending",
-          attempts: this.entries[index]!.attempts + 1,
+          attempts: current.attempts + 1,
           lastError: error,
         };
       }
@@ -66,8 +74,10 @@ class FakeStore implements OutboxStore<string, unknown> {
   async markQuarantined(id: string, error: string): Promise<void> {
     const index = this.entries.findIndex((x) => x.id === id);
     if (index >= 0) {
+      const current = this.entries[index];
+      if (!current) throw new Error("Entry not found despite valid index");
       this.entries[index] = {
-        ...this.entries[index]!,
+        ...current,
         state: "quarantined",
         lastError: error,
       };
@@ -76,9 +86,10 @@ class FakeStore implements OutboxStore<string, unknown> {
 
   async resetSending(): Promise<number> {
     let count = 0;
-    for (const e of this.entries) {
-      if (e.state === "sending") {
-        e.state = "pending";
+    for (let i = 0; i < this.entries.length; i++) {
+      const e = this.entries[i];
+      if (e && e.state === "sending") {
+        this.entries[i] = { ...e, state: "pending" };
         count++;
       }
     }
@@ -102,15 +113,17 @@ class FakeTransport implements Transport<string> {
     this.calls.push({ batch, timeoutMs: options.timeoutMs });
     if (this.mode === "error") throw new Error("network error");
     if (this.mode === "none") return [];
-    
-    return batch.map((e, i): ItemResult => {
-      if (this.mode === "rejected") return { id: e.id, status: "rejected", error: "bad" };
-      if (this.mode === "partial") {
-        // even elements applied, odd elements no result
-        if (i % 2 !== 0) return null as any;
-      }
-      return { id: e.id, status: i % 2 === 0 ? "applied" : "duplicate" };
-    }).filter(Boolean);
+
+    return batch
+      .map((e, i): ItemResult => {
+        if (this.mode === "rejected") return { id: e.id, status: "rejected", error: "bad" };
+        if (this.mode === "partial") {
+          if (e.id === "2") return null as any;
+          return { id: e.id, status: "applied" };
+        }
+        return { id: e.id, status: i % 2 === 0 ? "applied" : "duplicate" };
+      })
+      .filter(Boolean);
   }
 }
 
@@ -159,27 +172,38 @@ describe("outbox", () => {
     await outbox.enqueue(makeOp("1"));
     await outbox.enqueue(makeOp("2"));
     await outbox.enqueue(makeOp("3"));
-    
+
     transport.mode = "success";
     const report = await outbox.drain();
     expect(report).toEqual({ kind: "drained", sent: 3, acked: 3, quarantined: 0 });
-    
+
     // Check batches
     expect(transport.calls.length).toBe(2);
-    expect(transport.calls[0].batch.map(e => e.id)).toEqual(["1", "2"]);
-    expect(transport.calls[1].batch.map(e => e.id)).toEqual(["3"]);
+    const call0 = transport.calls[0];
+    const call1 = transport.calls[1];
+    if (!call0 || !call1) throw new Error("calls missing");
+    expect(call0.batch.map((e) => e.id)).toEqual(["1", "2"]);
+    expect(call1.batch.map((e) => e.id)).toEqual(["3"]);
 
     const counts = await store.counts();
     expect(counts.pending).toBe(0);
-    expect(store.entries.filter(e => e.state === "acked").length).toBe(3);
+    expect(store.entries.filter((e) => e.state === "acked").length).toBe(3);
 
     // Rejected becomes quarantined
     transport.mode = "rejected";
     await outbox.enqueue(makeOp("4"));
     await outbox.drain();
-    const entry4 = store.entries.find(e => e.id === "4");
+    const entry4 = store.entries.find((e) => e.id === "4");
     expect(entry4?.state).toBe("quarantined");
     expect(entry4?.lastError).toBe("bad");
+
+    // Rejected without error defaults to "rejected by the server"
+    transport.send = async () => [{ id: "5", status: "rejected" }];
+    await outbox.enqueue(makeOp("5"));
+    await outbox.drain();
+    const entry5 = store.entries.find(e => e.id === "5");
+    expect(entry5?.state).toBe("quarantined");
+    expect(entry5?.lastError).toBe("rejected by the server");
   });
 
   test("partial results put missing back to pending, empty usable counts as failed", async () => {
@@ -187,20 +211,22 @@ describe("outbox", () => {
     await outbox.enqueue(makeOp("1"));
     await outbox.enqueue(makeOp("2"));
     transport.mode = "partial";
-    await outbox.drain();
-    
+    const report1 = await outbox.drain();
+
     // 1 applied, 2 missing
-    const e1 = store.entries.find(e => e.id === "1");
-    const e2 = store.entries.find(e => e.id === "2");
+    const e1 = store.entries.find((e) => e.id === "1");
+    const e2 = store.entries.find((e) => e.id === "2");
     expect(e1?.state).toBe("acked");
     expect(e2?.state).toBe("pending");
-    expect(e2?.attempts).toBe(1);
+    expect(e2?.attempts).toBe(2);
+    expect(report1.kind).toBe("failed");
 
     // empty results = failed
     transport.mode = "none";
+    clock.currentTime += 120_000;
     const report2 = await outbox.drain();
     expect(report2.kind).toBe("failed");
-    expect(store.entries.find(e => e.id === "2")?.state).toBe("pending");
+    expect(store.entries.find((e) => e.id === "2")?.state).toBe("pending");
   });
 
   test("transport exception", async () => {
@@ -208,21 +234,39 @@ describe("outbox", () => {
     await outbox.enqueue(makeOp("1"));
     transport.mode = "error";
     const report = await outbox.drain();
-    
+
     expect(report.kind).toBe("failed");
     if (report.kind === "failed") {
       expect(report.error).toBe("network error");
     }
-    const e1 = store.entries.find(e => e.id === "1")!;
+    const e1 = store.entries.find((e) => e.id === "1");
+    if (!e1) throw new Error("e1 not found");
     expect(e1.state).toBe("pending");
     expect(e1.attempts).toBe(1);
-    expect(transport.calls[0].timeoutMs).toBe(4000);
+    const call0 = transport.calls[0];
+    if (!call0) throw new Error("call missing");
+    expect(call0.timeoutMs).toBe(4000);
+  });
+
+  test("transport exception (string)", async () => {
+    const outbox = createOutbox({ store, transport, clock, random, config: { timeoutMs: 4000 } });
+    await outbox.enqueue(makeOp("1"));
+    transport.send = () => { throw "network string"; };
+    const report = await outbox.drain();
+    expect(report.kind).toBe("failed");
+    if (report.kind === "failed") expect(report.error).toBe("network string");
   });
 
   test("backoff logic", async () => {
     const base = 2000;
     const max = 60000;
-    const outbox = createOutbox({ store, transport, clock, random, config: { backoffBaseMs: base, backoffMaxMs: max } });
+    const outbox = createOutbox({
+      store,
+      transport,
+      clock,
+      random,
+      config: { backoffBaseMs: base, backoffMaxMs: max },
+    });
     await outbox.enqueue(makeOp("1"));
     transport.mode = "error";
 
@@ -246,7 +290,13 @@ describe("outbox", () => {
   });
 
   test("circuit breaker", async () => {
-    const outbox = createOutbox({ store, transport, clock, random, config: { breakerThreshold: 3, breakerCooldownMs: 60000 } });
+    const outbox = createOutbox({
+      store,
+      transport,
+      clock,
+      random,
+      config: { breakerThreshold: 3, breakerCooldownMs: 60000 },
+    });
     await outbox.enqueue(makeOp("1"));
     await outbox.enqueue(makeOp("2"));
     transport.mode = "error";
@@ -256,7 +306,7 @@ describe("outbox", () => {
     await outbox.drain(); // fail 2
     clock.currentTime += 10000;
     await outbox.drain(); // fail 3 -> opens circuit
-    
+
     const statusOpen = await outbox.status();
     expect(statusOpen.circuit).toBe("open");
     expect(statusOpen.nextAttemptAt).toBe(clock.currentTime + 60000);
@@ -266,21 +316,34 @@ describe("outbox", () => {
     transport.mode = "success";
     const rep = await outbox.drain();
     expect(rep.kind).toBe("drained");
-    
+
     // it sent exactly 1 first, then the rest
-    expect(transport.calls.length).toBe(4); // 3 fails + 2 successes (probe of 1, then the rest)
-    expect(transport.calls[3].batch.length).toBe(1);
-    
+    expect(transport.calls.length).toBe(5); // 3 fails + 2 successes (probe of 1, then the rest)
+    const call3 = transport.calls[3];
+    const call4 = transport.calls[4];
+    if (!call3 || !call4) throw new Error("calls missing");
+    expect(call3.batch.length).toBe(1);
+    expect(call4.batch.length).toBe(1);
+    const b0 = call4.batch[0];
+    if (!b0) throw new Error("batch[0] missing");
+    expect(b0.id).toBe("2");
+
     // back to closed
     expect((await outbox.status()).circuit).toBe("closed");
   });
 
   test("circuit breaker goes back to open if probe fails", async () => {
-    const outbox = createOutbox({ store, transport, clock, random, config: { breakerThreshold: 1, breakerCooldownMs: 60000 } });
+    const outbox = createOutbox({
+      store,
+      transport,
+      clock,
+      random,
+      config: { breakerThreshold: 1, breakerCooldownMs: 60000 },
+    });
     await outbox.enqueue(makeOp("1"));
     transport.mode = "error";
     await outbox.drain(); // open
-    
+
     clock.currentTime += 60000;
     await outbox.drain(); // half_open probe fails -> open
     expect((await outbox.status()).circuit).toBe("open");
@@ -300,7 +363,7 @@ describe("outbox", () => {
   test("recover resets sending to pending", async () => {
     const outbox = createOutbox({ store, transport, clock, random });
     const e = await outbox.enqueue(makeOp("1"));
-    e.state = "sending";
+    await store.markSending([e.id]);
     await outbox.recover();
     const st = await outbox.status();
     expect(st.pending).toBe(1);
@@ -312,10 +375,10 @@ describe("outbox", () => {
     await outbox.enqueue(makeOp("1"));
     transport.mode = "error";
     await outbox.drain(); // sets nextAttemptAt
-    
+
     const st1 = await outbox.status();
     expect(st1.nextAttemptAt).toBeGreaterThan(clock.currentTime);
-    
+
     clock.currentTime += 10000;
     const st2 = await outbox.status();
     expect(st2.nextAttemptAt).toBeNull(); // past
@@ -326,78 +389,117 @@ describe("outbox", () => {
     expect(() => createOutbox({ ...valid, config: { batchSize: 0 } })).toThrow(RangeError);
     expect(() => createOutbox({ ...valid, config: { batchSize: 101 } })).toThrow(RangeError);
     expect(() => createOutbox({ ...valid, config: { timeoutMs: 1.5 } })).toThrow(RangeError);
-    expect(() => createOutbox({ ...valid, config: { backoffMaxMs: 1000, backoffBaseMs: 2000 } })).toThrow(RangeError);
+    expect(() =>
+      createOutbox({ ...valid, config: { backoffMaxMs: 1000, backoffBaseMs: 2000 } }),
+    ).toThrow(RangeError);
   });
 });
 
 describe("outbox properties (fast-check model based)", () => {
   // We model the operations.
   // We'll define fast-check commands.
-  
+
   interface Model {
     clock: number;
     ops: Map<string, { seq: number; state: OutboxState }>;
     seq: number;
   }
-  
+
   class EnqueueCommand implements fc.Command<Model, any> {
-    constructor(readonly id: string) {}
-    check() { return true; }
+    id: string;
+    constructor(id: string) {
+      this.id = id;
+    }
+    check() {
+      return true;
+    }
     async run(m: Model, r: any) {
-      await r.outbox.enqueue({ id: this.id, opType: "test", payload: "p", createdAt: m.clock, clockOffsetMs: 0 });
+      await r.outbox.enqueue({
+        id: this.id,
+        opType: "test",
+        payload: "p",
+        createdAt: m.clock,
+        clockOffsetMs: 0,
+      });
       m.ops.set(this.id, { seq: m.seq++, state: "pending" });
     }
-    toString() { return `enqueue(${this.id})`; }
+    toString() {
+      return `enqueue(${this.id})`;
+    }
   }
-  
+
   class DrainCommand implements fc.Command<Model, any> {
-    constructor(readonly transportMode: "success" | "error" | "partial" | "rejected") {}
-    check() { return true; }
+    transportMode: "success" | "error" | "partial" | "rejected";
+    constructor(transportMode: "success" | "error" | "partial" | "rejected") {
+      this.transportMode = transportMode;
+    }
+    check() {
+      return true;
+    }
     async run(m: Model, r: any) {
       r.transport.mode = this.transportMode;
       const stBefore = await r.outbox.status();
       await r.outbox.drain();
-      const stAfter = await r.outbox.status();
-      
+      const _stAfter = await r.outbox.status();
+
       // Update model based on what should have happened
-      if (this.transportMode === "success" && stBefore.circuit !== "open" && (stBefore.nextAttemptAt === null || stBefore.nextAttemptAt <= m.clock)) {
-        for (const [id, op] of m.ops.entries()) {
+      if (
+        this.transportMode === "success" &&
+        stBefore.circuit !== "open" &&
+        (stBefore.nextAttemptAt === null || stBefore.nextAttemptAt <= m.clock)
+      ) {
+        for (const [_id, op] of m.ops.entries()) {
           if (op.state === "pending") op.state = "acked";
         }
       }
-      // Accurate modeling of all transport modes is hard, we just update what we can 
+      // Accurate modeling of all transport modes is hard, we just update what we can
       // and rely on invariants checked at the end or during run.
     }
-    toString() { return `drain(${this.transportMode})`; }
+    toString() {
+      return `drain(${this.transportMode})`;
+    }
   }
 
   class AdvanceClockCommand implements fc.Command<Model, any> {
-    constructor(readonly ms: number) {}
-    check() { return true; }
+    ms: number;
+    constructor(ms: number) {
+      this.ms = ms;
+    }
+    check() {
+      return true;
+    }
     async run(m: Model, r: any) {
       m.clock += this.ms;
       r.clock.currentTime = m.clock;
     }
-    toString() { return `advanceClock(${this.ms})`; }
+    toString() {
+      return `advanceClock(${this.ms})`;
+    }
   }
 
   class RecoverCommand implements fc.Command<Model, any> {
-    check() { return true; }
+    check() {
+      return true;
+    }
     async run(m: Model, r: any) {
       await r.outbox.recover();
       for (const op of m.ops.values()) {
         if (op.state === "sending") op.state = "pending";
       }
     }
-    toString() { return `recover`; }
+    toString() {
+      return `recover`;
+    }
   }
 
   test("invariants", async () => {
     const allCommands = [
-      fc.uuid().map(id => new EnqueueCommand(id)),
-      fc.constantFrom("success", "error", "partial", "rejected").map(m => new DrainCommand(m as any)),
-      fc.integer({ min: 1000, max: 100000 }).map(ms => new AdvanceClockCommand(ms)),
-      fc.constant(new RecoverCommand())
+      fc.uuid().map((id) => new EnqueueCommand(id)),
+      fc
+        .constantFrom("success", "error", "partial", "rejected")
+        .map((m) => new DrainCommand(m as any)),
+      fc.integer({ min: 1000, max: 100000 }).map((ms) => new AdvanceClockCommand(ms)),
+      fc.constant(new RecoverCommand()),
     ];
 
     await fc.assert(
@@ -407,28 +509,41 @@ describe("outbox properties (fast-check model based)", () => {
           const transport = new FakeTransport();
           const clock = new FakeClock();
           const random = new FakeRandom();
-          const outbox = createOutbox({ store, transport, clock, random, config: { batchSize: 5 } });
-          return { model: { clock: 1000, ops: new Map(), seq: 1 }, real: { store, transport, clock, random, outbox } };
+          const outbox = createOutbox({
+            store,
+            transport,
+            clock,
+            random,
+            config: { batchSize: 5 },
+          });
+          return {
+            model: { clock: 1000, ops: new Map(), seq: 1 },
+            real: { store, transport, clock, random, outbox },
+          };
         };
 
         const { model, real } = setup();
         await fc.asyncModelRun(setup, cmds);
 
         // I6 Invariants
-        for (const [id, mOp] of model.ops.entries()) {
-          const rOp = real.store.entries.find(e => e.id === id);
+        for (const [id, _mOp] of model.ops.entries()) {
+          const rOp = real.store.entries.find((e) => e.id === id);
           // no operation disappears
           expect(rOp).toBeDefined();
+          if (!rOp) throw new Error("rOp not found");
           // ends acked, quarantined or pending
-          expect(["acked", "quarantined", "pending"].includes(rOp!.state)).toBe(true);
+          expect(["acked", "quarantined", "pending"].includes(rOp.state)).toBe(true);
           // no duplicates
-          expect(real.store.entries.filter(e => e.id === id).length).toBe(1);
+          expect(real.store.entries.filter((e) => e.id === id).length).toBe(1);
         }
 
         // no out of order pending
-        const pendings = real.store.entries.filter(e => e.state === "pending");
+        const pendings = real.store.entries.filter((e) => e.state === "pending");
         for (let i = 1; i < pendings.length; i++) {
-          expect(pendings[i].deviceSeq).toBeGreaterThan(pendings[i-1].deviceSeq);
+          const prev = pendings[i - 1];
+          const curr = pendings[i];
+          if (!prev || !curr) throw new Error("pending missing");
+          expect(curr.deviceSeq).toBeGreaterThan(prev.deviceSeq);
         }
 
         // no batch exceeds batchSize
@@ -446,7 +561,7 @@ describe("outbox properties (fast-check model based)", () => {
           }
         }
       }),
-      { numRuns: 100 }
+      { numRuns: 100 },
     );
   });
 });
