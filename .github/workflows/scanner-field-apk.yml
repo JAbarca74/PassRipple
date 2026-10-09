@@ -26,7 +26,7 @@ jobs:
     timeout-minutes: 60
     env:
       CI: "true"
-      EXPO_PUBLIC_API_URL: ${{ inputs.api_url || 'http://172.20.10.2:8787' }}
+      EXPO_PUBLIC_API_URL: ${{ inputs.api_url || 'http://192.168.8.108:8787' }}
       SCANNER_FIELD_BUILD: "1"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
