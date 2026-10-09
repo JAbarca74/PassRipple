@@ -23,7 +23,7 @@ permissions:
 jobs:
   apk:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     env:
       CI: "true"
       EXPO_PUBLIC_API_URL: ${{ inputs.api_url || 'http://172.20.10.2:8787' }}
@@ -51,12 +51,14 @@ jobs:
         working-directory: apps/scanner/android
         run: grep -q 'usesCleartextTraffic="true"' app/src/main/AndroidManifest.xml
 
+      # arm64-v8a only: every phone sold in years uses it, and the four ABIs together do not
+      # fit in the job's time (the first run was cancelled at 45 minutes compiling C++).
       - name: Build the release APK
         working-directory: apps/scanner/android
         run: |
           export JAVA_HOME="$JAVA_HOME_17_X64"
           set -o pipefail
-          ./gradlew assembleRelease --no-daemon 2>&1 | tee gradle.log | grep -E "OP-SQLITE|BUILD|FAILURE|error:"
+          ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a 2>&1 | tee gradle.log | grep -E "OP-SQLITE|BUILD|FAILURE|error:"
           grep -q "using sqlcipher" gradle.log
           test -f app/build/outputs/apk/release/app-release.apk
 
