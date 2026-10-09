@@ -2,7 +2,7 @@
 # by hand from the Actions tab and give it the address of the API the phone will reach, for
 # example http://192.168.1.50:8787 (the PC's address on the Wi-Fi). It allows plain HTTP, so it
 # is for testing only and is never a build that ships (see apps/scanner/app.config.ts).
-# It also logs timings with a [PERF] prefix (apps/scanner/src/perf.ts).
+# It also logs timings with a [PERF] prefix and shows them over the camera (apps/scanner/src/perf.ts).
 name: scanner-field-apk
 
 # GitHub only lets you run a workflow by hand once it is on the default branch. Until Phase 2

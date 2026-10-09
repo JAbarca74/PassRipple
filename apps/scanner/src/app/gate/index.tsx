@@ -11,7 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useGate, useReadySession } from "../../gate-context.tsx";
 import type { ScanOutcome } from "../../lib/gate-session.ts";
 import { REJECTION_TEXT } from "../../lib/verify.ts";
-import { perfLog, perfNow } from "../../perf.ts";
+import { perfLog, perfNow, perfSummary } from "../../perf.ts";
 import { ago, Body, Button, Centered, colors, Title } from "../../ui/ui.tsx";
 
 const VERDICT_MS = 2_500;
@@ -45,6 +45,7 @@ export default function Scan() {
   const [e2eText, setE2eText] = useState("");
   const busy = useRef(false);
   const cooldownUntil = useRef(0);
+  const [perfText, setPerfText] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(
@@ -57,6 +58,7 @@ export default function Scan() {
   const handle = useCallback(
     async (text: string) => {
       perfLog("camera_event", perfNow());
+      if (perfSummary() !== null) setPerfText(perfSummary());
       if (session === null || busy.current || performance.now() < cooldownUntil.current) return;
       busy.current = true;
       const scanStart = perfNow();
@@ -111,6 +113,21 @@ export default function Scan() {
         barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
         onBarcodeScanned={status?.over ? undefined : (result) => void handle(result.data)}
       />
+      {perfText !== null && (
+        <Text
+          style={{
+            position: "absolute",
+            top: 40,
+            left: 8,
+            color: "#0f0",
+            backgroundColor: "#000a",
+            padding: 4,
+            fontSize: 11,
+          }}
+        >
+          {perfText}
+        </Text>
+      )}
       <SafeAreaView style={styles.overlay} pointerEvents="box-none">
         <View style={styles.top}>
           <Text style={styles.event} numberOfLines={1}>
