@@ -3,24 +3,16 @@ import { sha256 } from "@noble/hashes/sha2.js";
 import { concatBytes, utf8ToBytes } from "@noble/hashes/utils.js";
 import {
   decodeBase45,
-  decodeQrPayload,
   encodeBase45,
   encodeCertificateBody,
   encodeQr,
-  encodeQrPayload,
   encodeTimeWindow,
 } from "@passripple/contracts";
 import fc from "fast-check";
 import { beforeAll, describe, expect, test } from "vitest";
 import { PRESENTATION_TAG } from "./bytes.ts";
 import { certificateMessage, eventRef, signCertificate } from "./certificate.ts";
-import {
-  presentCredential,
-  timeWindow,
-  verifyCredential,
-  WINDOW_MS,
-  WINDOW_TOLERANCE,
-} from "./credential.ts";
+import { presentCredential, timeWindow, verifyCredential, WINDOW_MS } from "./credential.ts";
 import { humanCode } from "./human-code.ts";
 import { createServerSigner, createSigner } from "./testing.ts";
 
@@ -54,7 +46,7 @@ describe("I7: Attacker cannot forge credentials", () => {
     const buildManifest = async (eventId: string, ticketCount: number) => {
       const tickets = [];
       for (let i = 0; i < ticketCount; i++) {
-        const ticketId = `00000000-0000-4000-8000-${eventId.split("-")[0]!.substring(0, 8)}${i.toString(16).padStart(4, "0")}`;
+        const ticketId = `00000000-0000-4000-8000-${eventId.split("-")[0]?.substring(0, 8)}${i.toString(16).padStart(4, "0")}`;
         const buyer = buyers[i % buyers.length]!;
 
         // Use crypto.subtle in tests? The requirements say:
@@ -87,7 +79,7 @@ describe("I7: Attacker cannot forge credentials", () => {
           entryMode: certInput.entryMode,
           status: "bound",
           redeemed: false,
-          holderPubkey: buyer!.publicKey,
+          holderPubkey: buyer?.publicKey,
           keyVersion: 1,
           codeHuman: code,
         });
@@ -157,7 +149,7 @@ describe("I7: Attacker cannot forge credentials", () => {
   });
 
   test("b) reusing server_sig as holder_sig", () => {
-    const ticketId = manifests.get(eventIdA)!.tickets[0].ticketId;
+    const ticketId = manifests.get(eventIdA)?.tickets[0].ticketId;
     const qr = credentials.get(ticketId)!;
     const bytes = decodeBase45(qr)!;
 
@@ -169,7 +161,7 @@ describe("I7: Attacker cannot forge credentials", () => {
   });
 
   test("c) changing time_window of captured QR", () => {
-    const ticketId = manifests.get(eventIdA)!.tickets[0].ticketId;
+    const ticketId = manifests.get(eventIdA)?.tickets[0].ticketId;
     const qr = credentials.get(ticketId)!;
     const originalBytes = decodeBase45(qr)!;
     const view = new DataView(
@@ -195,7 +187,7 @@ describe("I7: Attacker cannot forge credentials", () => {
   }, 30000);
 
   test("d) changing holder_pubkey to attacker's key", async () => {
-    const ticketId = manifests.get(eventIdA)!.tickets[0].ticketId;
+    const ticketId = manifests.get(eventIdA)?.tickets[0].ticketId;
     const qr = credentials.get(ticketId)!;
     const bytes = decodeBase45(qr)!;
 
@@ -215,7 +207,7 @@ describe("I7: Attacker cannot forge credentials", () => {
   });
 
   test("e) altering key_version, ticket_id, event_ref, type_ref, or flags", () => {
-    const ticketId = manifests.get(eventIdA)!.tickets[0].ticketId;
+    const ticketId = manifests.get(eventIdA)?.tickets[0].ticketId;
     const qr = credentials.get(ticketId)!;
     const bytes = decodeBase45(qr)!;
 
@@ -261,7 +253,7 @@ describe("I7: Attacker cannot forge credentials", () => {
   });
 
   test("g) presenting a credential of event A in event B", () => {
-    const ticketIdA = manifests.get(eventIdA)!.tickets[0].ticketId;
+    const ticketIdA = manifests.get(eventIdA)?.tickets[0].ticketId;
     const qrA = credentials.get(ticketIdA)!;
 
     const res = verifyCredential(qrA, getCtx(eventIdB), nowMs);
@@ -276,7 +268,7 @@ describe("I7: Attacker cannot forge credentials", () => {
       entryMode: "single_use" as const,
       ageRating: "all" as const,
       named: false,
-      holderPubkey: buyers[0]!.publicKey,
+      holderPubkey: buyers[0]?.publicKey,
       keyVersion: 1,
     };
 
@@ -309,7 +301,7 @@ describe("I7: Attacker cannot forge credentials", () => {
   });
 
   test("i) malleable signatures (S+L) and non-canonical encodings", async () => {
-    const ticketId = manifests.get(eventIdA)!.tickets[0].ticketId;
+    const ticketId = manifests.get(eventIdA)?.tickets[0].ticketId;
     const qr = credentials.get(ticketId)!;
     const bytes = decodeBase45(qr)!;
 
@@ -331,7 +323,7 @@ describe("I7: Attacker cannot forge credentials", () => {
   });
 
   test("j) fast-check: random mutations of bytes and characters", () => {
-    const ticketId = manifests.get(eventIdA)!.tickets[0].ticketId;
+    const ticketId = manifests.get(eventIdA)?.tickets[0].ticketId;
     const qr = credentials.get(ticketId)!;
     const bytes = decodeBase45(qr)!;
     const alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:";
@@ -367,7 +359,7 @@ describe("I7: Attacker cannot forge credentials", () => {
     test("accepts the same exact QR repeated within ±2 windows (Gate checks manifest for single-use / I1)", () => {
       // Reason: Crypto validates the keys and signature, but the gate prevents replay attacks
       // by marking the ticket as 'redeemed' in the manifest.
-      const ticketId = manifests.get(eventIdA)!.tickets[0].ticketId;
+      const ticketId = manifests.get(eventIdA)?.tickets[0].ticketId;
       const qr = credentials.get(ticketId)!;
 
       const res1 = verifyCredential(qr, getCtx(), nowMs);
@@ -382,7 +374,7 @@ describe("I7: Attacker cannot forge credentials", () => {
       // AT THE TIME. However, the ticket was since bound to a new key. The Gate will reject it
       // when it compares the keyVersion returned by crypto with the one in the Manifest.
       const buyerOld = buyers[0];
-      const certOld = certificates.get(manifests.get(eventIdA)!.tickets[0].ticketId);
+      const certOld = certificates.get(manifests.get(eventIdA)?.tickets[0].ticketId);
       const qrOld = await presentCredential(certOld, buyerOld!, nowMs);
 
       // Now the ticket gets rebound to buyer[1] (key_version 2)

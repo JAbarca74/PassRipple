@@ -1,7 +1,6 @@
 import { ed25519 } from "@noble/curves/ed25519.js";
 import { hexToBytes, utf8ToBytes } from "@noble/hashes/utils.js";
 import { describe, expect, test } from "vitest";
-import { bytesEqual } from "./bytes.ts";
 import { signCertificate } from "./certificate.ts";
 import { presentCredential, verifyCredential } from "./credential.ts";
 import type { Signer } from "./signer.ts";

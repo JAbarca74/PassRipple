@@ -1,17 +1,12 @@
-import { ed25519 } from "@noble/curves/ed25519.js";
-import { concatBytes } from "@noble/hashes/utils.js";
 import {
   decodeBase45,
   encodeBase45,
   encodeCertificateBody,
   encodeQr,
-  encodeQrPayload,
-  encodeTimeWindow,
   MAX_TIME_WINDOW,
 } from "@passripple/contracts";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { PRESENTATION_TAG } from "./bytes.ts";
 import { certificateMessage, signCertificate } from "./certificate.ts";
 import {
   presentCredential,
@@ -189,7 +184,7 @@ describe("verifyCredential", () => {
     const serverSig = await server.sign(certificateMessage(body));
     const cert = { fields: certFields, serverSig };
 
-    const weakHolder = { publicKey: smallOrder, sign: async () => new Uint8Array(64) }; // fake sig because verify doesn't even reach there
+    const _weakHolder = { publicKey: smallOrder, sign: async () => new Uint8Array(64) }; // fake sig because verify doesn't even reach there
     // also bypass presentCredential which rejects bad sigs
     // Just build the payload manually
     const timeWindowVal = timeWindow(0);

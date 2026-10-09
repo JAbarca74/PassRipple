@@ -1,4 +1,4 @@
-import { decodeCertificate, encodeCertificate, encodeCertificateBody } from "@passripple/contracts";
+import { decodeCertificate, encodeCertificate } from "@passripple/contracts";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { eventRef, signCertificate, verifyCertificate } from "./certificate.ts";
