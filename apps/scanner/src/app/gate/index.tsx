@@ -11,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useGate, useReadySession } from "../../gate-context.tsx";
 import type { ScanOutcome } from "../../lib/gate-session.ts";
 import { REJECTION_TEXT } from "../../lib/verify.ts";
+import { perfLog, perfNow } from "../../perf.ts";
 import { ago, Body, Button, Centered, colors, Title } from "../../ui/ui.tsx";
 
 const VERDICT_MS = 2_500;
@@ -51,10 +52,13 @@ export default function Scan() {
 
   const handle = useCallback(
     async (text: string) => {
+      perfLog("camera_event", perfNow());
       if (session === null || busy.current) return;
       busy.current = true;
+      const scanStart = perfNow();
       try {
         const result = await session.scanQr(text);
+        perfLog("scan_total_ms", perfNow() - scanStart);
         if (result === null) return;
         setOutcome(result);
         void Haptics.notificationAsync(

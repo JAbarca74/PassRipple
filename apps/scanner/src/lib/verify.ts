@@ -11,6 +11,7 @@ import {
   type VerifiedCredential,
   verifyCredential,
 } from "@passripple/crypto";
+import { perfLog, perfNow } from "../perf.ts";
 import type { StoredTicket } from "./manifest-store.ts";
 
 /** Why the gate refused a ticket, after the cryptography or in the manifest. */
@@ -80,11 +81,13 @@ export async function decideQr(
   lookups: GateLookups,
   nowMs: number,
 ): Promise<GateDecision> {
+  const verifyStart = perfNow();
   const verdict = verifyCredential(
     qr.trim(),
     { serverKeys: lookups.serverKeys, eventId: lookups.eventId },
     nowMs,
   );
+  perfLog("verify_ms", perfNow() - verifyStart);
   if (!verdict.ok)
     return { kind: "reject", reason: verdict.reason, ticketId: null, typeName: null };
   const { credential } = verdict;
