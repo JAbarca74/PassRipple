@@ -79,7 +79,7 @@ describe("base64url", () => {
         .uint8Array()
         .map(encodeBase64url)
         .filter((text) => decodeBase64url(text) !== null);
-      
+
       fc.assert(
         fc.property(validText, (text) => {
           expect(encodeBase64url(decodeBase64url(text)!)).toBe(text);

@@ -8,9 +8,9 @@ import {
   encodeGateManifest,
   encodeGateManifestDelta,
   GATE_MANIFEST_VERSION,
-  manifestCursor,
   type GateManifest,
   type GateManifestDelta,
+  manifestCursor,
 } from "./gate-manifest.ts";
 
 describe("gate-manifest", () => {
@@ -18,8 +18,8 @@ describe("gate-manifest", () => {
     expect(GATE_MANIFEST_VERSION).toBe(1);
   });
 
-  const validManifestBase = {
-    formatVersion: GATE_MANIFEST_VERSION as const,
+  const validManifestBase: GateManifest = {
+    formatVersion: 1,
     eventId: "12345678-1234-1234-1234-123456789012",
     event: {
       name: "Test Event",
@@ -47,47 +47,70 @@ describe("gate-manifest", () => {
         event: fc.record({
           name: fc.string({ minLength: 1 }),
           venueName: fc.string({ minLength: 1 }),
-          startsAt: fc.date().map((d) => d.toISOString()),
-          endsAt: fc.date().map((d) => d.toISOString()),
+          startsAt: fc
+            .integer({ min: 946684800000, max: 4102444800000 })
+            .map((ms) => new Date(ms).toISOString()),
+          endsAt: fc
+            .integer({ min: 946684800000, max: 4102444800000 })
+            .map((ms) => new Date(ms).toISOString()),
           ageRating: fc.constantFrom("all" as const, "12plus" as const, "18plus" as const),
         }),
-        deviceZone: fc.string({ minLength: 1 }),
-        expiresAt: fc.date().map((d) => d.toISOString()),
-        serverKeys: fc.array(
+        deviceZone: fc.string({ minLength: 1 }).filter((s) => s.trim().length > 0),
+        expiresAt: fc
+          .integer({ min: 946684800000, max: 4102444800000 })
+          .map((ms) => new Date(ms).toISOString()),
+        serverKeys: fc.uniqueArray(
           fc.record({
             id: fc.integer({ min: 0, max: 255 }),
             publicKey: fc.uint8Array({ minLength: 32, maxLength: 32 }),
-          })
+          }),
+          { selector: (k) => k.id },
         ),
-        ticketTypes: fc.array(
+        ticketTypes: fc.uniqueArray(
           fc.record({
             ref: fc.integer({ min: 1, max: 65535 }),
             name: fc.string({ minLength: 1 }),
-            zone: fc.string({ minLength: 1 }),
+            zone: fc.oneof(fc.string({ minLength: 1 }), fc.constant(null)),
             entryMode: fc.constantFrom("single_use" as const, "multi_scan" as const),
             audience: fc.constantFrom("public" as const, "staff" as const, "performer" as const),
-          })
+          }),
+          { selector: (t) => t.ref },
         ),
-        tickets: fc.array(
-          fc.record({
-            ticketId: fc.uuid(),
-            typeRef: fc.integer({ min: 1, max: 65535 }),
-            entryMode: fc.constantFrom("single_use" as const, "multi_scan" as const),
-            status: fc.constantFrom("issued" as const, "bound" as const, "void" as const),
-            redeemed: fc.boolean(),
-            holderPubkey: fc.option(fc.uint8Array({ minLength: 32, maxLength: 32 }), { nil: null }),
-            keyVersion: fc.integer({ min: 0, max: 255 }),
-            codeHuman: fc.stringOf(fc.constantFrom(..."0123456789ABCDEFGHJKMNPTVWXYZ"), { minLength: 10, maxLength: 10 }),
-          })
+        tickets: fc.uniqueArray(
+          fc
+            .record({
+              ticketId: fc.uuid(),
+              typeRef: fc.integer({ min: 1, max: 65535 }),
+              entryMode: fc.constantFrom("single_use" as const, "multi_scan" as const),
+              status: fc.constantFrom("issued" as const, "bound" as const, "void" as const),
+              redeemed: fc.boolean(),
+              holderPubkey: fc.uint8Array({ minLength: 32, maxLength: 32 }),
+              keyVersion: fc.integer({ min: 0, max: 255 }),
+              codeHuman: fc
+                .array(fc.constantFrom(..."0123456789ABCDEFGHJKMNPTVWXYZ"), {
+                  minLength: 10,
+                  maxLength: 10,
+                })
+                .map((a) => a.join("")),
+            })
+            .map((t) => {
+              if (t.status !== "bound") {
+                return { ...t, holderPubkey: null, keyVersion: 0 };
+              }
+              return { ...t, keyVersion: Math.max(1, t.keyVersion) };
+            }),
+          { selector: (t) => t.ticketId },
         ),
-        cursor: fc.stringOf(fc.constantFrom(..."0123456789"), { minLength: 1, maxLength: 20 }),
+        cursor: fc
+          .array(fc.constantFrom(..."0123456789"), { minLength: 1, maxLength: 20 })
+          .map((chars) => chars.join("")),
         serverTime: fc.integer({ min: 0, max: Number.MAX_SAFE_INTEGER }),
       });
 
       fc.assert(
         fc.property(manifestArb, (manifest) => {
           expect(decodeGateManifest(encodeGateManifest(manifest))).toEqual(manifest);
-        })
+        }),
       );
     });
 
@@ -96,20 +119,64 @@ describe("gate-manifest", () => {
       const encoded: any = encodeGateManifest(validManifest);
 
       // Key not 32 bytes
-      expect(decodeGateManifest({ ...encoded, serverKeys: [{ id: 1, publicKey: encodeBase64url(new Uint8Array(31)) }] })).toBeNull();
+      expect(
+        decodeGateManifest({
+          ...encoded,
+          serverKeys: [{ id: 1, publicKey: encodeBase64url(new Uint8Array(31)) }],
+        }),
+      ).toBeNull();
       // Key not base64url canonical (e.g. padded)
-      expect(decodeGateManifest({ ...encoded, serverKeys: [{ id: 1, publicKey: "A".repeat(43) + "=" }] })).toBeNull();
+      expect(
+        decodeGateManifest({
+          ...encoded,
+          serverKeys: [{ id: 1, publicKey: `${"A".repeat(43)}=` }],
+        }),
+      ).toBeNull();
 
       // ticketId uppercase
-      expect(decodeGateManifest({ ...encoded, tickets: [{ ticketId: "12345678-1234-1234-1234-12345678901A", typeRef: 1, entryMode: "single_use", status: "issued", redeemed: false, holderPubkey: null, keyVersion: 1, codeHuman: "0123456789" }] })).toBeNull();
+      expect(
+        decodeGateManifest({
+          ...encoded,
+          tickets: [
+            {
+              ticketId: "12345678-1234-1234-1234-12345678901A",
+              typeRef: 1,
+              entryMode: "single_use",
+              status: "issued",
+              redeemed: false,
+              holderPubkey: null,
+              keyVersion: 1,
+              codeHuman: "0123456789",
+            },
+          ],
+        }),
+      ).toBeNull();
 
       // codeHuman invalid length or invalid chars (I, L, O, U)
-      const ticketBase = { ticketId: validManifestBase.eventId, typeRef: 1, entryMode: "single_use", status: "issued", redeemed: false, holderPubkey: null, keyVersion: 1 };
-      expect(decodeGateManifest({ ...encoded, tickets: [{ ...ticketBase, codeHuman: "012345678" }] })).toBeNull(); // len 9
-      expect(decodeGateManifest({ ...encoded, tickets: [{ ...ticketBase, codeHuman: "012345678I" }] })).toBeNull(); // I
-      expect(decodeGateManifest({ ...encoded, tickets: [{ ...ticketBase, codeHuman: "012345678L" }] })).toBeNull(); // L
-      expect(decodeGateManifest({ ...encoded, tickets: [{ ...ticketBase, codeHuman: "012345678O" }] })).toBeNull(); // O
-      expect(decodeGateManifest({ ...encoded, tickets: [{ ...ticketBase, codeHuman: "012345678U" }] })).toBeNull(); // U
+      const ticketBase = {
+        ticketId: validManifestBase.eventId,
+        typeRef: 1,
+        entryMode: "single_use",
+        status: "issued",
+        redeemed: false,
+        holderPubkey: null,
+        keyVersion: 1,
+      };
+      expect(
+        decodeGateManifest({ ...encoded, tickets: [{ ...ticketBase, codeHuman: "012345678" }] }),
+      ).toBeNull(); // len 9
+      expect(
+        decodeGateManifest({ ...encoded, tickets: [{ ...ticketBase, codeHuman: "012345678I" }] }),
+      ).toBeNull(); // I
+      expect(
+        decodeGateManifest({ ...encoded, tickets: [{ ...ticketBase, codeHuman: "012345678L" }] }),
+      ).toBeNull(); // L
+      expect(
+        decodeGateManifest({ ...encoded, tickets: [{ ...ticketBase, codeHuman: "012345678O" }] }),
+      ).toBeNull(); // O
+      expect(
+        decodeGateManifest({ ...encoded, tickets: [{ ...ticketBase, codeHuman: "012345678U" }] }),
+      ).toBeNull(); // U
 
       // cursor not digits or more than 20
       expect(decodeGateManifest({ ...encoded, cursor: "-1" })).toBeNull();
@@ -119,13 +186,28 @@ describe("gate-manifest", () => {
       expect(decodeGateManifest({ ...encoded, formatVersion: 2 })).toBeNull();
 
       // keyVersion 256
-      expect(decodeGateManifest({ ...encoded, tickets: [{ ...ticketBase, codeHuman: "0123456789", keyVersion: 256 }] })).toBeNull();
+      expect(
+        decodeGateManifest({
+          ...encoded,
+          tickets: [{ ...ticketBase, codeHuman: "0123456789", keyVersion: 256 }],
+        }),
+      ).toBeNull();
 
       // typeRef 0
-      expect(decodeGateManifest({ ...encoded, tickets: [{ ...ticketBase, codeHuman: "0123456789", typeRef: 0 }] })).toBeNull();
+      expect(
+        decodeGateManifest({
+          ...encoded,
+          tickets: [{ ...ticketBase, codeHuman: "0123456789", typeRef: 0 }],
+        }),
+      ).toBeNull();
 
       // status redeemed (not in the enum)
-      expect(decodeGateManifest({ ...encoded, tickets: [{ ...ticketBase, codeHuman: "0123456789", status: "redeemed" }] })).toBeNull();
+      expect(
+        decodeGateManifest({
+          ...encoded,
+          tickets: [{ ...ticketBase, codeHuman: "0123456789", status: "redeemed" }],
+        }),
+      ).toBeNull();
 
       // missing event
       const { event, ...noEvent } = encoded;
@@ -156,7 +238,8 @@ describe("gate-manifest", () => {
       expect(decoded).toEqual(validDelta);
 
       // if since missing, null
-      const { since, ...noSince } = encoded as any;
+      if (typeof encoded !== "object" || !encoded) throw new Error("encoded is not an object");
+      const noSince = Object.fromEntries(Object.entries(encoded).filter(([k]) => k !== "since"));
       expect(decodeGateManifestDelta(noSince)).toBeNull();
     });
   });
@@ -165,24 +248,31 @@ describe("gate-manifest", () => {
     test("accepts valid key ring", () => {
       const ring = [{ id: 1, publicKey: encodeBase64url(new Uint8Array(32)) }];
       const decoded = decodeServerKeys(ring);
-      expect(decoded).toBeDefined();
-      expect(decoded![0].id).toBe(1);
-      expect(decoded![0].publicKey.length).toBe(32);
+      if (!decoded) throw new Error("decoded is null");
+      const decoded0 = decoded[0];
+      if (!decoded0) throw new Error("decoded[0] is undefined");
+      expect(decoded0.id).toBe(1);
+      expect(decoded0.publicKey.length).toBe(32);
     });
 
     test("returns null for invalid key rings", () => {
       const pk32 = encodeBase64url(new Uint8Array(32));
       const pk31 = encodeBase64url(new Uint8Array(31));
-      
+
       // Repeated ids
-      expect(decodeServerKeys([{ id: 1, publicKey: pk32 }, { id: 1, publicKey: pk32 }])).toBeNull();
-      
+      expect(
+        decodeServerKeys([
+          { id: 1, publicKey: pk32 },
+          { id: 1, publicKey: pk32 },
+        ]),
+      ).toBeNull();
+
       // id 256
       expect(decodeServerKeys([{ id: 256, publicKey: pk32 }])).toBeNull();
-      
+
       // key of 31 bytes
       expect(decodeServerKeys([{ id: 1, publicKey: pk31 }])).toBeNull();
-      
+
       // not an array
       expect(decodeServerKeys({ id: 1, publicKey: pk32 })).toBeNull();
     });

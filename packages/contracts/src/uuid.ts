@@ -36,9 +36,9 @@ export function uuidv7(ms: number, random: Uint8Array): string {
     bytes[i] = time % 256;
     time = Math.floor(time / 256);
   }
-  bytes[6] = 0x70 | ((random[0] ?? 0) & 0x0f);
-  bytes[7] = random[1] ?? 0;
-  bytes[8] = 0x80 | ((random[2] ?? 0) & 0x3f);
+  bytes[6] = 0x70 | ((random[0] as number) & 0x0f);
+  bytes[7] = random[1] as number;
+  bytes[8] = 0x80 | ((random[2] as number) & 0x3f);
   bytes.set(random.subarray(3, 10), 9);
   return bytesToUuid(bytes);
 }

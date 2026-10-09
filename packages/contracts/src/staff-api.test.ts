@@ -18,7 +18,7 @@ describe("staff-api", () => {
 
     test("rejects missing @ or more than 254 characters", () => {
       expect(() => signInRequest.parse({ email: "notanemail" })).toThrow();
-      expect(() => signInRequest.parse({ email: "a".repeat(250) + "@example.com" })).toThrow();
+      expect(() => signInRequest.parse({ email: `${"a".repeat(250)}@example.com` })).toThrow();
     });
   });
 
@@ -27,16 +27,22 @@ describe("staff-api", () => {
       const valid = { email: "test@example.com", code: "123456" };
       expect(verifySignInRequest.parse(valid)).toEqual(valid);
 
-      expect(() => verifySignInRequest.parse({ email: "test@example.com", code: "12345" })).toThrow();
-      expect(() => verifySignInRequest.parse({ email: "test@example.com", code: "1234567" })).toThrow();
-      expect(() => verifySignInRequest.parse({ email: "test@example.com", code: "123a56" })).toThrow();
+      expect(() =>
+        verifySignInRequest.parse({ email: "test@example.com", code: "12345" }),
+      ).toThrow();
+      expect(() =>
+        verifySignInRequest.parse({ email: "test@example.com", code: "1234567" }),
+      ).toThrow();
+      expect(() =>
+        verifySignInRequest.parse({ email: "test@example.com", code: "123a56" }),
+      ).toThrow();
     });
   });
 
   describe("createStaffCodeRequest", () => {
     test("defaults zone to null", () => {
       const valid = {
-        eventId: "12345678-1234-1234-1234-123456789012",
+        eventId: "12345678-1234-4234-8234-123456789012",
         role: "gate" as const,
         validFrom: "2024-01-01T12:00:00Z",
         validUntil: "2024-01-02T12:00:00Z",
@@ -47,7 +53,7 @@ describe("staff-api", () => {
 
     test("rejects invalid inputs", () => {
       const base = {
-        eventId: "12345678-1234-1234-1234-123456789012",
+        eventId: "12345678-1234-4234-8234-123456789012",
         role: "gate" as const,
         validFrom: "2024-01-01T12:00:00Z",
         validUntil: "2024-01-02T12:00:00Z",
@@ -55,8 +61,12 @@ describe("staff-api", () => {
       };
 
       // validUntil <= validFrom
-      expect(() => createStaffCodeRequest.parse({ ...base, validUntil: "2024-01-01T12:00:00Z" })).toThrow();
-      expect(() => createStaffCodeRequest.parse({ ...base, validUntil: "2024-01-01T11:00:00Z" })).toThrow();
+      expect(() =>
+        createStaffCodeRequest.parse({ ...base, validUntil: "2024-01-01T12:00:00Z" }),
+      ).toThrow();
+      expect(() =>
+        createStaffCodeRequest.parse({ ...base, validUntil: "2024-01-01T11:00:00Z" }),
+      ).toThrow();
 
       // maxUses 0 and 1001
       expect(() => createStaffCodeRequest.parse({ ...base, maxUses: 0 })).toThrow();
@@ -66,13 +76,19 @@ describe("staff-api", () => {
       expect(() => createStaffCodeRequest.parse({ ...base, role: "admin" })).toThrow();
 
       // dates without timezone
-      expect(() => createStaffCodeRequest.parse({ ...base, validFrom: "2024-01-01T12:00:00" })).toThrow();
+      expect(() =>
+        createStaffCodeRequest.parse({ ...base, validFrom: "2024-01-01T12:00:00" }),
+      ).toThrow();
     });
   });
 
   describe("enrollRequest", () => {
     test("defaults integrityToken to null and only accepts android and ios", () => {
-      const validAndroid = { staffCode: "CODE123", platform: "android" as const, appVersion: "1.0.0" };
+      const validAndroid = {
+        staffCode: "CODE123",
+        platform: "android" as const,
+        appVersion: "1.0.0",
+      };
       expect(enrollRequest.parse(validAndroid).integrityToken).toBeNull();
 
       const validIos = { staffCode: "CODE123", platform: "ios" as const, appVersion: "1.0.0" };
@@ -85,8 +101,8 @@ describe("staff-api", () => {
 
   describe("responses and types", () => {
     const validDevice = {
-      deviceId: "12345678-1234-1234-1234-123456789012",
-      eventId: "12345678-1234-1234-1234-123456789013",
+      deviceId: "12345678-1234-4234-8234-123456789012",
+      eventId: "12345678-1234-4234-8234-123456789013",
       role: "gate" as const,
       zone: null,
       validFrom: "2024-01-01T12:00:00Z",

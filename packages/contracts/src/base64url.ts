@@ -12,7 +12,7 @@ const VALUES: ReadonlyMap<string, number> = new Map(
 export function encodeBase64url(bytes: Uint8Array): string {
   let out = "";
   for (let i = 0; i < bytes.length; i += 3) {
-    const a = bytes[i] ?? 0;
+    const a = bytes[i] as number;
     const b = bytes[i + 1] ?? 0;
     const c = bytes[i + 2] ?? 0;
     const triple = (a << 16) | (b << 8) | c;

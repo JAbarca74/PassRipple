@@ -52,7 +52,7 @@ describe("uuidv7", () => {
     const ms = 0x0189_7c4a_8b00;
     const random = new Uint8Array([0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0, 0x12, 0x34]);
     const uuid = uuidv7(ms, random);
-    
+
     expect(uuid.startsWith("01897c4a-8b00-7")).toBe(true);
     // Version nibble is 7, variant is 10 (8, 9, a, b)
     expect(uuid.charAt(14)).toBe("7");
@@ -64,7 +64,7 @@ describe("uuidv7", () => {
     expect(() => uuidv7(-1, random)).toThrow(RangeError);
     expect(() => uuidv7(1.5, random)).toThrow(RangeError);
     expect(() => uuidv7(0x1_0000_0000_0000, random)).toThrow(RangeError); // > 2^48 - 1
-    
+
     expect(() => uuidv7(0, new Uint8Array(9))).toThrow(RangeError);
     expect(() => uuidv7(0, new Uint8Array(11))).toThrow(RangeError);
   });
