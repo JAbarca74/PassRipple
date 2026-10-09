@@ -5,6 +5,7 @@ import { consoleMailSender, createMailSender, sesMailSender } from "./mail.ts";
 
 vi.mock("aws4fetch", () => {
   return {
+    // biome-ignore lint/complexity/useArrowFunction: vitest requires function for constructors
     AwsClient: vi.fn(function () {
       return { fetch: vi.fn() };
     }),

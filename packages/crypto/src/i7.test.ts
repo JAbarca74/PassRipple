@@ -268,7 +268,7 @@ describe("I7: Attacker cannot forge credentials", () => {
       entryMode: "single_use" as const,
       ageRating: "all" as const,
       named: false,
-      holderPubkey: buyers[0]?.publicKey,
+      holderPubkey: buyers[0]!.publicKey,
       keyVersion: 1,
     };
 

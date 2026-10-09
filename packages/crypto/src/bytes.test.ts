@@ -140,7 +140,7 @@ describe("isAcceptableHolderKey", () => {
       "edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
     ];
     for (const hex of torsionHex) {
-      const bytes = new Uint8Array(hex.match(/.{1,2}/g)?.map((byte) => parseInt(byte, 16)));
+      const bytes = new Uint8Array((hex.match(/.{1,2}/g) || []).map((byte) => parseInt(byte, 16)));
       expect(isAcceptableHolderKey(bytes)).toBe(false);
     }
   });

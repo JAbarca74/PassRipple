@@ -201,7 +201,7 @@ describe("outbox", () => {
     transport.send = async () => [{ id: "5", status: "rejected" }];
     await outbox.enqueue(makeOp("5"));
     await outbox.drain();
-    const entry5 = store.entries.find(e => e.id === "5");
+    const entry5 = store.entries.find((e) => e.id === "5");
     expect(entry5?.state).toBe("quarantined");
     expect(entry5?.lastError).toBe("rejected by the server");
   });
@@ -251,7 +251,9 @@ describe("outbox", () => {
   test("transport exception (string)", async () => {
     const outbox = createOutbox({ store, transport, clock, random, config: { timeoutMs: 4000 } });
     await outbox.enqueue(makeOp("1"));
-    transport.send = () => { throw "network string"; };
+    transport.send = () => {
+      throw "network string";
+    };
     const report = await outbox.drain();
     expect(report.kind).toBe("failed");
     if (report.kind === "failed") expect(report.error).toBe("network string");
