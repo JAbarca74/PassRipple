@@ -15,6 +15,9 @@ import { perfLog, perfNow } from "../../perf.ts";
 import { ago, Body, Button, Centered, colors, Title } from "../../ui/ui.tsx";
 
 const VERDICT_MS = 2_500;
+// After a verdict the camera ignores every read for this long, so sweeping across several QR
+// codes does not flash a verdict for each one (field test, Phase 2).
+const SCAN_COOLDOWN_MS = 1_200;
 const E2E = process.env.EXPO_PUBLIC_E2E === "1";
 
 function verdictView(outcome: ScanOutcome) {
@@ -41,6 +44,7 @@ export default function Scan() {
   const [outcome, setOutcome] = useState<ScanOutcome | null>(null);
   const [e2eText, setE2eText] = useState("");
   const busy = useRef(false);
+  const cooldownUntil = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(
@@ -53,13 +57,14 @@ export default function Scan() {
   const handle = useCallback(
     async (text: string) => {
       perfLog("camera_event", perfNow());
-      if (session === null || busy.current) return;
+      if (session === null || busy.current || performance.now() < cooldownUntil.current) return;
       busy.current = true;
       const scanStart = perfNow();
       try {
         const result = await session.scanQr(text);
         perfLog("scan_total_ms", perfNow() - scanStart);
         if (result === null) return;
+        cooldownUntil.current = performance.now() + SCAN_COOLDOWN_MS;
         setOutcome(result);
         void Haptics.notificationAsync(
           result.decision.kind === "admit"
