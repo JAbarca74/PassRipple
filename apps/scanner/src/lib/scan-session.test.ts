@@ -11,11 +11,13 @@ describe("ScanSession.isNewRead", () => {
     const session = new ScanSession();
     session.isNewRead("text1", 1000);
     expect(session.isNewRead("text1", 1000 + REPEAT_WINDOW_MS - 1)).toBe(false);
-    
+
     // the timer is updated, so it needs REPEAT_WINDOW_MS from the last read to be true again
     expect(session.isNewRead("text1", 1000 + 2 * REPEAT_WINDOW_MS - 2)).toBe(false);
-    
-    expect(session.isNewRead("text1", 1000 + 2 * REPEAT_WINDOW_MS - 1)).toBe(true);
+
+    expect(session.isNewRead("text1", 1000 + 2 * REPEAT_WINDOW_MS - 2 + REPEAT_WINDOW_MS)).toBe(
+      true,
+    );
   });
 
   test("returns true if text changes", () => {
@@ -37,8 +39,11 @@ describe("ScanSession.admitted", () => {
   test("groups consecutive admissions of same key in burst", () => {
     const session = new ScanSession();
     expect(session.admitted("t1", k1, 3, 1000)).toEqual({ admitted: 1, total: 3 });
-    expect(session.admitted("t2", k1, 3, 1000 + BURST_GAP_MS - 1)).toEqual({ admitted: 2, total: 3 });
-    
+    expect(session.admitted("t2", k1, 3, 1000 + BURST_GAP_MS - 1)).toEqual({
+      admitted: 2,
+      total: 3,
+    });
+
     // same ticket id doesn't increment admitted again
     expect(session.admitted("t2", k1, 3, 1000 + BURST_GAP_MS)).toEqual({ admitted: 2, total: 3 });
   });
@@ -66,25 +71,25 @@ describe("ScanSession.admitted", () => {
 describe("ManualEntryLimiter", () => {
   test("locks after 5 failures and doubles lock time", () => {
     const limiter = new ManualEntryLimiter();
-    
+
     expect(limiter.lockedFor(1000)).toBe(0);
     expect(limiter.fail(1000)).toBe(false);
     expect(limiter.fail(1000)).toBe(false);
     expect(limiter.fail(1000)).toBe(false);
     expect(limiter.fail(1000)).toBe(false);
-    
+
     // 5th failure
     expect(limiter.fail(1000)).toBe(true);
     expect(limiter.lockedFor(1000)).toBe(60_000);
     expect(limiter.lockedFor(61_000)).toBe(0);
-    
+
     // fail 5 more times
     limiter.fail(61_000);
     limiter.fail(61_000);
     limiter.fail(61_000);
     limiter.fail(61_000);
     expect(limiter.fail(61_000)).toBe(true);
-    
+
     // second lock is 120_000
     expect(limiter.lockedFor(61_000)).toBe(120_000);
   });
@@ -94,7 +99,7 @@ describe("ManualEntryLimiter", () => {
     limiter.fail(1000);
     limiter.fail(1000);
     limiter.succeed();
-    
+
     expect(limiter.fail(1000)).toBe(false);
     expect(limiter.fail(1000)).toBe(false);
     expect(limiter.fail(1000)).toBe(false);

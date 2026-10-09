@@ -23,10 +23,10 @@ describe("DeviceClock", () => {
   test("now without anchor uses Date.now() + offsetMs", () => {
     const realNow = Date.now();
     vi.spyOn(Date, "now").mockReturnValue(realNow);
-    
+
     const clock = new DeviceClock({ offsetMs: 5000, rttMs: 100, sampledAt: 123 });
     expect(clock.now()).toBe(realNow + 5000);
-    
+
     vi.restoreAllMocks();
   });
 
@@ -49,13 +49,13 @@ describe("DeviceClock", () => {
     const clock = new DeviceClock();
     clock.sample(10000, 100, 300); // rtt = 200
     expect(clock.isSynced()).toBe(true);
-    
+
     // mock monotonic so now() is predictable
     // first sample mid is 200. anchor is 10000. monotonic is 400.
     // 10000 + (400 - 200) = 10200
     const perfSpy = vi.spyOn(performance, "now").mockReturnValue(400);
     expect(clock.now()).toBe(10200);
-    
+
     // add a better sample
     clock.sample(10150, 200, 250); // rtt = 50, mid = 225
     // anchor is now serverTime 10150, mid 225.
@@ -74,6 +74,6 @@ describe("DeviceClock", () => {
     clock.sample(10000, 100, 150); // rtt = 50
     const snap = clock.snapshot();
     expect(snap).not.toBeNull();
-    expect(snap!.rttMs).toBe(50);
+    expect(snap?.rttMs).toBe(50);
   });
 });

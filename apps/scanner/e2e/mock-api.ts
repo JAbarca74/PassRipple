@@ -1,10 +1,10 @@
 import * as http from "node:http";
 import { parse } from "node:url";
-import { createServerSigner, createSigner } from "../../../packages/crypto/src/testing.ts";
+import { encodeGateManifest } from "@passripple/contracts";
+import { buildGateManifest } from "../../../modules/manifest/src/gate-manifest.ts";
 import { signCertificate } from "../../../packages/crypto/src/certificate.ts";
 import { presentCredential } from "../../../packages/crypto/src/credential.ts";
-import { buildGateManifest } from "../../../modules/manifest/src/gate-manifest.ts";
-import { encodeGateManifest } from "@passripple/contracts";
+import { createServerSigner, createSigner } from "../../../packages/crypto/src/testing.ts";
 
 const port = 8787;
 
@@ -16,7 +16,7 @@ async function run() {
   // mock ticket
   const ticketId = "11111111-1111-1111-1111-111111111111";
   const eventId = "22222222-2222-2222-2222-222222222222";
-  
+
   const certificate = await signCertificate(
     {
       ticketId,
@@ -28,9 +28,9 @@ async function run() {
       holderPubkey: holder.publicKey,
       keyVersion: 1,
     },
-    serverSigner
+    serverSigner,
   );
-  
+
   const qr = await presentCredential(certificate, holder, Date.now());
 
   const manifest = buildGateManifest({

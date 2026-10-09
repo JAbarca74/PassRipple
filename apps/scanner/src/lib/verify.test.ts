@@ -1,7 +1,7 @@
-import { describe, expect, test, vi } from "vitest";
-import { checkManifest, decideQr, type GateLookups } from "./verify.ts";
-import type { StoredTicket } from "./manifest-store.ts";
 import { verifyCredential } from "@passripple/crypto";
+import { describe, expect, test, vi } from "vitest";
+import type { StoredTicket } from "./manifest-store.ts";
+import { checkManifest, decideQr, type GateLookups } from "./verify.ts";
 
 vi.mock("@passripple/crypto", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@passripple/crypto")>();
@@ -88,22 +88,50 @@ describe("checkManifest", () => {
 
 describe("decideQr", () => {
   const lookups: GateLookups = {
-    serverKeys: [{ id: 1, publicKey: new Uint8Array() }],
+    serverKeys: new Map([[1, new Uint8Array()]]),
     eventId: "e1",
-    ticketTypes: new Map([[1, { name: "Type 1", entryMode: "single_use" }]]),
+    ticketTypes: new Map([
+      [
+        1,
+        {
+          ref: 1,
+          zone: "Zone A",
+          audience: "public" as const,
+          name: "Type 1",
+          entryMode: "single_use",
+        },
+      ],
+    ]),
     ticket: vi.fn(),
   };
 
   test("rejects if verifyCredential fails", async () => {
     vi.mocked(verifyCredential).mockReturnValue({ ok: false, reason: "bad_server_signature" });
     const dec = await decideQr("qr", lookups, 0);
-    expect(dec).toEqual({ kind: "reject", reason: "bad_server_signature", ticketId: null, typeName: null });
+    expect(dec).toEqual({
+      kind: "reject",
+      reason: "bad_server_signature",
+      ticketId: null,
+      typeName: null,
+    });
   });
 
   test("rejects wrong zone if type not in lookups", async () => {
     vi.mocked(verifyCredential).mockReturnValue({
       ok: true,
-      credential: { ticketId: "t1", typeRef: 99, keyVersion: 1, entryMode: "single_use", holderPubkey: new Uint8Array() }
+      windowOffset: 0,
+      credential: {
+        ticketId: "t1",
+        typeRef: 99,
+        keyVersion: 1,
+        entryMode: "single_use",
+        holderPubkey: new Uint8Array(),
+        timeWindow: 0,
+        serverKeyId: 1,
+        eventRef: new Uint8Array(8),
+        ageRating: "all" as const,
+        named: false,
+      },
     });
     const dec = await decideQr("qr", lookups, 0);
     expect(dec).toEqual({ kind: "reject", reason: "wrong_zone", ticketId: "t1", typeName: null });
@@ -112,7 +140,19 @@ describe("decideQr", () => {
   test("admits not in manifest if ticket is missing", async () => {
     vi.mocked(verifyCredential).mockReturnValue({
       ok: true,
-      credential: { ticketId: "t1", typeRef: 1, keyVersion: 2, entryMode: "single_use", holderPubkey: new Uint8Array() }
+      windowOffset: 0,
+      credential: {
+        ticketId: "t1",
+        typeRef: 1,
+        keyVersion: 2,
+        entryMode: "single_use",
+        holderPubkey: new Uint8Array(),
+        timeWindow: 0,
+        serverKeyId: 1,
+        eventRef: new Uint8Array(8),
+        ageRating: "all" as const,
+        named: false,
+      },
     });
     vi.mocked(lookups.ticket).mockResolvedValue(null);
     const dec = await decideQr("qr", lookups, 0);
@@ -131,12 +171,33 @@ describe("decideQr", () => {
   test("delegates to checkManifest if ticket is found", async () => {
     vi.mocked(verifyCredential).mockReturnValue({
       ok: true,
-      credential: { ticketId: "t1", typeRef: 1, keyVersion: 2, entryMode: "single_use", holderPubkey: new Uint8Array() }
+      windowOffset: 0,
+      credential: {
+        ticketId: "t1",
+        typeRef: 1,
+        keyVersion: 2,
+        entryMode: "single_use",
+        holderPubkey: new Uint8Array(),
+        timeWindow: 0,
+        serverKeyId: 1,
+        eventRef: new Uint8Array(8),
+        ageRating: "all" as const,
+        named: false,
+      },
     });
-    const ticket: StoredTicket = { ticketId: "t1", typeRef: 1, status: "void", entryMode: "single_use", redeemed: false, keyVersion: 1, holderPubkey: new Uint8Array(), codeHuman: "123" };
+    const ticket: StoredTicket = {
+      ticketId: "t1",
+      typeRef: 1,
+      status: "void",
+      entryMode: "single_use",
+      redeemed: false,
+      keyVersion: 1,
+      holderPubkey: new Uint8Array(),
+      codeHuman: "123",
+    };
     vi.mocked(lookups.ticket).mockResolvedValue(ticket);
     const dec = await decideQr("qr", lookups, 0);
-    
+
     // should be rejected as void by checkManifest
     expect(dec).toEqual({
       kind: "reject",
