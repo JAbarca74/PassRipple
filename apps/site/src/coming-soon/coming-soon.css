@@ -208,13 +208,68 @@ nav .wordmark {
 }
 
 .hero-icon {
+  display: block;
   width: 72px;
   height: 72px;
-  margin-bottom: 2.5rem;
   position: relative;
   z-index: 1;
   opacity: 0;
   animation: appear 1s 0.3s ease forwards;
+}
+
+/* The mark and the ripples that spread from it. */
+.hero-mark {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  margin-bottom: 2.5rem;
+}
+
+.ripples {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 400px;
+  height: 400px;
+  max-width: none;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  overflow: visible;
+}
+
+.ripple-ring {
+  fill: none;
+  stroke: var(--wave);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  /* r is 36, half the icon: the ring starts under it and grows to 2.8 times that. */
+  animation: ripple-out 5.4s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
+}
+
+.ripple-ring:nth-child(1) {
+  animation-delay: 1.4s;
+}
+
+.ripple-ring:nth-child(2) {
+  animation-delay: 3.2s;
+}
+
+.ripple-ring:nth-child(3) {
+  animation-delay: 5s;
+}
+
+@keyframes ripple-out {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(2.8);
+    opacity: 0;
+  }
 }
 
 .hero-label {
@@ -473,6 +528,125 @@ h1 {
   letter-spacing: 0.04em;
 }
 
+/* A ticket whose code does not read: it takes the place of the icon on the 404. */
+.hero-ticket {
+  width: 168px;
+  height: auto;
+  margin-bottom: 2.5rem;
+  position: relative;
+  z-index: 1;
+  overflow: visible;
+  opacity: 0;
+  animation: appear 1s 0.3s ease forwards;
+}
+
+.ticket-outline,
+.ticket-tear {
+  fill: none;
+  stroke: var(--logo-letters);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ticket-tear {
+  stroke-width: 2;
+  stroke-dasharray: 2 6;
+  opacity: 0.6;
+}
+
+.ticket-cell {
+  fill: var(--logo-letters);
+}
+
+/* A few cells drop out and come back at different times: the code cannot be read. */
+.cell-lost {
+  animation: cell-lost 3.4s ease-in-out infinite;
+}
+
+.cell-lost-a {
+  animation-delay: 1.6s;
+}
+
+.cell-lost-b {
+  animation-delay: 2.3s;
+}
+
+.cell-lost-c {
+  animation-delay: 3s;
+}
+
+@keyframes cell-lost {
+  0%,
+  35%,
+  100% {
+    opacity: 1;
+  }
+  50%,
+  70% {
+    opacity: 0.12;
+  }
+}
+
+/* The scan line crosses the code and starts over: brand wave color, never red. */
+.ticket-scan {
+  fill: none;
+  stroke: var(--wave);
+  stroke-width: 3;
+  stroke-linecap: round;
+  opacity: 0;
+  animation: ticket-scan 3.4s ease-in-out 1.4s infinite;
+}
+
+@keyframes ticket-scan {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  55% {
+    transform: translateY(64px);
+    opacity: 1;
+  }
+  68%,
+  100% {
+    transform: translateY(64px);
+    opacity: 0;
+  }
+}
+
+/* On the stub, a wave starts to ripple and fades before it completes. */
+.ticket-stub {
+  fill: none;
+  stroke: var(--wave);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: stub-wave 3.4s ease-in-out 1.4s infinite;
+}
+
+@keyframes stub-wave {
+  0% {
+    stroke-dashoffset: 100;
+    opacity: 1;
+  }
+  45% {
+    stroke-dashoffset: 40;
+    opacity: 1;
+  }
+  75% {
+    stroke-dashoffset: 40;
+    opacity: 0;
+  }
+  100% {
+    stroke-dashoffset: 100;
+    opacity: 0;
+  }
+}
+
 .home-button {
   margin-top: 2.5rem;
   min-height: 48px;
@@ -579,6 +753,31 @@ h1 {
   gap: 1.75rem;
   position: relative;
   overflow: hidden;
+}
+
+/* Two bands of the brand wave drift in opposite directions behind the text. */
+.banner::before,
+.banner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("/wave-lines.svg") 0 0 / 120px auto repeat;
+  opacity: 0.12;
+  pointer-events: none;
+  animation: wave-drift 28s linear infinite;
+}
+
+.banner::after {
+  background-position: 0 22px;
+  opacity: 0.08;
+  animation-direction: reverse;
+  animation-duration: 40s;
+}
+
+@keyframes wave-drift {
+  to {
+    background-position-x: 120px;
+  }
 }
 
 .banner-wave-icon {
@@ -713,8 +912,22 @@ footer {
   .hero-sub,
   .scroll-hint,
   .scroll-line,
-  .home-button {
+  .home-button,
+  .ripple-ring,
+  .cell-lost,
+  .ticket-scan,
+  .ticket-stub,
+  .banner::before,
+  .banner::after {
     animation: none;
+  }
+  /* Still frame: no rings, no scan, the wave on the stub drawn. */
+  .ripples,
+  .ticket-scan {
+    display: none;
+  }
+  .ticket-stub {
+    stroke-dashoffset: 0;
   }
   body,
   nav,
@@ -735,6 +948,7 @@ footer {
   }
   nav .wordmark,
   .hero-icon,
+  .hero-ticket,
   .hero-word,
   .hero-label,
   h1,

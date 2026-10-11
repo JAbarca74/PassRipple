@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="44" viewBox="0 0 120 44" aria-hidden="true">
+  <!-- The brand wave on a transparent tile; 120 px is a whole number of crests, so it loops. -->
+  <g fill="none" stroke="#00E5D8" stroke-width="3" stroke-linecap="round">
+    <path d="M0 12q15-14 30 0t30 0t30 0t30 0"/>
+    <path d="M0 34q15-14 30 0t30 0t30 0t30 0"/>
+  </g>
+</svg>

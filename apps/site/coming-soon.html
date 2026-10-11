@@ -98,13 +98,21 @@
 
   <!-- Hero -->
   <section class="hero">
-    <svg class="hero-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="PassRipple">
-      <rect width="100" height="100" rx="22" fill="#5B1FE0"/>
-      <g fill="none" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" transform="translate(-6 -2)">
-        <path d="M30 18V82M30 40a22 22 0 1 0 44 0a22 22 0 1 0-44 0" stroke="#FFFFFF"/>
-        <path d="M46 84q6-8 12 0t12 0t12 0" stroke="#00E5D8"/>
-      </g>
-    </svg>
+    <!-- The brand mark with ripples spreading from it, as when a pass is validated. -->
+    <div class="hero-mark">
+      <svg class="ripples" viewBox="-100 -100 200 200" aria-hidden="true">
+        <circle class="ripple-ring" r="36" />
+        <circle class="ripple-ring" r="36" />
+        <circle class="ripple-ring" r="36" />
+      </svg>
+      <svg class="hero-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="PassRipple">
+        <rect width="100" height="100" rx="22" fill="#5B1FE0"/>
+        <g fill="none" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" transform="translate(-6 -2)">
+          <path d="M30 18V82M30 40a22 22 0 1 0 44 0a22 22 0 1 0-44 0" stroke="#FFFFFF"/>
+          <path d="M46 84q6-8 12 0t12 0t12 0" stroke="#00E5D8"/>
+        </g>
+      </svg>
+    </div>
 
     <!-- Split into letters by src/coming-soon/reveal-word.ts; without it the word shows whole. -->
     <p class="hero-word" data-reveal-word>Próximamente</p>
