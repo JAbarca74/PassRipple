@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "lucide-react": "1.49.0",
+    "lucide-react": "1.52.0",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
@@ -17,9 +17,9 @@
     "@tailwindcss/vite": "4.3.3",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "@vitejs/plugin-react": "6.1.1",
+    "@vitejs/plugin-react": "6.1.2",
     "tailwindcss": "4.3.3",
-    "vite": "8.3.2"
+    "vite": "8.3.3"
   },
   "passripple": {
     "kind": "app"
