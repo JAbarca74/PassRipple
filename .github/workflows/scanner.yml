@@ -38,7 +38,7 @@ jobs:
   # Apple account. The simulator has no camera, so UI-test builds feed QR text through a
   # hidden field (EXPO_PUBLIC_E2E).
   ios-simulator:
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 60
     env:
       CI: "true"
@@ -61,10 +61,12 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       # Expo SDK 57 resolves Swift packages that need Swift tools 6.2, which ships with
-      # Xcode 26. The macos-15 image defaults to Xcode 16.4 (Swift 6.1).
+      # Xcode 26. Xcode 26.2 and 26.3 reject the SWIFT_RETURNS_RETAINED constructors in
+      # expo-modules-jsi 57 (fixed upstream in 58); 26.5 and later build it, and only the
+      # macos-26 image has them. Pinned rather than the image default.
       - name: Xcode
         run: |
-          sudo xcode-select -s /Applications/Xcode_26.3.app
+          sudo xcode-select -s /Applications/Xcode_26.6.app
           xcodebuild -version
           swift --version
 
@@ -77,7 +79,7 @@ jobs:
           path: |
             apps/scanner/ios/Pods
             ~/Library/Caches/CocoaPods
-          key: pods-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'apps/scanner/app.config.ts', 'package.json') }}
+          key: pods-${{ runner.os }}-xcode26.6-${{ hashFiles('pnpm-lock.yaml', 'apps/scanner/app.config.ts', 'package.json') }}
 
       - name: Install pods
         working-directory: apps/scanner/ios
