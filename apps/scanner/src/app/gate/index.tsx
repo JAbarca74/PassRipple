@@ -163,6 +163,8 @@ export default function Scan() {
               onChangeText={setE2eText}
               style={styles.e2eInput}
               autoCapitalize="none"
+              autoCorrect={false}
+              spellCheck={false}
             />
             <Button
               testID="e2e-qr-submit"

@@ -43,7 +43,7 @@ appId: com.passripple.scanner
 - tapOn:
     id: "e2e-qr-input"
 - inputText: ${output.qr}
-- hideKeyboard
+# The scan button stays above the keyboard.
 - tapOn:
     id: "e2e-qr-submit"
 - extendedWaitUntil:
