@@ -5,8 +5,8 @@ import type { Database } from "./db.ts";
 function fakeServices(): Services {
   return {
     database: () => ({ close: vi.fn().mockResolvedValue(undefined) }) as unknown as Database,
-    mailer: () => ({}) as any,
-    integrity: () => ({}) as any,
+    mailer: () => ({}) as unknown as ReturnType<Services["mailer"]>,
+    integrity: () => ({}) as unknown as ReturnType<Services["integrity"]>,
   };
 }
 
@@ -20,8 +20,8 @@ describe("App", () => {
     const dbClose = vi.fn().mockResolvedValue(undefined);
     const services: Services = {
       database: () => ({ close: dbClose }) as unknown as Database,
-      mailer: () => ({}) as any,
-      integrity: () => ({}) as any,
+      mailer: () => ({}) as unknown as ReturnType<Services["mailer"]>,
+      integrity: () => ({}) as unknown as ReturnType<Services["integrity"]>,
     };
 
     const app = createApp(services);

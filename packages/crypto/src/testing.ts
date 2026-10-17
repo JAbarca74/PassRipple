@@ -12,7 +12,7 @@ export function createSigner(label: string): Signer & { seed: Uint8Array } {
   return {
     seed,
     publicKey,
-    async sign(this: any, message: Uint8Array) {
+    async sign(this: { readonly seed: Uint8Array }, message: Uint8Array) {
       return ed25519.sign(message, this.seed);
     },
   };

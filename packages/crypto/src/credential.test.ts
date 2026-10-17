@@ -17,6 +17,11 @@ import {
 } from "./credential.ts";
 import { createServerSigner, createSigner } from "./testing.ts";
 
+function must<T>(value: T | null | undefined): T {
+  if (value === null || value === undefined) throw new Error("expected a value");
+  return value;
+}
+
 describe("timeWindow", () => {
   test("returns correct windows", () => {
     expect(timeWindow(0)).toBe(0);
@@ -91,7 +96,7 @@ describe("verifyCredential", () => {
 
   test("malformed (all details)", async () => {
     const validQr = await getValidQr();
-    const bytes = decodeBase45(validQr)!;
+    const bytes = must(decodeBase45(validQr));
 
     // invalid_base45
     expect(verifyCredential("NOT BASE45!!!", context, 0)).toEqual({
@@ -127,7 +132,7 @@ describe("verifyCredential", () => {
 
     // reserved_flags
     const fBytes = new Uint8Array(bytes);
-    fBytes[28] = fBytes[28]! | 0x10; // set a reserved bit
+    fBytes[28] = must(fBytes[28]) | 0x10; // set a reserved bit
     expect(verifyCredential(encodeBase45(fBytes), context, 0)).toEqual({
       ok: false,
       reason: "malformed",
@@ -136,7 +141,7 @@ describe("verifyCredential", () => {
 
     // invalid_age_rating
     const aBytes = new Uint8Array(bytes);
-    aBytes[28] = aBytes[28]! | (3 << 1); // unknown age rating (3)
+    aBytes[28] = must(aBytes[28]) | (3 << 1); // unknown age rating (3)
     expect(verifyCredential(encodeBase45(aBytes), context, 0)).toEqual({
       ok: false,
       reason: "malformed",
@@ -163,8 +168,8 @@ describe("verifyCredential", () => {
 
   test("bad_server_signature", async () => {
     const qr = await getValidQr();
-    const bytes = decodeBase45(qr)!;
-    bytes[62] = bytes[62]! ^ 1; // alter serverSig
+    const bytes = must(decodeBase45(qr));
+    bytes[62] = must(bytes[62]) ^ 1; // alter serverSig
     expect(verifyCredential(encodeBase45(bytes), context, 0)).toEqual({
       ok: false,
       reason: "bad_server_signature",
@@ -198,8 +203,8 @@ describe("verifyCredential", () => {
 
   test("bad_holder_signature", async () => {
     const qr = await getValidQr();
-    const bytes = decodeBase45(qr)!;
-    bytes[130] = bytes[130]! ^ 1; // alter holderSig
+    const bytes = must(decodeBase45(qr));
+    bytes[130] = must(bytes[130]) ^ 1; // alter holderSig
     expect(verifyCredential(encodeBase45(bytes), context, 0)).toEqual({
       ok: false,
       reason: "bad_holder_signature",
@@ -252,17 +257,17 @@ describe("verifyCredential", () => {
 
   test("reason precedence: signatures over time/event", async () => {
     const qr = await getValidQr(0); // Window 0
-    const bytes = decodeBase45(qr)!;
+    const bytes = must(decodeBase45(qr));
 
     // Alter holder signature and check with old window
     const badSigBytes = new Uint8Array(bytes);
-    badSigBytes[130] = badSigBytes[130]! ^ 1;
+    badSigBytes[130] = must(badSigBytes[130]) ^ 1;
     const res1 = verifyCredential(encodeBase45(badSigBytes), context, 5 * WINDOW_MS);
     expect(res1).toEqual({ ok: false, reason: "bad_holder_signature" });
 
     // Alter server signature and check with old window
     const badServerSigBytes = new Uint8Array(bytes);
-    badServerSigBytes[62] = badServerSigBytes[62]! ^ 1;
+    badServerSigBytes[62] = must(badServerSigBytes[62]) ^ 1;
     const res2 = verifyCredential(encodeBase45(badServerSigBytes), context, 5 * WINDOW_MS);
     expect(res2).toEqual({ ok: false, reason: "bad_server_signature" });
 
@@ -321,7 +326,7 @@ describe("fast-check properties", () => {
     );
 
     const qr = await presentCredential(cert, holder, 0);
-    const bytes = decodeBase45(qr)!;
+    const bytes = must(decodeBase45(qr));
 
     fc.assert(
       fc.property(
@@ -329,7 +334,7 @@ describe("fast-check properties", () => {
         fc.integer({ min: 1, max: 255 }),
         (pos, diff) => {
           const altered = new Uint8Array(bytes);
-          altered[pos] = altered[pos]! ^ diff;
+          altered[pos] = must(altered[pos]) ^ diff;
           expect(verifyCredential(encodeBase45(altered), context, 0).ok).toBe(false);
         },
       ),
@@ -360,9 +365,9 @@ describe("fast-check properties", () => {
         fc.integer({ min: 1, max: alphabet.length - 1 }),
         (pos, diff) => {
           const alteredChars = qr.split("");
-          const origChar = alteredChars[pos]!;
+          const origChar = must(alteredChars[pos]);
           const origIdx = alphabet.indexOf(origChar);
-          const newChar = alphabet[(origIdx + diff) % alphabet.length]!;
+          const newChar = must(alphabet[(origIdx + diff) % alphabet.length]);
           alteredChars[pos] = newChar;
           const alteredQr = alteredChars.join("");
 

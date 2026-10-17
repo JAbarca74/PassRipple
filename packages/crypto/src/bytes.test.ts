@@ -1,3 +1,4 @@
+import type { QrPayload } from "@passripple/contracts";
 import {
   bytesToUuid,
   encodeBase45,
@@ -16,6 +17,11 @@ import {
   verifyStrict,
 } from "./bytes.ts";
 import { createSigner } from "./testing.ts";
+
+function must<T>(value: T | null | undefined): T {
+  if (value === null || value === undefined) throw new Error("expected a value");
+  return value;
+}
 
 describe("bytesEqual", () => {
   test("compares arrays correctly", () => {
@@ -43,7 +49,7 @@ describe("tags", () => {
 
   test("dummy coverage for contracts", () => {
     // To ensure v8 tracks coverage for these correctly when imported by crypto tests
-    const dummyPayload = {
+    const dummyPayload: QrPayload = {
       certificate: {
         fields: {
           serverKeyId: 1,
@@ -61,9 +67,9 @@ describe("tags", () => {
       timeWindow: 0,
       holderSig: new Uint8Array(64),
     };
-    encodeCertificate(dummyPayload.certificate as any);
+    encodeCertificate(dummyPayload.certificate);
     encodeTimeWindow(0);
-    encodeQrPayload(dummyPayload as any);
+    encodeQrPayload(dummyPayload);
     encodeBase45(new Uint8Array([1, 2]));
     uuidToBytes("00000000-0000-0000-0000-000000000000");
     bytesToUuid(new Uint8Array(16));
@@ -87,7 +93,7 @@ describe("verifyStrict", () => {
     const L = BigInt("0x1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3ed");
     let sBig = 0n;
     for (let i = 0; i < 32; i++) {
-      sBig |= BigInt(sig[32 + i]!) << BigInt(i * 8);
+      sBig |= BigInt(must(sig[32 + i])) << BigInt(i * 8);
     }
     sBig = sBig + L;
 

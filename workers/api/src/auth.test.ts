@@ -53,7 +53,7 @@ describe("userActor", () => {
     const resolver = await userActor(ctx, "organizer");
 
     const tx = vi.fn().mockResolvedValue([{ user_id: "00000000-0000-0000-0000-000000000002" }]);
-    const actor = await resolver(tx as any);
+    const actor = await resolver(tx as unknown as Parameters<typeof resolver>[0]);
 
     expect(actor).toEqual({
       id: "00000000-0000-0000-0000-000000000002",
@@ -72,7 +72,9 @@ describe("userActor", () => {
     const resolver = await userActor(ctx, "staff");
 
     const tx = vi.fn().mockResolvedValue([]);
-    await expect(resolver(tx as any)).rejects.toThrow(/Sign in again/);
+    await expect(resolver(tx as unknown as Parameters<typeof resolver>[0])).rejects.toThrow(
+      /Sign in again/,
+    );
   });
 
   test("throws 400 if x-org-id is invalid for organizer", async () => {
@@ -100,7 +102,7 @@ describe("deviceActor", () => {
     const resolver = await deviceActor(ctx, ["active"], found);
 
     const tx = vi.fn().mockResolvedValue([row]);
-    const actor = await resolver(tx as any);
+    const actor = await resolver(tx as unknown as Parameters<typeof resolver>[0]);
 
     expect(actor).toEqual({ id: "usr1", role: "staff", orgId: null });
     expect(found).toHaveBeenCalledWith({
@@ -121,7 +123,9 @@ describe("deviceActor", () => {
     const resolver = await deviceActor(ctx, ["revoked"], vi.fn());
 
     const tx = vi.fn().mockResolvedValue([row]);
-    await expect(resolver(tx as any)).rejects.toThrow(/This device is/);
+    await expect(resolver(tx as unknown as Parameters<typeof resolver>[0])).rejects.toThrow(
+      /This device is/,
+    );
   });
 
   test("throws 401 if device not found", async () => {
@@ -129,7 +133,9 @@ describe("deviceActor", () => {
     const resolver = await deviceActor(ctx, ["active"], vi.fn());
 
     const tx = vi.fn().mockResolvedValue([]);
-    await expect(resolver(tx as any)).rejects.toThrow(/Sign in again/);
+    await expect(resolver(tx as unknown as Parameters<typeof resolver>[0])).rejects.toThrow(
+      /Sign in again/,
+    );
   });
 });
 

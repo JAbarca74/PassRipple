@@ -4,6 +4,11 @@ import { describe, expect, test } from "vitest";
 import { eventRef, signCertificate, verifyCertificate } from "./certificate.ts";
 import { createServerSigner, createSigner } from "./testing.ts";
 
+function must<T>(value: T | null | undefined): T {
+  if (value === null || value === undefined) throw new Error("expected a value");
+  return value;
+}
+
 describe("eventRef", () => {
   test("returns 8 bytes", () => {
     const ref = eventRef("12345678-1234-1234-1234-123456789012");
@@ -111,7 +116,7 @@ describe("verifyCertificate", () => {
   test("returns false on altered signature", async () => {
     const cert = await signCertificate(input, server);
     const alteredSig = new Uint8Array(cert.serverSig);
-    alteredSig[0] = alteredSig[0]! ^ 1;
+    alteredSig[0] = must(alteredSig[0]) ^ 1;
     expect(verifyCertificate({ ...cert, serverSig: alteredSig }, serverKeys)).toBe(false);
   });
 
@@ -124,7 +129,7 @@ describe("verifyCertificate", () => {
         fc.integer({ min: 1, max: 255 }),
         (pos, diff) => {
           const altered = new Uint8Array(raw);
-          altered[pos] = altered[pos]! ^ diff;
+          altered[pos] = must(altered[pos]) ^ diff;
           // The decoder is tested in contracts, but verifying that the verification fails here.
           // But verifyCertificate takes a Certificate, not raw bytes.
           // We decode it manually. If it fails to decode, that's fine.

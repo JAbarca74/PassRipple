@@ -2,6 +2,11 @@ import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { decodeBase64url, encodeBase64url } from "./base64url.ts";
 
+function must<T>(value: T | null | undefined): T {
+  if (value === null || value === undefined) throw new Error("expected a value");
+  return value;
+}
+
 describe("base64url", () => {
   describe("encodeBase64url", () => {
     test("encodes RFC 4648 vectors without padding", () => {
@@ -82,7 +87,7 @@ describe("base64url", () => {
 
       fc.assert(
         fc.property(validText, (text) => {
-          expect(encodeBase64url(decodeBase64url(text)!)).toBe(text);
+          expect(encodeBase64url(must(decodeBase64url(text)))).toBe(text);
         }),
       );
     });

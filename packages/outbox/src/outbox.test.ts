@@ -1,6 +1,6 @@
 import fc from "fast-check";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { createOutbox } from "./outbox.ts";
+import { createOutbox, type Outbox } from "./outbox.ts";
 import type {
   Clock,
   ItemResult,
@@ -118,7 +118,7 @@ class FakeTransport implements Transport<string> {
       .map((e, i): ItemResult => {
         if (this.mode === "rejected") return { id: e.id, status: "rejected", error: "bad" };
         if (this.mode === "partial") {
-          if (e.id === "2") return null as any;
+          if (e.id === "2") return null as unknown as ItemResult;
           return { id: e.id, status: "applied" };
         }
         return { id: e.id, status: i % 2 === 0 ? "applied" : "duplicate" };
@@ -407,7 +407,15 @@ describe("outbox properties (fast-check model based)", () => {
     seq: number;
   }
 
-  class EnqueueCommand implements fc.Command<Model, any> {
+  interface Real {
+    store: FakeStore;
+    transport: FakeTransport;
+    clock: FakeClock;
+    random: FakeRandom;
+    outbox: Outbox<string>;
+  }
+
+  class EnqueueCommand implements fc.AsyncCommand<Model, Real> {
     id: string;
     constructor(id: string) {
       this.id = id;
@@ -415,7 +423,7 @@ describe("outbox properties (fast-check model based)", () => {
     check() {
       return true;
     }
-    async run(m: Model, r: any) {
+    async run(m: Model, r: Real) {
       await r.outbox.enqueue({
         id: this.id,
         opType: "test",
@@ -430,7 +438,7 @@ describe("outbox properties (fast-check model based)", () => {
     }
   }
 
-  class DrainCommand implements fc.Command<Model, any> {
+  class DrainCommand implements fc.AsyncCommand<Model, Real> {
     transportMode: "success" | "error" | "partial" | "rejected";
     constructor(transportMode: "success" | "error" | "partial" | "rejected") {
       this.transportMode = transportMode;
@@ -438,7 +446,7 @@ describe("outbox properties (fast-check model based)", () => {
     check() {
       return true;
     }
-    async run(m: Model, r: any) {
+    async run(m: Model, r: Real) {
       r.transport.mode = this.transportMode;
       const stBefore = await r.outbox.status();
       await r.outbox.drain();
@@ -462,7 +470,7 @@ describe("outbox properties (fast-check model based)", () => {
     }
   }
 
-  class AdvanceClockCommand implements fc.Command<Model, any> {
+  class AdvanceClockCommand implements fc.AsyncCommand<Model, Real> {
     ms: number;
     constructor(ms: number) {
       this.ms = ms;
@@ -470,7 +478,7 @@ describe("outbox properties (fast-check model based)", () => {
     check() {
       return true;
     }
-    async run(m: Model, r: any) {
+    async run(m: Model, r: Real) {
       m.clock += this.ms;
       r.clock.currentTime = m.clock;
     }
@@ -479,11 +487,11 @@ describe("outbox properties (fast-check model based)", () => {
     }
   }
 
-  class RecoverCommand implements fc.Command<Model, any> {
+  class RecoverCommand implements fc.AsyncCommand<Model, Real> {
     check() {
       return true;
     }
-    async run(m: Model, r: any) {
+    async run(m: Model, r: Real) {
       await r.outbox.recover();
       for (const op of m.ops.values()) {
         if (op.state === "sending") op.state = "pending";
@@ -497,9 +505,7 @@ describe("outbox properties (fast-check model based)", () => {
   test("invariants", async () => {
     const allCommands = [
       fc.uuid().map((id) => new EnqueueCommand(id)),
-      fc
-        .constantFrom("success", "error", "partial", "rejected")
-        .map((m) => new DrainCommand(m as any)),
+      fc.constantFrom("success", "error", "partial", "rejected").map((m) => new DrainCommand(m)),
       fc.integer({ min: 1000, max: 100000 }).map((ms) => new AdvanceClockCommand(ms)),
       fc.constant(new RecoverCommand()),
     ];

@@ -116,7 +116,7 @@ describe("gate-manifest", () => {
 
     test("decode returns null for various invalid inputs", () => {
       // Valid baseline encoded
-      const encoded: any = encodeGateManifest(validManifest);
+      const encoded = encodeGateManifest(validManifest) as Record<string, unknown>;
 
       // Key not 32 bytes
       expect(

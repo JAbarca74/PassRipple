@@ -8,6 +8,11 @@ import {
   type GateTicketTypeRow,
 } from "./gate-manifest.ts";
 
+function must<T>(value: T | null | undefined): T {
+  if (value === null || value === undefined) throw new Error("expected a value");
+  return value;
+}
+
 describe("gate-manifest builder", () => {
   const event: GateEventRow = {
     event_id: "12345678-1234-1234-1234-123456789012",
@@ -85,7 +90,7 @@ describe("gate-manifest builder", () => {
       const buffer = new Uint8Array(32).fill(1);
       const m = buildGateManifest({
         ...input,
-        tickets: [{ ...tickets[0]!, holder_pubkey: buffer }],
+        tickets: [{ ...must(tickets[0]), holder_pubkey: buffer }],
       });
 
       buffer[0] = 99; // mutate original

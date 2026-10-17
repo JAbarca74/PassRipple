@@ -1,6 +1,7 @@
 import { ed25519 } from "@noble/curves/ed25519.js";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { concatBytes, utf8ToBytes } from "@noble/hashes/utils.js";
+import type { Certificate } from "@passripple/contracts";
 import {
   decodeBase45,
   encodeBase45,
@@ -15,6 +16,20 @@ import { certificateMessage, eventRef, signCertificate } from "./certificate.ts"
 import { presentCredential, timeWindow, verifyCredential, WINDOW_MS } from "./credential.ts";
 import { humanCode } from "./human-code.ts";
 import { createServerSigner, createSigner } from "./testing.ts";
+
+interface FixtureTicket {
+  readonly ticketId: string;
+  readonly holderPubkey: Uint8Array;
+  readonly codeHuman: string;
+}
+interface FixtureManifest {
+  readonly tickets: readonly FixtureTicket[];
+}
+
+function must<T>(value: T | null | undefined): T {
+  if (value === null || value === undefined) throw new Error("expected a value");
+  return value;
+}
 
 // Invariant I7: No validator can forge a valid credential
 describe("I7: Attacker cannot forge credentials", () => {
@@ -36,18 +51,21 @@ describe("I7: Attacker cannot forge credentials", () => {
   for (let i = 0; i < 10; i++) buyers.push(createSigner(`buyer-${i}`));
 
   // Fixture states
-  const manifests = new Map<string, any>();
+  const manifests = new Map<string, FixtureManifest>();
   const credentials = new Map<string, string>(); // ticketId -> qr
-  const certificates = new Map<string, any>(); // ticketId -> certificate
+  const certificates = new Map<string, Certificate>(); // ticketId -> certificate
 
   const nowMs = 1000 * WINDOW_MS;
+
+  // The first ticket of event A, once beforeAll has built the fixtures.
+  const firstTicketId = () => must(must(manifests.get(eventIdA)).tickets[0]).ticketId;
 
   beforeAll(async () => {
     const buildManifest = async (eventId: string, ticketCount: number) => {
       const tickets = [];
       for (let i = 0; i < ticketCount; i++) {
         const ticketId = `00000000-0000-4000-8000-${eventId.split("-")[0]?.substring(0, 8)}${i.toString(16).padStart(4, "0")}`;
-        const buyer = buyers[i % buyers.length]!;
+        const buyer = must(buyers[i % buyers.length]);
 
         // Use crypto.subtle in tests? The requirements say:
         // "No uses crypto.getRandomValues fuera de archivos *.test.ts"
@@ -106,9 +124,9 @@ describe("I7: Attacker cannot forge credentials", () => {
   }
 
   test("a) signing with manifest data as a private key and attacker's key", async () => {
-    const manifest = manifests.get(eventIdA)!;
-    const ticket = manifest.tickets[0];
-    const cert = certificates.get(ticket.ticketId);
+    const manifest = must(manifests.get(eventIdA));
+    const ticket = must(manifest.tickets[0]);
+    const cert = must(certificates.get(ticket.ticketId));
 
     // Attacker tries to use a piece of data from the manifest as a seed
     const attackerSeeds = [
@@ -149,9 +167,9 @@ describe("I7: Attacker cannot forge credentials", () => {
   });
 
   test("b) reusing server_sig as holder_sig", () => {
-    const ticketId = manifests.get(eventIdA)?.tickets[0].ticketId;
-    const qr = credentials.get(ticketId)!;
-    const bytes = decodeBase45(qr)!;
+    const ticketId = firstTicketId();
+    const qr = must(credentials.get(ticketId));
+    const bytes = must(decodeBase45(qr));
 
     // Copy server_sig (bytes 62 to 126) into holder_sig (bytes 130 to 194)
     const serverSig = bytes.slice(62, 126);
@@ -161,9 +179,9 @@ describe("I7: Attacker cannot forge credentials", () => {
   });
 
   test("c) changing time_window of captured QR", () => {
-    const ticketId = manifests.get(eventIdA)?.tickets[0].ticketId;
-    const qr = credentials.get(ticketId)!;
-    const originalBytes = decodeBase45(qr)!;
+    const ticketId = firstTicketId();
+    const qr = must(credentials.get(ticketId));
+    const originalBytes = must(decodeBase45(qr));
     const view = new DataView(
       originalBytes.buffer,
       originalBytes.byteOffset,
@@ -187,9 +205,9 @@ describe("I7: Attacker cannot forge credentials", () => {
   }, 30000);
 
   test("d) changing holder_pubkey to attacker's key", async () => {
-    const ticketId = manifests.get(eventIdA)?.tickets[0].ticketId;
-    const qr = credentials.get(ticketId)!;
-    const bytes = decodeBase45(qr)!;
+    const ticketId = firstTicketId();
+    const qr = must(credentials.get(ticketId));
+    const bytes = must(decodeBase45(qr));
 
     // Bytes 29 to 61 are holderPubkey
     bytes.set(attacker.publicKey, 29);
@@ -207,9 +225,9 @@ describe("I7: Attacker cannot forge credentials", () => {
   });
 
   test("e) altering key_version, ticket_id, event_ref, type_ref, or flags", () => {
-    const ticketId = manifests.get(eventIdA)?.tickets[0].ticketId;
-    const qr = credentials.get(ticketId)!;
-    const bytes = decodeBase45(qr)!;
+    const ticketId = firstTicketId();
+    const qr = must(credentials.get(ticketId));
+    const bytes = must(decodeBase45(qr));
 
     const testOffsets = [
       { name: "ticket_id", offset: 2 },
@@ -221,7 +239,7 @@ describe("I7: Attacker cannot forge credentials", () => {
 
     for (const testCase of testOffsets) {
       const alteredBytes = new Uint8Array(bytes);
-      alteredBytes[testCase.offset] = alteredBytes[testCase.offset]! ^ 1; // alter 1 bit
+      alteredBytes[testCase.offset] = must(alteredBytes[testCase.offset]) ^ 1; // alter 1 bit
       const res = verifyCredential(encodeBase45(alteredBytes), getCtx(), nowMs);
       expect(res.ok).toBe(false);
       // Depending on the field, it could be a malformed or bad_server_signature
@@ -230,19 +248,21 @@ describe("I7: Attacker cannot forge credentials", () => {
 
   test("f) mixing certificates and signatures from the same device", async () => {
     // Find two tickets belonging to the same buyer
-    const manifest = manifests.get(eventIdA)!;
-    const ticket1 = manifest.tickets[0];
-    const ticket2 = manifest.tickets.find(
-      (t: any) =>
-        t.ticketId !== ticket1.ticketId &&
-        Buffer.from(t.holderPubkey).equals(Buffer.from(ticket1.holderPubkey)),
+    const manifest = must(manifests.get(eventIdA));
+    const ticket1 = must(manifest.tickets[0]);
+    const ticket2 = must(
+      manifest.tickets.find(
+        (t) =>
+          t.ticketId !== ticket1.ticketId &&
+          Buffer.from(t.holderPubkey).equals(Buffer.from(ticket1.holderPubkey)),
+      ),
     );
 
-    const qr1 = credentials.get(ticket1.ticketId)!;
-    const qr2 = credentials.get(ticket2.ticketId)!;
+    const qr1 = must(credentials.get(ticket1.ticketId));
+    const qr2 = must(credentials.get(ticket2.ticketId));
 
-    const bytes1 = decodeBase45(qr1)!;
-    const bytes2 = decodeBase45(qr2)!;
+    const bytes1 = must(decodeBase45(qr1));
+    const bytes2 = must(decodeBase45(qr2));
 
     // Swap holder_sig: cert of 1 with sig of 2
     const forgedBytes = new Uint8Array(bytes1);
@@ -253,8 +273,8 @@ describe("I7: Attacker cannot forge credentials", () => {
   });
 
   test("g) presenting a credential of event A in event B", () => {
-    const ticketIdA = manifests.get(eventIdA)?.tickets[0].ticketId;
-    const qrA = credentials.get(ticketIdA)!;
+    const ticketIdA = firstTicketId();
+    const qrA = must(credentials.get(ticketIdA));
 
     const res = verifyCredential(qrA, getCtx(eventIdB), nowMs);
     expect(res).toEqual({ ok: false, reason: "wrong_event" });
@@ -268,13 +288,13 @@ describe("I7: Attacker cannot forge credentials", () => {
       entryMode: "single_use" as const,
       ageRating: "all" as const,
       named: false,
-      holderPubkey: buyers[0]!.publicKey,
+      holderPubkey: must(buyers[0]).publicKey,
       keyVersion: 1,
     };
 
     // Retired key
     const certRetired = await signCertificate(certInput, retiredServer);
-    const qrRetired = await presentCredential(certRetired, buyers[0]!, nowMs);
+    const qrRetired = await presentCredential(certRetired, must(buyers[0]), nowMs);
     const resRetired = verifyCredential(qrRetired, getCtx(), nowMs);
     expect(resRetired).toEqual({ ok: false, reason: "unknown_server_key" });
 
@@ -294,22 +314,22 @@ describe("I7: Attacker cannot forge credentials", () => {
     const body = encodeCertificateBody(fields);
     const serverSig = await attackerServer.sign(certificateMessage(body));
     const certAttacker = { fields, serverSig };
-    const qrAttacker = await presentCredential(certAttacker as any, buyers[0]!, nowMs);
+    const qrAttacker = await presentCredential(certAttacker, must(buyers[0]), nowMs);
 
     const resAttacker = verifyCredential(qrAttacker, getCtx(), nowMs);
     expect(resAttacker).toEqual({ ok: false, reason: "bad_server_signature" });
   });
 
   test("i) malleable signatures (S+L) and non-canonical encodings", async () => {
-    const ticketId = manifests.get(eventIdA)?.tickets[0].ticketId;
-    const qr = credentials.get(ticketId)!;
-    const bytes = decodeBase45(qr)!;
+    const ticketId = firstTicketId();
+    const qr = must(credentials.get(ticketId));
+    const bytes = must(decodeBase45(qr));
 
     // Add L to S in holder signature
     const L = BigInt("0x1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3ed");
     let sBig = 0n;
     for (let i = 0; i < 32; i++) {
-      sBig |= BigInt(bytes[130 + 32 + i]!) << BigInt(i * 8);
+      sBig |= BigInt(must(bytes[130 + 32 + i])) << BigInt(i * 8);
     }
     sBig = sBig + L;
 
@@ -323,9 +343,9 @@ describe("I7: Attacker cannot forge credentials", () => {
   });
 
   test("j) fast-check: random mutations of bytes and characters", () => {
-    const ticketId = manifests.get(eventIdA)?.tickets[0].ticketId;
-    const qr = credentials.get(ticketId)!;
-    const bytes = decodeBase45(qr)!;
+    const ticketId = firstTicketId();
+    const qr = must(credentials.get(ticketId));
+    const bytes = must(decodeBase45(qr));
     const alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:";
 
     fc.assert(
@@ -334,7 +354,7 @@ describe("I7: Attacker cannot forge credentials", () => {
         fc.integer({ min: 1, max: 255 }),
         (pos, diff) => {
           const alteredBytes = new Uint8Array(bytes);
-          alteredBytes[pos] = alteredBytes[pos]! ^ diff;
+          alteredBytes[pos] = must(alteredBytes[pos]) ^ diff;
           expect(verifyCredential(encodeBase45(alteredBytes), getCtx(), nowMs).ok).toBe(false);
         },
       ),
@@ -346,8 +366,8 @@ describe("I7: Attacker cannot forge credentials", () => {
         fc.integer({ min: 1, max: alphabet.length - 1 }),
         (pos, diff) => {
           const alteredChars = qr.split("");
-          const origIdx = alphabet.indexOf(alteredChars[pos]!);
-          alteredChars[pos] = alphabet[(origIdx + diff) % alphabet.length]!;
+          const origIdx = alphabet.indexOf(must(alteredChars[pos]));
+          alteredChars[pos] = must(alphabet[(origIdx + diff) % alphabet.length]);
           expect(verifyCredential(alteredChars.join(""), getCtx(), nowMs).ok).toBe(false);
         },
       ),
@@ -359,8 +379,8 @@ describe("I7: Attacker cannot forge credentials", () => {
     test("accepts the same exact QR repeated within ±2 windows (Gate checks manifest for single-use / I1)", () => {
       // Reason: Crypto validates the keys and signature, but the gate prevents replay attacks
       // by marking the ticket as 'redeemed' in the manifest.
-      const ticketId = manifests.get(eventIdA)?.tickets[0].ticketId;
-      const qr = credentials.get(ticketId)!;
+      const ticketId = firstTicketId();
+      const qr = must(credentials.get(ticketId));
 
       const res1 = verifyCredential(qr, getCtx(), nowMs);
       expect(res1.ok).toBe(true);
@@ -374,8 +394,8 @@ describe("I7: Attacker cannot forge credentials", () => {
       // AT THE TIME. However, the ticket was since bound to a new key. The Gate will reject it
       // when it compares the keyVersion returned by crypto with the one in the Manifest.
       const buyerOld = buyers[0];
-      const certOld = certificates.get(manifests.get(eventIdA)?.tickets[0].ticketId);
-      const qrOld = await presentCredential(certOld, buyerOld!, nowMs);
+      const certOld = must(certificates.get(firstTicketId()));
+      const qrOld = await presentCredential(certOld, must(buyerOld), nowMs);
 
       // Now the ticket gets rebound to buyer[1] (key_version 2)
       // The old QR still passes crypto verification
