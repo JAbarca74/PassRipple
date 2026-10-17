@@ -18,7 +18,7 @@ appId: com.passripple.scanner
 - tapOn:
     id: "otp-input"
 - inputText: "123456"
-- hideKeyboard
+# The numeric keypad has no dismiss key; the button stays above it.
 - tapOn:
     id: "otp-submit"
 
