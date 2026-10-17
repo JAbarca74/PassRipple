@@ -23,7 +23,7 @@ pnpm dev:site   # http://localhost:5173
 
 ## Coming-soon mode
 
-While the platform is being built, the deployed site is a single holding page, [`coming-soon.html`](coming-soon.html). The `coming-soon` mode builds that page as `dist/index.html`, plus [`404.html`](404.html), which the static assets serve with status 404 for every path that is not a file. `/privacidad`, `/terminos` and `/eliminar-datos`, which Google Play links to, are built into `dist/site.html` and `_redirects` rewrites them there. Its styles and script are bundled files, so the same `_headers` CSP applies. [`robots.txt`](public/robots.txt), [`sitemap.xml`](public/sitemap.xml) and the Organization data in the page help search engines; the steps in Google Search Console are outside the repository.
+While the platform is being built, the deployed site is a single holding page, [`coming-soon.html`](coming-soon.html). The `coming-soon` mode builds that page as `dist/index.html`, plus [`404.html`](404.html), which the static assets serve with status 404 for every path that is not a file. `/privacidad`, `/terminos` and `/eliminar-datos`, which Google Play links to, are built into `dist/site.html`, and `_redirects` rewrites them to `/site`, not `/site.html`: the static assets redirect `/site.html` to `/site`, which would take the visitor away from the legal page's own address. Its styles and script are bundled files, so the same `_headers` CSP applies. [`robots.txt`](public/robots.txt), [`sitemap.xml`](public/sitemap.xml) and the Organization data in the page help search engines; the steps in Google Search Console are outside the repository.
 
 ```bash
 pnpm dev:coming-soon     # http://localhost:5173

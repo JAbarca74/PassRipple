@@ -6,6 +6,11 @@ import { defineConfig, loadEnv, type Plugin } from "vite";
 
 const COMING_SOON_PAGE = "coming-soon.html";
 const SITE_PAGE = "site.html";
+/**
+ * Path the legal pages are rewritten to. It omits ".html": the static assets redirect
+ * "/site.html" to "/site", and a rewrite to it would land the visitor on "/site".
+ */
+const SITE_ROUTE = `/${SITE_PAGE.replace(/\.html$/, "")}`;
 /** Served by the static assets, with status 404, for every path that is not a file. */
 const NOT_FOUND_PAGE = "404.html";
 /** Pages that must be public even while the site is "coming soon": Play Store links (14.5, 14.7). */
@@ -35,7 +40,7 @@ function comingSoon(): Plugin {
       this.emitFile({
         type: "asset",
         fileName: "_redirects",
-        source: `${ALWAYS_PUBLIC.map((path) => `${path} /${SITE_PAGE} 200`).join("\n")}\n`,
+        source: `${ALWAYS_PUBLIC.map((path) => `${path} ${SITE_ROUTE} 200`).join("\n")}\n`,
       });
     },
   };
