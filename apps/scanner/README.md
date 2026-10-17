@@ -34,7 +34,7 @@ The screen stays on in the gate screens, and the app works in the foreground: iO
 
 There is no Expo Go build: the app uses native modules (camera, SQLCipher), so it runs as a **development build** generated with `expo prebuild` (ADR 0022). `android/` and `ios/` are generated and never committed.
 
-You need Node.js 22.18+, pnpm through `corepack`, Docker, and for Android: Android Studio with an SDK and an emulator (or a phone with USB debugging) and JDK 17. iOS needs a Mac; without one, the iOS build is checked in CI on the iOS simulator.
+You need Node.js 22.18+, pnpm through `corepack`, Docker, and for Android: Android Studio with an SDK and an emulator (or a phone with USB debugging) and JDK 17. Building for iOS needs a Mac; without one, CI builds it on a macOS runner: for the simulator on every relevant change, and for a real iPhone on demand, installed with xtool from Windows (see "iOS on a real iPhone without a Mac" below).
 
 ### 1. Database and API (no Cloudflare account needed)
 
@@ -107,6 +107,50 @@ The gate's acceptance test (Phase 2): a phone in airplane mode validates a whole
 To check revocation: revoke the device as the organizer (`POST /v1/staff/devices/:id/revoke`, see `workers/api/README.md`). The phone stops validating at its next sync, uploads what it has and deletes the event.
 
 After trying it, run `corepack pnpm db:down` and `corepack pnpm db:up` before `corepack pnpm db:test`: the pgTAP suite expects a database without fixtures.
+
+## iOS on a real iPhone without a Mac
+
+Field tests on an iPhone (camera, SQLCipher, performance) use [xtool](https://github.com/xtool-org/xtool) before there is a paid Apple Developer account (ADR 0027). xtool does not build the app: CI builds it unsigned on macOS, and xtool signs it with an Apple ID and installs it over USB from WSL.
+
+> **Pending:** the `scanner-field-ipa` workflow and the iOS plain-HTTP exception for field builds in `app.config.ts` are not written yet. Until they are, there is no `.ipa` to install.
+
+### One-time setup (Windows)
+
+1. Install WSL with Ubuntu, and [usbipd-win](https://learn.microsoft.com/en-us/windows/wsl/connect-usb) to pass the iPhone through to WSL. In PowerShell as administrator, with the iPhone plugged in and trusted:
+
+   ```powershell
+   usbipd list
+   usbipd bind --busid <BUSID>
+   usbipd attach --wsl --busid <BUSID>
+   ```
+
+   `attach` is needed again each time the iPhone is plugged in.
+
+2. In WSL, follow xtool's [Linux installation guide](https://xtool.sh/documentation/xtooldocs/installation-linux): the Swift toolchain, `usbmuxd` (`sudo apt-get install usbmuxd`), and `Xcode.xip` downloaded in the browser from developer.apple.com. Then install the AppImage:
+
+   ```bash
+   curl -fL "https://github.com/xtool-org/xtool/releases/latest/download/xtool-$(uname -m).AppImage" -o xtool
+   chmod +x xtool
+   sudo mv xtool /usr/local/bin/
+   xtool setup
+   ```
+
+3. In `xtool setup`, choose **Password** with the project's dedicated Apple ID, never a personal one: it uses Apple's private APIs, and running Apple's SDK outside a Mac goes against Apple's developer agreement. With a paid account, **API Key** (an App Store Connect team key with the App Manager role) replaces it.
+
+### Each test round
+
+1. Run the `scanner-field-ipa` workflow from the Actions tab with the API's address as the iPhone sees it, as for the field APK.
+2. Download its artifact and install it from WSL, with the iPhone attached:
+
+   ```bash
+   gh run download <run-id> --name passripple-gate-field-ipa
+   xtool devices
+   xtool install <path-to>.ipa
+   ```
+
+3. On the iPhone, trust the developer profile (Settings → General → VPN & Device Management) the first time.
+
+Free signing lasts 7 days and allows up to 3 apps per device: after that, install it again. The build is Release, with its JavaScript bundled, so it needs no Metro and has no hot reload: each code change is a new CI run.
 
 ## UI tests
 
