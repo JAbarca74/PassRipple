@@ -1,112 +1,181 @@
+// A stand-in for the PassRipple API, for the gate app's UI flows (Maestro) in CI. It answers
+// every route the app calls, in the shared wire format, for one fixture event with one bound
+// ticket. Every key is derived from a public label: nothing here is a secret.
+//
+//   node apps/scanner/e2e/mock-api.ts
+//
+// GET /e2e/qr returns the ticket's QR text, valid now: a credential lives for its 30-second
+// window and two on each side (ADR 0014), so a flow asks for it right before scanning.
+
+import { randomUUID } from "node:crypto";
 import * as http from "node:http";
-import { parse } from "node:url";
-import { encodeGateManifest } from "@passripple/contracts";
-import { buildGateManifest } from "../../../modules/manifest/src/gate-manifest.ts";
+import { encodeGateManifest, encodeGateManifestDelta } from "@passripple/contracts";
+import {
+  buildGateManifest,
+  buildGateManifestDelta,
+} from "../../../modules/manifest/src/gate-manifest.ts";
 import { signCertificate } from "../../../packages/crypto/src/certificate.ts";
 import { presentCredential } from "../../../packages/crypto/src/credential.ts";
 import { createServerSigner, createSigner } from "../../../packages/crypto/src/testing.ts";
 
-const port = 8787;
+const PORT = 8787;
+const HOUR_MS = 3_600_000;
 
-async function run() {
-  const serverSigner = createServerSigner("mock_server_key", 1);
-  const holder = createSigner("mock_holder_key");
-  const serverKeys = [{ id: 1, publicKey: serverSigner.publicKey }];
+const serverSigner = createServerSigner("e2e mock server key", 1);
+const holder = createSigner("e2e mock holder key");
+const serverKeys = [{ id: 1, publicKey: serverSigner.publicKey }];
 
-  // mock ticket
-  const ticketId = "11111111-1111-1111-1111-111111111111";
-  const eventId = "22222222-2222-2222-2222-222222222222";
+const eventId = randomUUID();
+const ticketId = randomUUID();
+const userId = randomUUID();
+const deviceId = randomUUID();
+const startedAt = Date.now();
+const startsAt = new Date(startedAt - HOUR_MS);
+const endsAt = new Date(startedAt + 6 * HOUR_MS);
 
-  const certificate = await signCertificate(
+const certificate = await signCertificate(
+  {
+    ticketId,
+    eventId,
+    typeRef: 1,
+    entryMode: "single_use",
+    ageRating: "all",
+    named: false,
+    holderPubkey: holder.publicKey,
+    keyVersion: 1,
+  },
+  serverSigner,
+);
+
+const manifestInput = {
+  event: {
+    event_id: eventId,
+    name: "Evento de prueba",
+    venue_name: "Sede de prueba",
+    starts_at: startsAt,
+    ends_at: endsAt,
+    age_rating: "all" as const,
+    device_zone: null,
+  },
+  serverKeys,
+  ticketTypes: [
+    { ref: 1, name: "General", zone: null, entry_mode: "single_use" as const, audience: "public" },
+  ],
+  tickets: [
     {
-      ticketId,
-      eventId,
-      typeRef: 1,
-      entryMode: "single_use",
-      ageRating: "all",
-      named: false,
-      holderPubkey: holder.publicKey,
-      keyVersion: 1,
+      ticket_id: ticketId,
+      type_ref: 1,
+      entry_mode: "single_use" as const,
+      status: "bound" as const,
+      redeemed: false,
+      holder_pubkey: holder.publicKey,
+      key_version: 1,
+      code_human: "E2E0000001",
     },
-    serverSigner,
-  );
+  ],
+  cursor: "1",
+};
 
-  const qr = await presentCredential(certificate, holder, Date.now());
+const device = {
+  deviceId,
+  eventId,
+  role: "gate",
+  zone: null,
+  validFrom: startsAt.toISOString(),
+  validUntil: endsAt.toISOString(),
+  status: "active",
+};
 
-  const manifest = buildGateManifest({
-    event: {
-      event_id: eventId,
-      name: "Mock Event",
-      venue_name: "Mock Venue",
-      starts_at: new Date(Date.now() - 3600000),
-      ends_at: new Date(Date.now() + 3600000),
-      age_rating: "all",
-      device_zone: null,
-    },
-    serverKeys,
-    ticketTypes: [
-      {
-        ref: 1,
-        name: "Mock Ticket",
-        zone: null,
-        entry_mode: "single_use",
-        audience: "public",
-      },
-    ],
-    tickets: [
-      {
-        ticket_id: ticketId,
-        type_ref: 1,
-        entry_mode: "single_use",
-        status: "issued",
-        redeemed: false,
-        holder_pubkey: holder.publicKey,
-        key_version: 1,
-        code_human: "MOCKCODE01",
-      },
-    ],
-    cursor: "1",
-    serverTime: Date.now(),
-  });
+type Reply = { status: number; body?: unknown; text?: string };
 
-  const manifestBytes = encodeGateManifest(manifest);
-
-  const httpServer = http.createServer((req, res) => {
-    // CORS
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, x-org-id");
-    res.setHeader("X-Server-Time", Date.now().toString());
-
-    if (req.method === "OPTIONS") {
-      res.writeHead(204);
-      res.end();
-      return;
+async function route(method: string, path: string, url: URL, body: unknown): Promise<Reply> {
+  const key = `${method} ${path}`;
+  switch (key) {
+    case "GET /v1/health":
+      return { status: 200, body: { status: "ok" } };
+    case "GET /e2e/qr":
+      return { status: 200, text: await presentCredential(certificate, holder, Date.now()) };
+    case "POST /v1/auth/sign-in":
+      return { status: 200, body: { expiresInSeconds: 600 } };
+    case "POST /v1/auth/verify":
+      return {
+        status: 200,
+        body: {
+          token: "e2e-user-token",
+          userId,
+          expiresAt: new Date(Date.now() + HOUR_MS).toISOString(),
+        },
+      };
+    case "POST /v1/staff/enroll":
+      return { status: 200, body: { deviceToken: "e2e-device-token", device } };
+    case "GET /v1/gate/session":
+      return { status: 200, body: { device, serverTime: Date.now() } };
+    case "GET /v1/gate/manifest": {
+      const since = url.searchParams.get("since");
+      if (since === null) {
+        return {
+          status: 200,
+          body: encodeGateManifest(buildGateManifest({ ...manifestInput, serverTime: Date.now() })),
+        };
+      }
+      const delta = buildGateManifestDelta({
+        ...manifestInput,
+        tickets: [],
+        since,
+        serverTime: Date.now(),
+      });
+      return { status: 200, body: encodeGateManifestDelta(delta) };
     }
-
-    const parsedUrl = parse(req.url || "", true);
-    const path = parsedUrl.pathname;
-
-    if (req.method === "GET" && path === "/v1/health") {
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ status: "ok" }));
-    } else if (req.method === "POST" && path === "/v1/auth/staff/session") {
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ token: "prd_mocktoken123" }));
-    } else if (req.method === "GET" && path === "/v1/gate/manifest") {
-      res.writeHead(200, { "Content-Type": "application/json" });
-      // The encodeGateManifest returns a base64url string.
-      res.end(JSON.stringify(manifestBytes));
-    } else {
-      res.writeHead(404);
-      res.end("Not found");
+    case "POST /v1/gate/batches": {
+      const items = (body as { items?: { id: string; opType: string }[] } | null)?.items ?? [];
+      const results = items.map((item) =>
+        item.opType === "incident"
+          ? { id: item.id, status: "applied" }
+          : { id: item.id, status: "applied", outcome: "admitted" },
+      );
+      return { status: 200, body: { results, serverTime: Date.now() } };
     }
-  });
+    case "POST /v1/gate/sign-out":
+    case "POST /v1/auth/sign-out":
+    case "DELETE /v1/account":
+      return { status: 204 };
+    default:
+      return { status: 404, body: { error: { code: "not_found", message: `No route ${key}` } } };
+  }
+}
 
-  httpServer.listen(port, () => {
-    console.log(`Mock API running on port ${port}`);
-    console.log(`QR for flow: ${qr}`);
+function readBody(req: http.IncomingMessage): Promise<unknown> {
+  return new Promise((resolve) => {
+    const chunks: Buffer[] = [];
+    req.on("data", (chunk: Buffer) => chunks.push(chunk));
+    req.on("end", () => {
+      const text = Buffer.concat(chunks).toString("utf8");
+      try {
+        resolve(text.length > 0 ? JSON.parse(text) : null);
+      } catch {
+        resolve(null);
+      }
+    });
   });
 }
 
-run().catch(console.error);
+const server = http.createServer(async (req, res) => {
+  const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
+  const reply = await route(req.method ?? "GET", url.pathname, url, await readBody(req));
+  console.log(`${req.method} ${url.pathname}${url.search} -> ${reply.status}`);
+  res.setHeader("X-Server-Time", Date.now().toString());
+  if (reply.text !== undefined) {
+    res.writeHead(reply.status, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end(reply.text);
+  } else if (reply.body !== undefined) {
+    res.writeHead(reply.status, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(reply.body));
+  } else {
+    res.writeHead(reply.status);
+    res.end();
+  }
+});
+
+server.listen(PORT, () => {
+  console.log(`Mock API on http://localhost:${PORT}, event ${eventId}, ticket ${ticketId}`);
+});

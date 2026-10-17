@@ -124,6 +124,8 @@ jobs:
           if [ -f apps/scanner/e2e/mock-api.ts ]; then
             node apps/scanner/e2e/mock-api.ts > mock-api.log 2>&1 &
             for i in $(seq 1 30); do curl -sf http://localhost:8787/v1/health && break; sleep 1; done
+            # The mock must speak the app's contracts, or the flows fail for the wrong reason.
+            node apps/scanner/e2e/check-mock-api.ts
           fi
           maestro --device "$SIMULATOR" test apps/scanner/e2e --format junit --output maestro-report.xml
 
