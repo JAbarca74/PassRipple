@@ -95,9 +95,12 @@ jobs:
           workspace=$(ls -d *.xcworkspace | head -1)
           scheme=$(basename "$workspace" .xcworkspace)
           set -o pipefail
+          # Ad-hoc signed ("Sign to Run Locally"), not unsigned: an unsigned app has no
+          # entitlements, and the keychain behind expo-secure-store refuses it at launch.
           xcodebuild -workspace "$workspace" -scheme "$scheme" -configuration Release \
             -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
-            -derivedDataPath build CODE_SIGNING_ALLOWED=NO | tee xcodebuild.log | grep -E "error:|warning: .*deprecated|BUILD"
+            -derivedDataPath build CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= \
+            PROVISIONING_PROFILE_SPECIFIER= | tee xcodebuild.log | grep -E "error:|warning: .*deprecated|BUILD"
           test -d build/Build/Products/Release-iphonesimulator/*.app
 
       - name: Boot a simulator and install the app
