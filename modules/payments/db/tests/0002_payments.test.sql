@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(14);
+SELECT plan(15);
 
 -- ── Superuser setup ──────────────────────────────────────────────────────────
 INSERT INTO identity.organizations (id, name, verified_at) VALUES
@@ -192,8 +192,3 @@ SELECT dblink_disconnect(name) FROM unnest(ARRAY['setup', 'a', 'b']) AS name;
 
 SELECT * FROM finish(true);
 ROLLBACK;
-
-
-
-
-

@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(11);
+SELECT plan(15);
 
 -- ── Superuser setup ──────────────────────────────────────────────────────────
 INSERT INTO identity.users (id, is_admin) VALUES
@@ -75,8 +75,3 @@ RESET ROLE;
 
 SELECT * FROM finish(true);
 ROLLBACK;
-
-
-
-
-

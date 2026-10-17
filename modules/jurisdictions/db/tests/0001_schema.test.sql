@@ -5,8 +5,3 @@ SELECT has_schema('jurisdictions', 'module jurisdictions owns the jurisdictions 
 
 SELECT * FROM finish(true);
 ROLLBACK;
-
-
-
-
-

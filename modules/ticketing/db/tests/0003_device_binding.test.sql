@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(28);
+SELECT plan(31);
 
 -- ── Superuser setup ──────────────────────────────────────────────────────────
 INSERT INTO identity.organizations (id, name, verified_at) VALUES
@@ -197,8 +197,3 @@ SELECT throws_ok(
 
 SELECT * FROM finish(true);
 ROLLBACK;
-
-
-
-
-
