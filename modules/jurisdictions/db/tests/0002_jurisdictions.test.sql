@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(19);
+SELECT plan(15);
 
 -- ── Superuser setup ──────────────────────────────────────────────────────────
 INSERT INTO identity.users (id, is_admin) VALUES

@@ -1,89 +1,96 @@
 BEGIN;
+SELECT plan(9);
 
-SELECT no_plan();
+-- ── Superuser setup ──────────────────────────────────────────────────────────
+INSERT INTO identity.organizations (id, name, verified_at) VALUES
+  ('00000000-0000-4000-8000-00000000000a', 'Org 1', now()),
+  ('00000000-0000-4000-8000-00000000000b', 'Org 2', now());
 
--- Create a mock organization and user
-INSERT INTO identity.users (id, email) VALUES ('00000000-0000-0000-0000-000000000001', 'org@example.com');
-INSERT INTO identity.organizations (id, name) VALUES ('00000000-0000-0000-0000-000000000002', 'Org');
-INSERT INTO identity.memberships (org_id, user_id) VALUES ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001');
+INSERT INTO identity.users (id, is_admin) VALUES
+  ('00000000-0000-4000-8000-00000000000c', false),
+  ('00000000-0000-4000-8000-00000000000d', false);
 
-SET SESSION AUTHORIZATION passripple_api;
-SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000001","org":"00000000-0000-0000-0000-000000000002"}', true);
+INSERT INTO identity.memberships (org_id, user_id) VALUES
+  ('00000000-0000-4000-8000-00000000000a', '00000000-0000-4000-8000-00000000000c'),
+  ('00000000-0000-4000-8000-00000000000b', '00000000-0000-4000-8000-00000000000d');
+
+INSERT INTO jurisdictions.jurisdictions (canton_code, name, tax_rate_bps, courtesy_deduct_bps, settlement_rule) VALUES
+  ('TEST-01', 'Test', 0, '{}', 'next_business_day');
 
 -- Un evento insertado sin ends_at recibe starts_at + 12 h
-INSERT INTO events.events (id, org_id, name, starts_at, age_rating) 
-VALUES ('00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000002', 'Ev1', '2024-01-01 10:00:00+00');
+INSERT INTO events.events (id, org_id, canton_code, name, venue_name, starts_at, age_rating, permitted_capacity) VALUES
+  ('00000000-0000-4000-8000-000000000010', '00000000-0000-4000-8000-00000000000a', 'TEST-01', 'Ev1', 'Venue', '2024-01-01 10:00:00+00', 'all', 10);
 
-SELECT results_eq(
-    'SELECT ends_at FROM events.events WHERE id = ''00000000-0000-0000-0000-000000000003''',
-    ARRAY['2024-01-01 22:00:00+00'::timestamptz],
-    'ends_at defaults to starts_at + 12 hours'
+SELECT is(
+  (SELECT ends_at FROM events.events WHERE id = '00000000-0000-4000-8000-000000000010'),
+  '2024-01-01 22:00:00+00'::timestamptz,
+  'ends_at defaults to starts_at + 12 hours'
 );
 
 -- Con ends_at explícito lo conserva
-INSERT INTO events.events (id, org_id, name, starts_at, ends_at, age_rating) VALUES ('00000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000002', 'Ev2', '2024-01-02 10:00:00+00', '2024-01-02 15:00:00+00', 'all_ages');
+INSERT INTO events.events (id, org_id, canton_code, name, venue_name, starts_at, ends_at, age_rating, permitted_capacity) VALUES
+  ('00000000-0000-4000-8000-000000000011', '00000000-0000-4000-8000-00000000000a', 'TEST-01', 'Ev2', 'Venue', '2024-01-02 10:00:00+00', '2024-01-02 15:00:00+00', 'all', 10);
 
-SELECT results_eq(
-    'SELECT ends_at FROM events.events WHERE id = ''00000000-0000-0000-0000-000000000004''',
-    ARRAY['2024-01-02 15:00:00+00'::timestamptz],
-    'explicit ends_at is preserved'
+SELECT is(
+  (SELECT ends_at FROM events.events WHERE id = '00000000-0000-4000-8000-000000000011'),
+  '2024-01-02 15:00:00+00'::timestamptz,
+  'explicit ends_at is preserved'
 );
 
 -- ends_at <= starts_at viola events_window
 SELECT throws_ok(
-    $$INSERT INTO events.events (id, org_id, name, starts_at, ends_at, age_rating) VALUES ('00000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000002', 'Ev3', '2024-01-03 10:00:00+00', '2024-01-03 09:00:00+00', 'all_ages')$$,
-    '23514',
-    NULL,
-    'ends_at < starts_at violates CHECK constraint'
+  $$ INSERT INTO events.events (org_id, canton_code, name, venue_name, starts_at, ends_at, age_rating, permitted_capacity)
+     VALUES ('00000000-0000-4000-8000-00000000000a', 'TEST-01', 'Ev3', 'Venue', '2024-01-03 10:00:00+00', '2024-01-03 09:00:00+00', 'all', 10) $$,
+  '23514', NULL, 'ends_at before starts_at violates events_window'
+);
+SELECT throws_ok(
+  $$ INSERT INTO events.events (org_id, canton_code, name, venue_name, starts_at, ends_at, age_rating, permitted_capacity)
+     VALUES ('00000000-0000-4000-8000-00000000000a', 'TEST-01', 'Ev3', 'Venue', '2024-01-03 10:00:00+00', '2024-01-03 10:00:00+00', 'all', 10) $$,
+  '23514', NULL, 'ends_at equal to starts_at violates events_window'
 );
 
-SELECT throws_ok(
-    $$INSERT INTO events.events (id, org_id, name, starts_at, ends_at, age_rating) VALUES ('00000000-0000-0000-0000-000000000006', '00000000-0000-0000-0000-000000000002', 'Ev3', '2024-01-03 10:00:00+00', '2024-01-03 10:00:00+00', 'all_ages')$$,
-    '23514',
-    NULL,
-    'ends_at = starts_at violates CHECK constraint'
-);
+-- ── API actions ──────────────────────────────────────────────────────────────
+SET LOCAL SESSION AUTHORIZATION passripple_api;
+SELECT identity.set_actor('00000000-0000-4000-8000-00000000000c', 'organizer', '00000000-0000-4000-8000-00000000000a');
 
 -- mover starts_at después de ends_at falla
 SELECT throws_ok(
-    $$UPDATE events.events SET starts_at = '2024-01-03 00:00:00+00' WHERE id = '00000000-0000-0000-0000-000000000004'$$,
-    '23514',
-    NULL,
-    'updating starts_at > ends_at violates CHECK constraint'
+  $$ UPDATE events.events SET starts_at = '2024-01-03 00:00:00+00' WHERE id = '00000000-0000-4000-8000-000000000011' $$,
+  '23514', NULL, 'moving starts_at past ends_at violates events_window'
 );
 
--- passripple_api puede actualizar ends_at
-UPDATE events.events SET ends_at = '2024-01-02 20:00:00+00' WHERE id = '00000000-0000-0000-0000-000000000004';
-SELECT results_eq(
-    'SELECT ends_at FROM events.events WHERE id = ''00000000-0000-0000-0000-000000000004''',
-    ARRAY['2024-01-02 20:00:00+00'::timestamptz],
-    'passripple_api can update ends_at'
+-- El organizador del evento puede mover ends_at
+UPDATE events.events SET ends_at = '2024-01-02 20:00:00+00' WHERE id = '00000000-0000-4000-8000-000000000011';
+SELECT is(
+  (SELECT ends_at FROM events.events WHERE id = '00000000-0000-4000-8000-000000000011'),
+  '2024-01-02 20:00:00+00'::timestamptz,
+  'the organizer can update ends_at'
 );
 
--- check other roles cannot (system is owner but passripple_api can due to policies)
-RESET SESSION AUTHORIZATION;
-SET SESSION AUTHORIZATION passripple_api;
-SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000001","org":"00000000-0000-0000-0000-000000000000"}', true); -- not organizer
+-- Puede crear un evento con su propio ends_at
+SELECT lives_ok(
+  $$ INSERT INTO events.events (org_id, canton_code, name, venue_name, starts_at, ends_at, age_rating, permitted_capacity)
+     VALUES ('00000000-0000-4000-8000-00000000000a', 'TEST-01', 'Ev4', 'Venue', '2024-01-04 10:00:00+00', '2024-01-04 18:00:00+00', 'all', 10) $$,
+  'the organizer can insert an event with ends_at'
+);
 
+-- Otra organización no lo ve ni lo cambia (RLS)
+SELECT identity.set_actor('00000000-0000-4000-8000-00000000000d', 'organizer', '00000000-0000-4000-8000-00000000000b');
+WITH updated AS (
+  UPDATE events.events SET ends_at = '2024-01-02 21:00:00+00'
+   WHERE id = '00000000-0000-4000-8000-000000000011' RETURNING 1
+)
+SELECT is((SELECT count(*)::int FROM updated), 0, 'an organizer of another org cannot update ends_at');
+
+-- Un comprador no crea eventos
+SELECT identity.set_actor(NULL, 'buyer');
 SELECT throws_ok(
-    $$UPDATE events.events SET ends_at = '2024-01-02 21:00:00+00' WHERE id = '00000000-0000-0000-0000-000000000004'$$,
-    '42501',
-    NULL,
-    'non-organizer cannot update ends_at'
+  $$ INSERT INTO events.events (org_id, canton_code, name, venue_name, starts_at, age_rating, permitted_capacity)
+     VALUES ('00000000-0000-4000-8000-00000000000a', 'TEST-01', 'Ev5', 'Venue', '2024-01-05 10:00:00+00', 'all', 10) $$,
+  '42501', NULL, 'a buyer cannot insert events'
 );
 
-SELECT throws_ok(
-    $$INSERT INTO events.events (id, org_id, name, starts_at, age_rating) VALUES ('00000000-0000-0000-0000-000000000007', '00000000-0000-0000-0000-000000000002', 'Ev3', '2024-01-03 10:00:00+00')$$,
-    '42501',
-    NULL,
-    'non-organizer cannot insert events'
-);
+RESET ROLE;
 
-SELECT * FROM finish();
-
+SELECT * FROM finish(true);
 ROLLBACK;
-
-
-
-
-

@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(15);
+SELECT plan(14);
 
 -- ── Superuser setup ──────────────────────────────────────────────────────────
 INSERT INTO identity.organizations (id, name, verified_at) VALUES
@@ -24,7 +24,7 @@ INSERT INTO events.events (id, org_id, canton_code, name, venue_name, starts_at,
 -- ── API actions ──────────────────────────────────────────────────────────────
 SET LOCAL SESSION AUTHORIZATION passripple_api;
 
-SELECT identity.set_actor('00000000-0000-4000-8000-00000000000d', 'organizer');
+SELECT identity.set_actor('00000000-0000-4000-8000-00000000000d', 'organizer', '00000000-0000-4000-8000-00000000000b');
 
 SELECT is((SELECT count(*)::int FROM events.events WHERE id = '00000000-0000-4000-8000-000000000010'), 0, 'organizer cannot see draft event of another org');
 
@@ -52,7 +52,7 @@ SELECT throws_ok(
   '55000', NULL, 'cannot publish if organization is not verified'
 );
 
-SELECT identity.set_actor('00000000-0000-4000-8000-00000000000c', 'organizer');
+SELECT identity.set_actor('00000000-0000-4000-8000-00000000000c', 'organizer', '00000000-0000-4000-8000-00000000000a');
 -- Event 1 has a permit, so we remove it to test
 UPDATE events.events SET permit_number = NULL WHERE id = '00000000-0000-4000-8000-000000000010';
 SELECT throws_ok(
@@ -62,13 +62,13 @@ SELECT throws_ok(
 
 UPDATE events.events SET permit_number = 'PERMIT1' WHERE id = '00000000-0000-4000-8000-000000000010';
 
-SELECT identity.set_actor('00000000-0000-4000-8000-00000000000d', 'organizer');
+SELECT identity.set_actor('00000000-0000-4000-8000-00000000000d', 'organizer', '00000000-0000-4000-8000-00000000000b');
 SELECT throws_ok(
   $$ SELECT events.publish('00000000-0000-4000-8000-000000000010') $$,
   '42501', NULL, 'cannot publish event from another organization'
 );
 
-SELECT identity.set_actor('00000000-0000-4000-8000-00000000000c', 'organizer');
+SELECT identity.set_actor('00000000-0000-4000-8000-00000000000c', 'organizer', '00000000-0000-4000-8000-00000000000a');
 SELECT lives_ok($$ SELECT events.publish('00000000-0000-4000-8000-000000000010') $$, 'publish succeeds');
 
 SELECT throws_ok(
@@ -94,8 +94,3 @@ SELECT is((SELECT count(*)::int FROM events.events WHERE id = '00000000-0000-400
 RESET SESSION AUTHORIZATION;
 SELECT * FROM finish(true);
 ROLLBACK;
-
-
-
-
-

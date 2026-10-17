@@ -104,16 +104,27 @@ SELECT is(
 -- vencido ⇒ NULL
 -- mock expiry by updating directly
 SELECT identity.request_sign_in('verify2@example.com', '\x0100000000000000000000000000000000000000000000000000000000000000'::bytea, interval '5 minutes');
--- BUG: updating expires_at to past violates CHECK (expires_at > created_at)
-UPDATE identity.sign_in_codes SET expires_at = now() - interval '1 minute' WHERE email = 'verify2@example.com';
+-- Move the whole code into the past: the CHECK keeps expires_at after created_at.
+UPDATE identity.sign_in_codes
+SET created_at = now() - interval '10 minutes', expires_at = now() - interval '1 minute'
+WHERE email = 'verify2@example.com';
 SELECT is(
     identity.verify_sign_in('verify2@example.com', '\x0100000000000000000000000000000000000000000000000000000000000000'::bytea, '\x1100000000000000000000000000000000000000000000000000000000000000'::bytea, interval '1 hour'),
     NULL,
     'expired code returns NULL'
 );
 
+-- The API normalizes the address (contracts/staff-api.ts); the database only accepts it
+-- already in lowercase and trimmed.
+SELECT throws_ok(
+    $$SELECT identity.request_sign_in('NEW@example.com', '\x0100000000000000000000000000000000000000000000000000000000000000'::bytea, interval '5 minutes')$$,
+    '23514',
+    NULL,
+    'request_sign_in rejects an address that is not lowercase'
+);
+
 -- Con el código correcto crea el usuario (correo en minúsculas)
-SELECT identity.request_sign_in('NEW@example.com', '\x0100000000000000000000000000000000000000000000000000000000000000'::bytea, interval '5 minutes');
+SELECT identity.request_sign_in('new@example.com', '\x0100000000000000000000000000000000000000000000000000000000000000'::bytea, interval '5 minutes');
 SELECT isnt(
     identity.verify_sign_in('new@example.com', '\x0100000000000000000000000000000000000000000000000000000000000000'::bytea, '\x1200000000000000000000000000000000000000000000000000000000000000'::bytea, interval '1 hour'),
     NULL,
@@ -203,7 +214,8 @@ SELECT throws_ok(
     'duplicate email rejected'
 );
 
--- Concurrencia (dblink)
+-- Concurrencia (dblink): the advisory lock serializes two requests for one address, so
+-- the limit of five codes in fifteen minutes holds when both arrive together.
 CREATE FUNCTION pg_temp.cleanup_i2() RETURNS text LANGUAGE sql AS $f$
   SELECT dblink_exec('setup', $c$
     SET session_replication_role = replica;
@@ -212,34 +224,45 @@ CREATE FUNCTION pg_temp.cleanup_i2() RETURNS text LANGUAGE sql AS $f$
   $c$);
 $f$;
 
-SELECT dblink_connect(name, format('dbname=%s user=%s', current_database(), (SELECT rolname FROM pg_roles WHERE oid = 10)))
+SELECT dblink_connect(name, format('dbname=%s user=%s', current_database(),
+                                   (SELECT rolname FROM pg_roles WHERE oid = 10)))
   FROM unnest(ARRAY['setup', 'a', 'b']) AS name;
 SELECT pg_temp.cleanup_i2();
 
+-- Four codes already sent: one more is allowed.
 SELECT dblink_exec('setup', $$
-  INSERT INTO identity.sign_in_codes (email, code_hash, created_at, expires_at) VALUES 
-  ('race@example.com', '\x0100000000000000000000000000000000000000000000000000000000000000', now(), now() + interval '5 minutes'),
-  ('race@example.com', '\x0200000000000000000000000000000000000000000000000000000000000000', now(), now() + interval '5 minutes'),
-  ('race@example.com', '\x0300000000000000000000000000000000000000000000000000000000000000', now(), now() + interval '5 minutes'),
-  ('race@example.com', '\x0400000000000000000000000000000000000000000000000000000000000000', now(), now() + interval '5 minutes');
+  INSERT INTO identity.sign_in_codes (email, code_hash, expires_at) VALUES
+  ('race@example.com', '\x0100000000000000000000000000000000000000000000000000000000000000', now() + interval '5 minutes'),
+  ('race@example.com', '\x0200000000000000000000000000000000000000000000000000000000000000', now() + interval '5 minutes'),
+  ('race@example.com', '\x0300000000000000000000000000000000000000000000000000000000000000', now() + interval '5 minutes'),
+  ('race@example.com', '\x0400000000000000000000000000000000000000000000000000000000000000', now() + interval '5 minutes');
 $$);
 
-SELECT dblink_exec(name, 'BEGIN'), dblink_exec(name, 'SET SESSION AUTHORIZATION passripple_api') FROM unnest(ARRAY['a', 'b']) AS name;
+-- Both racers act as the API, as the system.
+SELECT dblink_exec(name, 'BEGIN'), dblink_exec(name, 'SET LOCAL SESSION AUTHORIZATION passripple_api'),
+       (SELECT x FROM dblink(name, $$SELECT identity.set_actor(NULL, 'system')::text$$) AS t(x text))
+  FROM unnest(ARRAY['a', 'b']) AS name;
 
-SELECT dblink_send_query('a', $$SELECT identity.request_sign_in('race@example.com', '\x0500000000000000000000000000000000000000000000000000000000000000', interval '5 minutes')$$);
+-- A records the fifth code and keeps its transaction open, holding the address lock.
+SELECT lives_ok(
+  $$SELECT * FROM dblink('a', $q$SELECT identity.request_sign_in('race@example.com', '\x0500000000000000000000000000000000000000000000000000000000000000', interval '5 minutes')::text$q$) AS t(x text)$$,
+  'the first request records the fifth code'
+);
+SELECT dblink_send_query('b', $$SELECT identity.request_sign_in('race@example.com', '\x0600000000000000000000000000000000000000000000000000000000000000', interval '5 minutes')::text$$);
 SELECT pg_sleep(0.3);
-SELECT dblink_send_query('b', $$SELECT identity.request_sign_in('race@example.com', '\x0600000000000000000000000000000000000000000000000000000000000000', interval '5 minutes')$$);
-SELECT pg_sleep(0.3);
-
--- one must fail with PR429
-SELECT count(*) > 0 FROM dblink_get_result('a') AS t(err text);
-SELECT * FROM dblink_get_result('a') AS t(err text);
-
-SELECT count(*) > 0 FROM dblink_get_result('b') AS t(err text);
-SELECT * FROM dblink_get_result('b') AS t(err text);
-
+SELECT is(dblink_is_busy('b'), 1, 'the second request waits for the address lock');
 SELECT dblink_exec('a', 'COMMIT');
-SELECT dblink_exec('b', 'COMMIT');
+SELECT is(
+  (SELECT count(*)::int FROM dblink_get_result('b', false) AS t(x text)),
+  0,
+  'once the first commits, the second request fails'
+);
+SELECT ok(
+  dblink_error_message('b') LIKE '%too many sign-in codes%',
+  'the second request fails with the rate limit (PR429)'
+);
+SELECT * FROM dblink_get_result('b', false) AS t(x text);
+SELECT dblink_exec('b', 'ROLLBACK');
 
 SELECT is(
   (SELECT count(*)::int FROM identity.sign_in_codes WHERE email = 'race@example.com'),
@@ -252,8 +275,3 @@ SELECT dblink_disconnect(name) FROM unnest(ARRAY['setup', 'a', 'b']) AS name;
 
 SELECT * FROM finish();
 ROLLBACK;
-
-
-
-
-

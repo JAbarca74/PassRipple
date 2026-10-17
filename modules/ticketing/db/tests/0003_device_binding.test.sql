@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(31);
+SELECT plan(28);
 
 -- ── Superuser setup ──────────────────────────────────────────────────────────
 INSERT INTO identity.organizations (id, name, verified_at) VALUES

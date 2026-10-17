@@ -29,7 +29,7 @@ SELECT throws_ok(
 );
 
 -- set actor to the user
-SELECT identity.set_actor('00000000-0000-0000-0000-000000000001', 'organizer');
+SELECT identity.set_actor('00000000-0000-0000-0000-000000000001', 'organizer', '00000000-0000-0000-0000-000000000002');
 
 -- execute erasure
 SELECT lives_ok(
@@ -68,8 +68,8 @@ SELECT results_eq(
 
 -- check set_actor fails for that user because they are disabled
 SELECT throws_ok(
-    $$SELECT identity.set_actor('00000000-0000-0000-0000-000000000001', 'organizer')$$,
-    'P0001',
+    $$SELECT identity.set_actor('00000000-0000-0000-0000-000000000001', 'organizer', '00000000-0000-0000-0000-000000000002')$$,
+    '42501',
     NULL,
     'set_actor fails for disabled user'
 );
@@ -77,8 +77,3 @@ SELECT throws_ok(
 SELECT * FROM finish();
 
 ROLLBACK;
-
-
-
-
-
