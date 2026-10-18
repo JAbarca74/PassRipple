@@ -1,0 +1,126 @@
+# The gate app as Google Play takes it: a release Android App Bundle signed with the upload
+# key, for the closed test and later production (design 16, Phase 2). Run it by hand from the
+# Actions tab with the production API address and a version code higher than the last one
+# uploaded. Play re-signs the app with its own key (Play App Signing); the upload key only
+# proves the bundle comes from us.
+#
+# Needs four repository secrets, created once (docs: apps/scanner/README.md, "Google Play"):
+#   ANDROID_UPLOAD_KEYSTORE_BASE64   the upload keystore (.jks), base64-encoded
+#   ANDROID_UPLOAD_KEYSTORE_PASSWORD
+#   ANDROID_UPLOAD_KEY_ALIAS
+#   ANDROID_UPLOAD_KEY_PASSWORD
+# Without them the job stops before building and says so.
+name: scanner-play-aab
+
+# GitHub only lets you run a workflow by hand once it is on the default branch. Until Phase 2
+# reaches main, a push that changes this file runs it with the defaults below.
+on:
+  push:
+    branches: [Phase-Gate]
+    paths: [.github/workflows/scanner-play-aab.yml]
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: Production API address, https only, for example https://api.passripple.com
+        required: true
+        type: string
+      version_code:
+        description: Play version code, higher than every one uploaded before
+        required: true
+        type: number
+
+permissions:
+  contents: read
+
+jobs:
+  aab:
+    runs-on: ubuntu-latest
+    # Two ABIs of native code take a while; the field APK builds only one.
+    timeout-minutes: 120
+    env:
+      CI: "true"
+      EXPO_PUBLIC_API_URL: ${{ inputs.api_url || 'https://api.passripple.com' }}
+      SCANNER_VERSION_CODE: ${{ inputs.version_code || github.run_number }}
+      KEYSTORE_BASE64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}
+      KEYSTORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
+      KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+      KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+    steps:
+      - name: Check the upload key and the API address
+        id: ready
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]; then
+            echo "::warning::The upload key secrets are not set yet, so no bundle is built. See apps/scanner/README.md, \"Google Play\"."
+            echo "build=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          case "$EXPO_PUBLIC_API_URL" in
+            https://*) ;;
+            *) echo "::error::A build for Play talks to the API over HTTPS only."; exit 1 ;;
+          esac
+          echo "build=true" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.ready.outputs.build == 'true'
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        if: steps.ready.outputs.build == 'true'
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: steps.ready.outputs.build == 'true'
+        with:
+          node-version: lts/*
+          cache: pnpm
+
+      - name: Install
+        if: steps.ready.outputs.build == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate the Android project
+        if: steps.ready.outputs.build == 'true'
+        working-directory: apps/scanner
+        run: pnpm exec expo prebuild --platform android --no-install --clean
+
+      - name: Check that the build ships without plain HTTP
+        if: steps.ready.outputs.build == 'true'
+        working-directory: apps/scanner/android
+        run: "! grep -q 'usesCleartextTraffic=\"true\"' app/src/main/AndroidManifest.xml"
+
+      # arm64-v8a for every recent phone, armeabi-v7a for the cheap 32-bit ones a gate may use.
+      # The upload key reaches Gradle as injected signing properties, from a file in the
+      # runner's temporary directory that is removed with the runner.
+      - name: Build the signed bundle
+        if: steps.ready.outputs.build == 'true'
+        working-directory: apps/scanner/android
+        run: |
+          export JAVA_HOME="$JAVA_HOME_17_X64"
+          keystore="$RUNNER_TEMP/upload.jks"
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$keystore"
+          set -o pipefail
+          ./gradlew bundleRelease --no-daemon \
+            -PreactNativeArchitectures=arm64-v8a,armeabi-v7a \
+            -Pandroid.injected.signing.store.file="$keystore" \
+            -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASSWORD" \
+            2>&1 | tee gradle.log | grep -E "OP-SQLITE|BUILD|FAILURE|error:"
+          grep -q "using sqlcipher" gradle.log
+          rm -f "$keystore"
+          test -f app/build/outputs/bundle/release/app-release.aab
+
+      - name: Check the bundle is signed with the upload key
+        if: steps.ready.outputs.build == 'true'
+        working-directory: apps/scanner/android
+        run: |
+          "$JAVA_HOME_17_X64/bin/jarsigner" -verify app/build/outputs/bundle/release/app-release.aab | grep -q "jar verified"
+          echo "Version code $SCANNER_VERSION_CODE, API $EXPO_PUBLIC_API_URL"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: steps.ready.outputs.build == 'true'
+        with:
+          name: passripple-gate-play-aab-${{ env.SCANNER_VERSION_CODE }}
+          path: apps/scanner/android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 30
+          if-no-files-found: error

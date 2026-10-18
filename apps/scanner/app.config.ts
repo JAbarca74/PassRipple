@@ -25,6 +25,8 @@ const config: ExpoConfig = {
   },
   android: {
     package: appId,
+    // Google Play needs it higher on every upload; the "scanner-play-aab" workflow sets it.
+    versionCode: Number(process.env.SCANNER_VERSION_CODE ?? "1"),
     adaptiveIcon: {
       foregroundImage: "../../brand/png/adaptive-icon-foreground.png",
       monochromeImage: "../../brand/png/adaptive-icon-monochrome.png",

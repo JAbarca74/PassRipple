@@ -154,7 +154,36 @@ Free signing lasts 7 days and allows up to 3 apps per device: after that, instal
 
 ## UI tests
 
-UI-test builds set `EXPO_PUBLIC_E2E=1`, which adds a hidden field (`e2e-qr-input`, `e2e-qr-submit`) that feeds QR text to the scanner, because simulators have no camera. Screens carry `testID`s for the flows. Production builds never set it. The flows run with Maestro in CI on the iOS simulator (ADR 0023).
+UI-test builds set `EXPO_PUBLIC_E2E=1`, which adds a hidden field (`e2e-qr-input`, `e2e-qr-submit`) that feeds QR text to the scanner, because simulators have no camera. Screens carry `testID`s for the flows. Production builds never set it. The flows run with Maestro in CI on the iOS simulator (ADR 0023), against [`e2e/mock-api.ts`](e2e/mock-api.ts), which answers every route the app calls in the shared wire format; [`e2e/check-mock-api.ts`](e2e/check-mock-api.ts) checks that before the flows start.
+
+## Google Play
+
+Play takes a signed Android App Bundle. The [`scanner-play-aab`](../../.github/workflows/scanner-play-aab.yml) workflow builds it (arm64-v8a and armeabi-v7a, SQLCipher checked, no plain HTTP) and signs it with the **upload key**; Play App Signing then signs what reaches phones with Google's own key, so a lost upload key can be reset and never locks the app.
+
+### Once: the upload key
+
+On your own machine, with the JDK's `keytool`. Choose the passwords yourself and keep the `.jks` file and both passwords in your password manager: they are not in this repository and nobody else needs them.
+
+```bash
+keytool -genkeypair -v -keystore passripple-upload.jks -alias upload -keyalg RSA -keysize 4096 -validity 10000 -dname "CN=PassRipple, O=PassRipple, C=CR"
+```
+
+Then store it as four repository secrets (the base64 one from the file, the others typed when `gh` asks):
+
+```bash
+base64 -w0 passripple-upload.jks | gh secret set ANDROID_UPLOAD_KEYSTORE_BASE64
+gh secret set ANDROID_UPLOAD_KEYSTORE_PASSWORD
+gh secret set ANDROID_UPLOAD_KEY_ALIAS
+gh secret set ANDROID_UPLOAD_KEY_PASSWORD
+```
+
+### Each upload
+
+Run `scanner-play-aab` from the Actions tab with the production API address (HTTPS) and a version code higher than any uploaded before, then upload the `.aab` artifact to the track in Play Console. Until Phase 2 reaches `main`, GitHub only offers the manual run on `main`; a push that changes the workflow file runs it with defaults instead.
+
+### The closed test
+
+Personal developer accounts created after 13 November 2023 must run a closed test with at least 12 testers for 14 days in a row before production (design 15.2). The testers are the first organizers' real staff; start at least three weeks before the first event, with more than 12 people for margin. The privacy policy is at `https://passripple.com/privacidad` and account deletion at `https://passripple.com/eliminar-datos`, both linked from the Play listing.
 
 ## Dependencies
 

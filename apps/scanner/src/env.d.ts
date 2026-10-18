@@ -8,6 +8,7 @@ declare const process: {
     /** Read by app.config.ts at build time only. */
     readonly SCANNER_APP_ID?: string;
     readonly SCANNER_FIELD_BUILD?: string;
+    readonly SCANNER_VERSION_CODE?: string;
   };
 };
 
