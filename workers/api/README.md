@@ -77,7 +77,18 @@ The fixtures stay in the local database, and the pgTAP suite expects one without
 
 ## Configuration
 
-`wrangler.jsonc` holds no secret. The Hyperdrive id is a placeholder until the Cloudflare account exists: replace it with the id printed by `wrangler hyperdrive create` (see `db/README.md`). Secrets are set with `wrangler secret put <NAME>`.
+`wrangler.jsonc` holds no secret. The Hyperdrive id is that of `passripple-db` (see `db/README.md`). Secrets are set with `wrangler secret put <NAME>`: `SIGN_IN_PEPPER`, `SERVER_PUBLIC_KEYS`, `ALLOWED_ORIGINS` (`https://passripple.com`), `MAIL_PROVIDER` (`ses`), `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME`, `SES_REGION` (`us-east-2`), `SES_ACCESS_KEY_ID` and `SES_SECRET_ACCESS_KEY`.
+
+The Worker answers only on `api.passripple.com`, a custom domain like the site's: `workers_dev` and `preview_urls` are off (ADR 0026). The SES access key belongs to an IAM user allowed nothing but `ses:SendEmail` on the `passripple.com` identity.
+
+## Deploy
+
+From the repository root, always with `--config` and a dry run first (ADR 0026): the dry run must show only the `HYPERDRIVE` binding.
+
+```bash
+pnpm --filter @passripple/worker-api exec wrangler deploy --config wrangler.jsonc --dry-run
+pnpm --filter @passripple/worker-api exec wrangler deploy --config wrangler.jsonc
+```
 
 ## Depends on
 
