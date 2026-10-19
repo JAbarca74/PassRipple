@@ -16,12 +16,19 @@ SERVER_PUBLIC_KEYS=[]
 ALLOWED_ORIGINS=http://localhost:5173
 
 # `log` prints emails to the wrangler console and only works on localhost.
-# Production uses `ses`.
+# Production uses `gmail` (ADR 0028); `ses` remains available.
 MAIL_PROVIDER=log
 
 # Sender of transactional mail (same values as MAIL_FROM_* in the root .env.example).
 MAIL_FROM_ADDRESS=
 MAIL_FROM_NAME=
+
+# Gmail through Google Workspace, only when MAIL_PROVIDER=gmail: the service account's
+# client_email and private_key from its JSON key file (the key is secret), and the mailbox
+# it sends as if MAIL_FROM_ADDRESS is an alias of it.
+GMAIL_CLIENT_EMAIL=
+GMAIL_PRIVATE_KEY=
+GMAIL_SENDER_USER=
 
 # Amazon SES, only when MAIL_PROVIDER=ses. The access key is secret.
 SES_REGION=

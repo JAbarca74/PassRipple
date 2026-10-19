@@ -57,7 +57,7 @@ The public site calls `/v1/auth/*` and `/v1/account` from the browser for `/elim
 
 | Port | Adapters |
 |---|---|
-| `MailSender` (`src/ports/mail.ts`) | `ses` (Amazon SES API v2, SigV4 with `aws4fetch`); `log`, which prints to the console and refuses to run anywhere but localhost |
+| `MailSender` (`src/ports/mail.ts`) | `gmail` (Gmail API as a Google Workspace mailbox, service account with domain-wide delegation, ADR 0028); `ses` (Amazon SES API v2, SigV4 with `aws4fetch`); `log`, which prints to the console and refuses to run anywhere but localhost |
 | `IntegrityVerifier` (`src/ports/integrity.ts`) | `unverified`: records whether the phone sent a Play Integrity or App Attest token. A signal, never a block |
 
 ## Running it locally
@@ -77,9 +77,9 @@ The fixtures stay in the local database, and the pgTAP suite expects one without
 
 ## Configuration
 
-`wrangler.jsonc` holds no secret. The Hyperdrive id is that of `passripple-db` (see `db/README.md`). Secrets are set with `wrangler secret put <NAME>`: `SIGN_IN_PEPPER`, `SERVER_PUBLIC_KEYS`, `ALLOWED_ORIGINS` (`https://passripple.com`), `MAIL_PROVIDER` (`ses`), `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME`, `SES_REGION` (`us-east-2`), `SES_ACCESS_KEY_ID` and `SES_SECRET_ACCESS_KEY`.
+`wrangler.jsonc` holds no secret. The Hyperdrive id is that of `passripple-db` (see `db/README.md`). Secrets are set with `wrangler secret put <NAME>`: `SIGN_IN_PEPPER`, `SERVER_PUBLIC_KEYS`, `ALLOWED_ORIGINS` (`https://passripple.com`), `MAIL_PROVIDER` (`gmail`), `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME`, `GMAIL_CLIENT_EMAIL` and `GMAIL_PRIVATE_KEY` (from the service account's JSON key), and `GMAIL_SENDER_USER` when the sender is an alias. With `MAIL_PROVIDER=ses` instead: `SES_REGION`, `SES_ACCESS_KEY_ID` and `SES_SECRET_ACCESS_KEY`.
 
-The Worker answers only on `api.passripple.com`, a custom domain like the site's: `workers_dev` and `preview_urls` are off (ADR 0026). The SES access key belongs to an IAM user allowed nothing but `ses:SendEmail` on the `passripple.com` identity.
+The Worker answers only on `api.passripple.com`, a custom domain like the site's: `workers_dev` and `preview_urls` are off (ADR 0026). The Gmail service account may only use the `gmail.send` scope, granted by domain-wide delegation in the Workspace admin console (ADR 0028).
 
 ## Deploy
 

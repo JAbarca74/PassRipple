@@ -40,7 +40,7 @@ export const privacyPolicy: LegalDocument = {
       id: "encargados",
       title: "Quién nos ayuda a tratarlos",
       paragraphs: [
-        "Neon guarda la base de datos. Cloudflare hospeda la API y el sitio. Amazon Web Services (Amazon SES) envía los correos con los códigos de acceso. Esta lista se ampliará antes de usar cualquier otro proveedor.",
+        "Neon guarda la base de datos. Cloudflare hospeda la API y el sitio. Google (Google Workspace) envía los correos con los códigos de acceso. Esta lista se ampliará antes de usar cualquier otro proveedor.",
       ],
     },
     {

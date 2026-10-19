@@ -25,10 +25,20 @@ export interface Env {
    */
   readonly ALLOWED_ORIGINS?: string;
 
-  /** `ses` in production. `log` prints messages to the console, and only works on localhost. */
+  /**
+   * `gmail` in production (ADR 0028), `ses` as the alternative. `log` prints messages to the
+   * console, and only works on localhost.
+   */
   readonly MAIL_PROVIDER?: string;
   readonly MAIL_FROM_ADDRESS?: string;
   readonly MAIL_FROM_NAME?: string;
+  /**
+   * Gmail through Google Workspace: the service account's email and private key (the key is
+   * secret), and the mailbox it sends as when that is not MAIL_FROM_ADDRESS itself.
+   */
+  readonly GMAIL_CLIENT_EMAIL?: string;
+  readonly GMAIL_PRIVATE_KEY?: string;
+  readonly GMAIL_SENDER_USER?: string;
   /** Amazon SES. The access key is secret. */
   readonly SES_REGION?: string;
   readonly SES_ACCESS_KEY_ID?: string;
