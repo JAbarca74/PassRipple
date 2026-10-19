@@ -22,9 +22,7 @@ The API never writes these tables. It calls, as the system actor:
 
 Matching a notice to its order (by payment code and amount) is part of reconciliation, in Phase 3.
 
-## Emits
-
-`payment.succeeded` when `payments.confirm` returns `paid`.
+- `payments.outbox`: the domain events this module emitted, published by the relay in `workers/jobs` (ADR 0029).
 
 ## Depends on
 
@@ -34,7 +32,7 @@ Matching a notice to its order (by payment code and amount) is part of reconcili
 
 ## Emits
 
-- `payment.succeeded`
+- `payment.succeeded`, when `payments.confirm` returns `paid`, through `payments.outbox`
 
 ## Guarantees
 

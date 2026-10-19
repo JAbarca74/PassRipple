@@ -32,12 +32,22 @@ export {
   SIGNATURE_LENGTH,
   TICKET_ID_LENGTH,
 } from "./credential-format.ts";
+export {
+  type DomainEventEnvelope,
+  decodeDomainEventEnvelope,
+  domainEvent,
+  domainEventEnvelope,
+  EVENT_SOURCES,
+  type EventSource,
+} from "./domain-event-envelope.ts";
 export type {
   DomainEvent,
   DomainEventType,
   EventCancelled,
   EventPublished,
   EventUpdated,
+  OrderExpired,
+  OrderPaid,
   PaymentSucceeded,
   TicketBound,
   TicketIssued,

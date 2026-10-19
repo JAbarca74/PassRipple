@@ -16,7 +16,7 @@
     "build:coming-soon": "pnpm --filter @passripple/site build:coming-soon",
     "lint": "biome check .",
     "format": "biome check --write .",
-    "typecheck": "tsc -p tsconfig.json && tsc -p workers/api/tsconfig.json && tsc -p apps/scanner/tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json && tsc -p workers/api/tsconfig.json && tsc -p workers/jobs/tsconfig.json && tsc -p apps/scanner/tsconfig.json",
     "test": "vitest run",
     "test:cov": "vitest run --coverage",
     "check:boundaries": "node scripts/check-boundaries.ts",
@@ -26,7 +26,8 @@
     "db:migrate": "node scripts/db.ts migrate",
     "db:test": "node scripts/db.ts test",
     "db:api-login": "node scripts/db.ts api-login",
-    "dev:fixtures": "node scripts/dev-fixtures.ts"
+    "dev:fixtures": "node scripts/dev-fixtures.ts",
+    "dev:jobs": "pnpm --filter @passripple/worker-jobs dev"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",

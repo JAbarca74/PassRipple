@@ -1,0 +1,44 @@
+// Cloudflare configuration of the jobs Worker: the relay of domain events, the queue
+// consumer and the expiry of holds and orders (ADR 0029). No secrets. Resource names are
+// examples to create in the account before deploying; the Hyperdrive id is a placeholder.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "passripple-jobs",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  // Postgres.js needs Node's net, tls and crypto APIs.
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  // Nothing reaches this Worker over HTTP in production: it runs on the cron and the queue.
+  "workers_dev": false,
+  "preview_urls": false,
+  // Next to the API (8787) when both run locally.
+  "dev": { "port": 8788 },
+  "triggers": {
+    // Every minute: publish the outboxes, then expire holds and orders.
+    "crons": ["* * * * *"]
+  },
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      // Placeholder: the id of the Hyperdrive configuration to use, created in the account.
+      "id": "00000000000000000000000000000000",
+      // `wrangler dev` connects here instead: the local Docker database, as passripple_api
+      // (run `pnpm db:api-login` once).
+      "localConnectionString": "postgres://passripple_api:unused@localhost:54329/passripple"
+    }
+  ],
+  "queues": {
+    "producers": [{ "binding": "EVENTS", "queue": "passripple-domain-events" }],
+    "consumers": [
+      {
+        "queue": "passripple-domain-events",
+        "max_batch_size": 10,
+        "max_batch_timeout": 1,
+        "max_retries": 5,
+        // A message that fails five times waits here for a person.
+        "dead_letter_queue": "passripple-domain-events-dlq"
+      }
+    ]
+  }
+}

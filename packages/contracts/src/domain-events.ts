@@ -28,6 +28,22 @@ export interface EventCancelled {
   occurredAt: string;
 }
 
+/** An order was paid in time: its hold became issued capacity. ticketing issues its tickets. */
+export interface OrderPaid {
+  type: "order.paid";
+  orderId: string;
+  eventId: string;
+  occurredAt: string;
+}
+
+/** A pending order ran out of time: its hold and its unique amount were released. */
+export interface OrderExpired {
+  type: "order.expired";
+  orderId: string;
+  eventId: string;
+  occurredAt: string;
+}
+
 /** A bank notice became the payment of an order, and the order is paid. */
 export interface PaymentSucceeded {
   type: "payment.succeeded";
@@ -83,6 +99,8 @@ export type DomainEvent =
   | EventPublished
   | EventUpdated
   | EventCancelled
+  | OrderPaid
+  | OrderExpired
   | PaymentSucceeded
   | TicketIssued
   | TicketBound

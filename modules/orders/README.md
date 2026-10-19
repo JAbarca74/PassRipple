@@ -21,7 +21,14 @@ The API never writes these tables. It calls:
 | `orders.expire_orders(now)` | system | Expires pending orders whose time is up and releases their holds |
 | `orders.order_for_token(access_token)` | anyone holding the token | The buyer's wallet: returns only the order the token belongs to |
 
+- `orders.outbox`: the domain events this module emitted, written in the same transaction as the change and published by the relay in `workers/jobs` (ADR 0029). Only their publishing time is ever set.
+
 `orders.mark_paid(order)` is for `payments`: a pending order with an active hold becomes paid and its hold becomes issued capacity; a payment that arrives too late leaves the order `refund_due`. The bank reference of a payment lives in `payments`, not here.
+
+## Emits
+
+- `order.paid`, when `orders.mark_paid` turns a pending order into a paid one. `orders.paid_order_lines(order)` gives the consumer what to issue.
+- `order.expired`, when `orders.expire_orders` expires a pending order.
 
 ## Depends on
 

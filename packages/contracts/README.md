@@ -15,11 +15,15 @@ Shared vocabulary for the whole system: Zod schemas, TypeScript types, the domai
 | `event.published` | `events` | An event went on sale |
 | `event.updated` | `events` | An event's data changed |
 | `event.cancelled` | `events` | An event was cancelled |
+| `order.paid` | `orders` | An order was paid in time; ticketing issues its tickets |
+| `order.expired` | `orders` | A pending order ran out of time; its hold and unique amount were released |
 | `payment.succeeded` | `payments` | A bank notice became the payment of an order, and the order is paid |
 | `ticket.issued` | `ticketing` | A ticket was issued |
 | `ticket.bound` | `ticketing` | A ticket was bound to a device key, first or on recovery |
 | `ticket.transferred` | `ticketing` | A ticket was transferred to another person's device |
 | `ticket.voided` | `ticketing` | A ticket was voided |
+
+On the server, events travel in a `DomainEventEnvelope` (`src/domain-event-envelope.ts`, ADR 0029): the id of the outbox row that carried it, the emitting schema (`EVENT_SOURCES`) and the event. `decodeDomainEventEnvelope` validates a queue message field by field; consumers use the envelope's id to ignore a second delivery.
 
 ## Credential QR format
 

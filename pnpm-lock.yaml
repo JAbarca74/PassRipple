@@ -515,7 +515,24 @@ importers:
         specifier: 4.138.0
         version: 4.138.0(@cloudflare/workers-types@5.20260924.1)(@types/node@26.6.3)
 
-  workers/jobs: {}
+  workers/jobs:
+    dependencies:
+      '@passripple/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@passripple/crypto':
+        specifier: workspace:*
+        version: link:../../packages/crypto
+      postgres:
+        specifier: 3.4.9
+        version: 3.4.9
+    devDependencies:
+      '@cloudflare/workers-types':
+        specifier: 5.20260924.1
+        version: 5.20260924.1
+      wrangler:
+        specifier: 4.138.0
+        version: 4.138.0(@cloudflare/workers-types@5.20260924.1)(@types/node@26.6.3)
 
   workers/payments-in: {}
 
