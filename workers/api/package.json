@@ -14,6 +14,7 @@
     "@passripple/contracts": "workspace:*",
     "@passripple/crypto": "workspace:*",
     "@passripple/manifest": "workspace:*",
+    "@passripple/pricing": "workspace:*",
     "aws4fetch": "1.0.20",
     "hono": "4.13.9",
     "postgres": "3.4.9",

@@ -495,6 +495,9 @@ importers:
       '@passripple/manifest':
         specifier: workspace:*
         version: link:../../modules/manifest
+      '@passripple/pricing':
+        specifier: workspace:*
+        version: link:../../packages/pricing
       aws4fetch:
         specifier: 1.0.20
         version: 1.0.20

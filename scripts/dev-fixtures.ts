@@ -43,6 +43,10 @@ const OUT_DIR = join(ROOT, ".dev-fixtures");
 const DEV_ORG_ID = "d0000000-0000-4000-8000-000000000001";
 const DEV_EVENT_ID = "d0000000-0000-4000-8000-000000000003";
 const DEV_ORGANIZER_EMAIL = "organizer@example.test";
+const DEV_ADMIN_EMAIL = "admin@example.test";
+/** The event's address: http://localhost:5174/comprar?evento=evento-de-desarrollo */
+const DEV_EVENT_SLUG = "evento-de-desarrollo";
+const DEV_LEGAL_VERSION = "dev-1";
 const DEV_SERVER_KEY_ID = 1;
 
 // Without psql on PATH, set DB_CONTAINER to run it inside the local database's container
@@ -153,8 +157,10 @@ function seed(count: number): void {
     "BEGIN;",
     `INSERT INTO jurisdictions.jurisdictions (canton_code, name, tax_rate_bps, courtesy_deduct_bps, settlement_rule)
        VALUES ('dev', 'Development canton', 500, '{}', 'next_business_day') ON CONFLICT DO NOTHING;`,
-    `INSERT INTO identity.organizations (id, name) VALUES ('${DEV_ORG_ID}', 'Development organization')
+    `INSERT INTO identity.organizations (id, name, verified_at)
+       VALUES ('${DEV_ORG_ID}', 'Development organization', now())
        ON CONFLICT DO NOTHING;`,
+    `INSERT INTO identity.users (email, is_admin) VALUES ('${DEV_ADMIN_EMAIL}', true) ON CONFLICT DO NOTHING;`,
     `INSERT INTO identity.users (email) VALUES ('${DEV_ORGANIZER_EMAIL}') ON CONFLICT DO NOTHING;`,
     `INSERT INTO identity.memberships (org_id, user_id)
        SELECT '${DEV_ORG_ID}', id FROM identity.users WHERE email = '${DEV_ORGANIZER_EMAIL}'
@@ -165,12 +171,21 @@ function seed(count: number): void {
                date_trunc('hour', now()) - interval '1 hour', date_trunc('hour', now()) + interval '2 days',
                'all', 1000)
        ON CONFLICT DO NOTHING;`,
+    // On sale, with a permit and an address, so the checkout can sell it (Phase 3).
+    `UPDATE events.events SET permit_number = 'DEV-0001', slug = '${DEV_EVENT_SLUG}',
+            status = 'on_sale', published_at = coalesce(published_at, now())
+      WHERE id = '${DEV_EVENT_ID}';`,
+    `INSERT INTO privacy.legal_documents (kind, version, content_sha256)
+       SELECT kind, '${DEV_LEGAL_VERSION}', sha256(convert_to('PassRipple development ' || kind, 'UTF8'))
+         FROM unnest(ARRAY['terms', 'privacy']) AS kind
+       ON CONFLICT DO NOTHING;`,
     `INSERT INTO catalog.ticket_types (event_id, name, price_crc, audience, entry_mode) VALUES
        ('${DEV_EVENT_ID}', 'General', 5000, 'public', 'single_use'),
        ('${DEV_EVENT_ID}', 'VIP', 15000, 'public', 'single_use'),
        ('${DEV_EVENT_ID}', 'Staff', 0, 'staff', 'multi_scan')
        ON CONFLICT DO NOTHING;`,
     "SELECT identity.set_actor(NULL, 'system', NULL);",
+    `SELECT inventory.apply_event_published('${DEV_EVENT_ID}');`,
   ];
   for (const ticket of plan(count)) {
     const code = fixtureCode(ticket.index);
@@ -204,13 +219,21 @@ function seed(count: number): void {
 
   console.log(`Seeded ${count} fixture tickets for event ${DEV_EVENT_ID} ("Development event").`);
   console.log(`Organizer: ${DEV_ORGANIZER_EMAIL} (organization ${DEV_ORG_ID})`);
+  console.log(`Administrator: ${DEV_ADMIN_EMAIL}`);
+  console.log(`Checkout: http://localhost:5174/comprar?evento=${DEV_EVENT_SLUG}`);
   if (pepper === null) {
     console.log("\nNo staff code: set SIGN_IN_PEPPER in workers/api/.dev.vars and run seed again.");
   } else {
     console.log(`Staff code (gate, 50 uses): ${formatHumanCode(DEV_STAFF_CODE)}`);
   }
-  console.log("\nPut this line in workers/api/.dev.vars:\n");
+  console.log("\nPut these lines in workers/api/.dev.vars:\n");
   console.log(`SERVER_PUBLIC_KEYS=${serverKeysJson()}`);
+  // The development key is derived from a public label: it signs fixture and local tickets
+  // only, never anything outside this machine.
+  console.log(
+    `SERVER_SIGNING_KEY=${sha256("PassRipple development server key").toString("base64url")}`,
+  );
+  console.log(`SERVER_SIGNING_KEY_ID=${DEV_SERVER_KEY_ID}`);
 }
 
 interface FixtureTicket {

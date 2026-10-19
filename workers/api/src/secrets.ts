@@ -2,7 +2,14 @@
 // the Worker ever sees a token or a code; the database keeps their SHA-256 (tokens, 256
 // random bits) or a keyed HMAC (codes, too short to survive a plain hash).
 
-import { HUMAN_CODE_ENTROPY_BYTES, humanCode, normalizeHumanCode } from "@passripple/crypto";
+import { ORDER_TOKEN_PREFIX } from "@passripple/contracts";
+import {
+  HUMAN_CODE_ENTROPY_BYTES,
+  humanCode,
+  normalizeHumanCode,
+  PAY_CODE_ENTROPY_BYTES,
+  payCode,
+} from "@passripple/crypto";
 
 /** Prefix of a person's session token. */
 export const USER_TOKEN_PREFIX = "pru_";
@@ -92,4 +99,19 @@ export function signInCodeHash(pepper: string, email: string, code: string): Pro
 /** What the database stores for a staff code, in canonical form. */
 export function staffCodeHash(pepper: string, canonicalCode: string): Promise<Uint8Array> {
   return keyedHash(pepper, "PassRipple/staff-code/v1", [canonicalCode]);
+}
+
+/**
+ * An order's access token, derived from the browser's idempotency key with the server's
+ * key (ADR 0033): a checkout retried with the same key gets the same token back, although
+ * the database keeps only its SHA-256. Whoever holds the key already holds the token.
+ */
+export async function orderToken(pepper: string, idempotencyKey: string): Promise<string> {
+  const mac = await keyedHash(pepper, "PassRipple/order-token/v1", [idempotencyKey]);
+  return ORDER_TOKEN_PREFIX + base64url(mac);
+}
+
+/** Candidates for an order's payment code; the database takes the first one free. */
+export function newPayCodes(count: number): string[] {
+  return Array.from({ length: count }, () => payCode(randomBytes(PAY_CODE_ENTROPY_BYTES)));
 }

@@ -3,6 +3,30 @@
 export { decodeBase45, encodeBase45 } from "./base45.ts";
 export { decodeBase64url, encodeBase64url } from "./base64url.ts";
 export {
+  AGE_RATINGS,
+  AVAILABILITY_LEVELS,
+  type AvailabilityLevel,
+  type BuyerContact,
+  buyerContact,
+  type CreateOrderRequest,
+  createOrderRequest,
+  EVENT_SLUG_PATTERN,
+  eventSlug,
+  IDEMPOTENCY_HEADER,
+  idempotencyKey,
+  ORDER_STATUSES,
+  ORDER_TOKEN_PREFIX,
+  type OrderState,
+  type OrderStatus,
+  orderState,
+  type PlacedOrder,
+  type PublicEvent,
+  type PublicTicketType,
+  placedOrder,
+  publicEvent,
+  publicTicketType,
+} from "./checkout-api.ts";
+export {
   type AgeRating,
   CERTIFICATE_BODY_LENGTH,
   CERTIFICATE_LENGTH,

@@ -26,6 +26,28 @@ export interface Env {
   readonly ALLOWED_ORIGINS?: string;
 
   /**
+   * Origins of the app (app.<domain>) allowed to call the buyer's routes from the browser:
+   * events, orders and the wallet. Comma-separated; empty allows none.
+   */
+  readonly APP_ORIGINS?: string;
+
+  /**
+   * The fee schedule that prices the service charge (10.5, ADR 0033), as JSON:
+   * `{"id":"…","rateBps":…,"fixedCrc":…,"taxRateBps":…,"taxMode":"added"|"included"}`.
+   * Business data: set outside Git, never in wrangler.jsonc.
+   */
+  readonly FEE_SCHEDULE?: string;
+
+  /** The platform's SINPE Móvil number the buyer pays to (10.2). Set outside Git. */
+  readonly SINPE_NUMBER?: string;
+
+  /**
+   * How many colones above its price an order may be charged so that no two pending orders
+   * share an amount (ADR 0031). 0 or unset: never more than the price.
+   */
+  readonly UNIQUE_AMOUNT_MAX_OFFSET_CRC?: string;
+
+  /**
    * `gmail` in production (ADR 0028), `ses` as the alternative. `log` prints messages to the
    * console, and only works on localhost.
    */

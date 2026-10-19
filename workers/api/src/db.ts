@@ -17,6 +17,9 @@ export interface Actor {
 
 export const SYSTEM_ACTOR: Actor = { id: null, role: "system", orgId: null };
 
+/** A buyer: no account and no organization. Row Level Security shows only public data. */
+export const BUYER_ACTOR: Actor = { id: null, role: "buyer", orgId: null };
+
 /** A transaction, with its actor already set. */
 export type Tx = postgres.TransactionSql;
 
