@@ -16,6 +16,9 @@ coverage/
 .env.*
 !.env.example
 .dev.vars
+# Service account keys and other credential files (workers/api/.secrets/, ADR 0028)
+.secrets/
+*.jks
 *.pem
 *.key
 *.p12
