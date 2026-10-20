@@ -11,6 +11,7 @@ import { errorResponse } from "./errors.ts";
 import type { IntegrityVerifier } from "./ports/integrity.ts";
 import type { MailSender } from "./ports/mail.ts";
 import { accountRoutes } from "./routes/account.ts";
+import { adminRoutes } from "./routes/admin.ts";
 import { authRoutes } from "./routes/auth.ts";
 import { eventRoutes } from "./routes/events.ts";
 import { gateRoutes } from "./routes/gate.ts";
@@ -97,6 +98,7 @@ export function createApp(services: Services): Hono<AppEnv> {
   app.route("/staff", staffRoutes);
   app.route("/gate", gateRoutes);
   app.route("/account", accountRoutes);
+  app.route("/admin", adminRoutes);
   app.route("/events", eventRoutes);
   app.route("/orders", orderRoutes);
 

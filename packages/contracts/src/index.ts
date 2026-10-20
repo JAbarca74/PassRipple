@@ -111,6 +111,16 @@ export {
   type ScanPayload,
 } from "./gate-operations.ts";
 export {
+  type ManualNoticeRequest,
+  type ManualNoticeResponse,
+  manualNoticeRequest,
+  manualNoticeResponse,
+  type PaymentNotice,
+  type PaymentProvider,
+  RECONCILE_RESULTS,
+  type ReconcileResult,
+} from "./payments.ts";
+export {
   type ApiErrorBody,
   apiError,
   type CreatedStaffCode,
