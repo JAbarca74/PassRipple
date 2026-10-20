@@ -42,10 +42,18 @@ Every response carries the server's clock in `X-Server-Time` (milliseconds), whi
 | `DELETE /v1/account` | person | Erases the account (design 14.7): devices revoked, email, codes, sessions and memberships erased. `409 device_enrolled` while a phone of the account is still enrolled and may hold scans to upload |
 | `POST /v1/gate/batches` | any device | Uploads 1 to 100 offline operations to `redemption.apply_batch`. Always `200` with one result per operation; revoked and expired devices may upload too (I6) |
 | `POST /v1/gate/sign-out` | device | Signs the device out for good |
+| `GET /v1/events/:slug` | anyone | An event on sale: public ticket types, price, service charge per ticket, coarse availability, current legal versions. Cached 5 s |
+| `POST /v1/orders` | anyone, with `Idempotency-Key` | Holds the tickets (30 min), places the order with a unique amount and a payment code, records the consents. Returns the order's token (`pro_…`), the code, the exact amount and the SINPE number. The same key returns the same order and token (ADR 0033) |
+| `GET /v1/orders/current` | order token | The order's status, for the payment screen's polling |
+| `GET /v1/wallet` | order token | The order's tickets with their certificates, signed now, and the server key ring (ADR 0030, 0035) |
+| `POST /v1/wallet/bind` | order token | Binds the order's unbound tickets to the device key; with a recovery token, rebinds them (ADR 0032, 0036) |
+| `POST /v1/wallet/recovery`, `POST /v1/wallet/recovery/verify` | anyone | A code to the order's email, then one recovery token per paid order (ADR 0036). Phone only: `422` |
+| `POST /v1/buyer/erasure/code`, `POST /v1/buyer/erasure` | anyone | A buyer's erasure by email code; `409 open_orders` while an order is open or a ticket's event has not ended (ADR 0037) |
+| `POST /v1/admin/payments/notices` | administrator | A bank notice typed by hand, recorded once (I4) and reconciled (ADR 0034) |
 
 Organizers send their organization in `X-Org-Id`; `identity.set_actor` checks the membership.
 
-The public site calls `/v1/auth/*` and `/v1/account` from the browser for `/eliminar-datos`; only the origins in `ALLOWED_ORIGINS` may (CORS). No other route answers cross-origin.
+The public site calls `/v1/auth/*`, `/v1/account` and `/v1/buyer/*` from the browser for `/eliminar-datos`; only the origins in `ALLOWED_ORIGINS` may (CORS). The app calls `/v1/events/*`, `/v1/orders` and `/v1/wallet`; only the origins in `APP_ORIGINS` may.
 
 ## Tokens and codes
 
@@ -58,6 +66,8 @@ The public site calls `/v1/auth/*` and `/v1/account` from the browser for `/elim
 | Port | Adapters |
 |---|---|
 | `MailSender` (`src/ports/mail.ts`) | `gmail` (Gmail API as a Google Workspace mailbox, service account with domain-wide delegation, ADR 0028); `ses` (Amazon SES API v2, SigV4 with `aws4fetch`); `log`, which prints to the console and refuses to run anywhere but localhost |
+| `PaymentProvider` (`src/ports/payments.ts`, from `@passripple/contracts`) | `manual`: a notice typed by an administrator. Bank parsers arrive with real anonymized notices (ADR 0034) |
+| `ContactChannel` (`src/ports/contact.ts`) | `email`, through `MailSender`. A phone channel is an open decision (ADR 0036) |
 | `IntegrityVerifier` (`src/ports/integrity.ts`) | `unverified`: records whether the phone sent a Play Integrity or App Attest token. A signal, never a block |
 
 ## Running it locally
@@ -73,11 +83,13 @@ For a gate to try, seed the development event (`pnpm dev:fixtures seed`) and put
 
 The fixtures stay in the local database, and the pgTAP suite expects one without them: run `pnpm db:down` and `pnpm db:up` before `pnpm db:test`.
 
+The route to `api.passripple.com` makes `wrangler dev` present that host to the Worker, and the console mailer refuses it. Run it with `--local-upstream localhost:8787` to see sign-in and recovery codes in the console.
+
 `wrangler dev` connects to the local database through the Hyperdrive binding's `localConnectionString`. Secrets come from `.dev.vars` (never committed), copied from `.dev.vars.example`.
 
 ## Configuration
 
-`wrangler.jsonc` holds no secret. The Hyperdrive id is that of `passripple-db` (see `db/README.md`). Secrets are set with `wrangler secret put <NAME>`: `SIGN_IN_PEPPER`, `SERVER_PUBLIC_KEYS`, `ALLOWED_ORIGINS` (`https://passripple.com`), `MAIL_PROVIDER` (`gmail`), `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME`, `GMAIL_CLIENT_EMAIL` and `GMAIL_PRIVATE_KEY` (from the service account's JSON key), and `GMAIL_SENDER_USER` when the sender is an alias. With `MAIL_PROVIDER=ses` instead: `SES_REGION`, `SES_ACCESS_KEY_ID` and `SES_SECRET_ACCESS_KEY`.
+`wrangler.jsonc` holds no secret. The Hyperdrive id is that of `passripple-db` (see `db/README.md`). Secrets are set with `wrangler secret put <NAME>`: `SIGN_IN_PEPPER`, `SERVER_PUBLIC_KEYS`, `ALLOWED_ORIGINS` (`https://passripple.com`), `MAIL_PROVIDER` (`gmail`), `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME`, `GMAIL_CLIENT_EMAIL` and `GMAIL_PRIVATE_KEY` (from the service account's JSON key), and `GMAIL_SENDER_USER` when the sender is an alias. For the checkout and wallet (Phase 3): `SERVER_SIGNING_KEY` and `SERVER_SIGNING_KEY_ID` (ADR 0035; the production key is not decided yet), `APP_ORIGINS`, `FEE_SCHEDULE`, `SINPE_NUMBER` and `UNIQUE_AMOUNT_MAX_OFFSET_CRC` (ADR 0031, 0033). Fee figures and the SINPE number are business data and are never committed. With `MAIL_PROVIDER=ses` instead: `SES_REGION`, `SES_ACCESS_KEY_ID` and `SES_SECRET_ACCESS_KEY`.
 
 The Worker answers only on `api.passripple.com`, a custom domain like the site's: `workers_dev` and `preview_urls` are off (ADR 0026). The Gmail service account may only use the `gmail.send` scope, granted by domain-wide delegation in the Workspace admin console (ADR 0028).
 
@@ -94,6 +106,7 @@ pnpm --filter @passripple/worker-api exec wrangler deploy --config wrangler.json
 
 - `@passripple/contracts`
 - `@passripple/crypto`
+- `@passripple/manifest`, `@passripple/pricing`
 - `hono`, `postgres`, `zod`, `aws4fetch`; `wrangler` and `@cloudflare/workers-types` for development
 
 Apps and workers are composition roots: they may depend on any core package or module, never on another app or worker.

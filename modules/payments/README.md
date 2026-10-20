@@ -20,7 +20,8 @@ The API never writes these tables. It calls, as the system actor:
 | `payments.record_notice(source, reference, amount, description, payer_name, payer_phone, raw_sha256)` | Records a notice. The same notice again returns the same id; the same reference with different content is an error |
 | `payments.confirm(notice, order)` | Turns the notice into the order's payment and marks the order paid. Returns `paid`, `refund_due`, `already_confirmed`, `surplus`, `amount_mismatch` or `unmatched`; confirming twice never creates a second payment |
 
-Matching a notice to its order (by payment code and amount) is part of reconciliation, in Phase 3.
+| `payments.record_manual_notice(reference, amount, description, payer_name, payer_phone, paid_at, raw_sha256)` | A notice typed by a platform administrator (source `manual`), recorded once; who typed it goes to `payments.manual_entries` (ADR 0034) |
+| `payments.reconcile(notice, codes)` | Matches the notice by a payment code from its description, else by an amount only one pending order holds, and confirms it; otherwise `unmatched` or `ambiguous` |
 
 - `payments.outbox`: the domain events this module emitted, published by the relay in `workers/jobs` (ADR 0029).
 

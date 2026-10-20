@@ -26,6 +26,8 @@ Organizers create and edit their organization's events while they are a draft, p
 
 Each event has a window, `starts_at` to `ends_at` (twelve hours after the start when not given). Gate manifests expire at its end.
 
+An event may have a `slug`, its address in links (`app.<domain>/comprar?evento=<slug>`): lowercase words of letters and digits joined by hyphens, unique across the platform.
+
 ## Depends on
 
 - `@passripple/contracts`

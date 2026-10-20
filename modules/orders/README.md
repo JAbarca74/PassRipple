@@ -20,7 +20,17 @@ The API never writes these tables. It calls:
 | `orders.create(hold, idem_key, email, phone, access_token, pay_code, unit_fee, unit_fee_tax, fee_rule)` | buyer, system | Creates the order for an active hold. The price comes from the catalog; the fee is calculated by the API with `pricing`. The same idempotency key for the same hold returns the same order |
 | `orders.expire_orders(now)` | system | Expires pending orders whose time is up and releases their holds |
 | `orders.order_for_token(access_token)` | anyone holding the token | The buyer's wallet: returns only the order the token belongs to |
+| `orders.place(hold, idem_key, email, phone, access_token, pay_codes, unit_fee, unit_fee_tax, fee_rule, max_offset)` | buyer, system | The checkout's order: the first free unique amount up to the offset (ADR 0031) and the first free payment code; a repeated key returns the same order (ADR 0033) |
+| `orders.order_by_idem_key(idem_key)` | buyer, system | The order a checkout key created, for retries |
+| `orders.wallet_access(token)`, `orders.wallet_tickets(token)` | anyone holding the token | The order behind a purchase or recovery token, and its tickets read from `ticketing` in the same statement (ADR 0030) |
+| `orders.consume_rebind(token)` | system | A recovery token used its one rebinding |
+| `orders.request_contact_code`, `contact_code_challenge`, `use_contact_code` | system | Codes to a buyer's email for recovery and erasure (ADR 0036) |
+| `orders.recoverable_orders(code)`, `orders.add_recovery_token(code, order, token)` | system | Recovery tokens for the paid orders of an address |
+| `orders.erasure_blockers(code)`, `orders.erase_buyer(code)` | system | A buyer's erasure: contacts and tokens become NULL, once (ADR 0037) |
 
+- `orders.pending_amounts`: the amount each pending order holds, unique platform-wide; a trigger frees it when the order leaves `pending` (ADR 0031).
+- `orders.order_tokens`: recovery tokens, by SHA-256 (ADR 0036). `orders.contact_codes`: codes sent to a buyer's email, as an HMAC.
+- An erased order keeps its amounts and lines without contact or token (`erased_at`, ADR 0037).
 - `orders.outbox`: the domain events this module emitted, written in the same transaction as the change and published by the relay in `workers/jobs` (ADR 0029). Only their publishing time is ever set.
 
 `orders.mark_paid(order)` is for `payments`: a pending order with an active hold becomes paid and its hold becomes issued capacity; a payment that arrives too late leaves the order `refund_due`. The bank reference of a payment lives in `payments`, not here.
@@ -37,6 +47,7 @@ The API never writes these tables. It calls:
 - `@passripple/events`
 - `@passripple/catalog`
 - `@passripple/inventory`
+- `@passripple/ticketing` (the wallet reads an order's tickets, ADR 0030)
 
 ## Guarantees
 
