@@ -115,3 +115,18 @@ export async function orderToken(pepper: string, idempotencyKey: string): Promis
 export function newPayCodes(count: number): string[] {
   return Array.from({ length: count }, () => payCode(randomBytes(PAY_CODE_ENTROPY_BYTES)));
 }
+
+/** What the database stores for a buyer's contact code: bound to its purpose and address. */
+export function contactCodeHash(
+  pepper: string,
+  purpose: "recovery" | "erasure",
+  email: string,
+  code: string,
+): Promise<Uint8Array> {
+  return keyedHash(pepper, "PassRipple/contact-code/v1", [purpose, email, code]);
+}
+
+/** Compares two hashes in constant time (Workers' crypto.subtle.timingSafeEqual). */
+export function sameHash(a: Uint8Array, b: Uint8Array): boolean {
+  return a.length === b.length && crypto.subtle.timingSafeEqual(a, b);
+}

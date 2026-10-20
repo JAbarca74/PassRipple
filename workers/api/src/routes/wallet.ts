@@ -10,6 +10,9 @@ import {
   encodeBase64url,
   encodeCertificate,
   type OrderStatus,
+  type RecoveryVerifyResponse,
+  recoveryRequest,
+  recoveryVerifyRequest,
   ORDER_TOKEN_PREFIX as TOKEN_PREFIX,
   type WalletTicket,
   type WalletView,
@@ -25,8 +28,11 @@ import type { AppEnv } from "../app.ts";
 import { bearer } from "../auth.ts";
 import { SYSTEM_ACTOR, type Tx } from "../db.ts";
 import { ApiError } from "../errors.ts";
+import { emailOf } from "../ports/contact.ts";
+import { newToken } from "../secrets.ts";
 import { serverKeys, serverSigner } from "../server-keys.ts";
 import { isoRequired, jsonBody } from "../validation.ts";
+import { CONTACT_CODE_TTL_SECONDS, checkContactCode, sendContactCode } from "./contact-codes.ts";
 
 interface AccessRow {
   order_id: string;
@@ -178,4 +184,37 @@ export const walletRoutes = new Hono<AppEnv>()
     });
     c.header("Cache-Control", "no-store");
     return c.json(await view(c, result.access, result.rows, result.boundElsewhere));
+  })
+
+  // Recovery on a new device (6.6, ADR 0036): a code to the order's email.
+  .post("/recovery", async (c) => {
+    const { contact } = await jsonBody(c, recoveryRequest);
+    await sendContactCode(c, emailOf(contact), "recovery");
+    return c.json({ expiresInSeconds: CONTACT_CODE_TTL_SECONDS }, 202);
+  })
+
+  // The code matched: one new token per paid order of that email. Each may rebind its
+  // order's tickets to this device once, within an hour, through POST /wallet/bind.
+  .post("/recovery/verify", async (c) => {
+    const { contact, code } = await jsonBody(c, recoveryVerifyRequest);
+    const email = emailOf(contact);
+    const codeId = await checkContactCode(c, email, "recovery", code);
+    const body = await c.var.db.transaction(SYSTEM_ACTOR, async (tx) => {
+      const [used] = await tx<
+        { used: boolean }[]
+      >`SELECT orders.use_contact_code(${codeId}) AS used`;
+      if (!used?.used)
+        throw new ApiError(401, "invalid_code", "The code is wrong, used or expired.");
+      const orders = await tx<{ order_id: string; pay_code: string }[]>`
+        SELECT * FROM orders.recoverable_orders(${codeId})`;
+      const response: RecoveryVerifyResponse = { orders: [] };
+      for (const order of orders) {
+        const token = newToken(TOKEN_PREFIX);
+        await tx`SELECT orders.add_recovery_token(${codeId}, ${order.order_id}, ${token})`;
+        response.orders.push({ orderCode: order.pay_code, token });
+      }
+      return response;
+    });
+    c.header("Cache-Control", "no-store");
+    return c.json(body);
   });
