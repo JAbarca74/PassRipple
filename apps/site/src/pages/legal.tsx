@@ -153,14 +153,27 @@ const ERROR_TEXT: Readonly<Record<string, string>> = {
     "Uno de sus teléfonos sigue unido a un evento y podría tener validaciones sin subir. Abra la app y salga del evento primero.",
   invalid_request: "Revise el correo y el código.",
   network: "No hay conexión con PassRipple. Intente de nuevo.",
+  contact_channel_unavailable:
+    "Todavía no podemos enviar códigos a un teléfono. Escríbanos para eliminar sus datos.",
 };
 
+/** A buyer's order that keeps their data from being erased now (ADR 0037). */
+interface OpenOrder {
+  orderCode: string;
+  status: string;
+  eventName: string;
+  endsAt: string;
+}
+
 /**
- * Account deletion without installing anything (design 14.7): email → code → done. For
- * staff, organizers and inspectors, whose accounts sign in by email; buyers' data joins
- * this page when buying opens.
+ * Data deletion without installing anything (design 14.7): email → code → done. Staff,
+ * organizers and inspectors erase their account; buyers, who have no account, erase the
+ * contact data of their orders (ADR 0037). Buyers with an order still open or a ticket for an
+ * event to come see those orders and can come back after the event.
  */
 export function DeleteDataPage() {
+  const [who, setWho] = useState<"buyer" | "account">("buyer");
+  const [openOrders, setOpenOrders] = useState<OpenOrder[]>([]);
   const [step, setStep] = useState<"email" | "code" | "done">("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -182,7 +195,10 @@ export function DeleteDataPage() {
   const sendCode = (event: FormEvent) => {
     event.preventDefault();
     void guarded(async () => {
-      const response = await post("/v1/auth/sign-in", { email });
+      const response =
+        who === "buyer"
+          ? await post("/v1/buyer/erasure/code", { contact: email })
+          : await post("/v1/auth/sign-in", { email });
       if (!response.ok) {
         setError(ERROR_TEXT[await errorCode(response)] ?? "Algo salió mal. Intente de nuevo.");
         return;
@@ -194,6 +210,20 @@ export function DeleteDataPage() {
   const erase = (event: FormEvent) => {
     event.preventDefault();
     void guarded(async () => {
+      if (who === "buyer") {
+        const erased = await post("/v1/buyer/erasure", { contact: email, code });
+        if (erased.status === 409) {
+          const body = (await erased.json()) as { orders?: OpenOrder[] };
+          setOpenOrders(body.orders ?? []);
+          return;
+        }
+        if (!erased.ok) {
+          setError(ERROR_TEXT[await errorCode(erased)] ?? "Algo salió mal. Intente de nuevo.");
+          return;
+        }
+        setStep("done");
+        return;
+      }
       const verified = await post("/v1/auth/verify", { email, code });
       if (!verified.ok) {
         setError(ERROR_TEXT[await errorCode(verified)] ?? "Algo salió mal. Intente de nuevo.");
@@ -213,16 +243,49 @@ export function DeleteDataPage() {
   return (
     <SiteLayout>
       <main className="mx-auto max-w-md px-4 py-10">
-        <h1 className="text-3xl font-black tracking-tight">Eliminar mi cuenta</h1>
-        <p className="mt-2 text-slate-600">
-          Para personal de puerta, organizadores y fiscalizadores. Use el correo con que entra a
-          PassRipple: le enviamos un código para confirmar que es usted.
-        </p>
-        <p className="mt-2 text-sm text-slate-600">
-          Se borran su correo y el acceso de sus teléfonos. Las validaciones y ventas se conservan
-          sin datos suyos, por obligaciones municipales y tributarias. También puede hacerlo desde
-          la app: Cuenta → Eliminar mi cuenta.
-        </p>
+        <h1 className="text-3xl font-black tracking-tight">Eliminar mis datos</h1>
+        <fieldset className="mt-4 grid grid-cols-2 gap-2" disabled={step !== "email"}>
+          <legend className="sr-only">Quién es usted</legend>
+          {(
+            [
+              ["buyer", "Compré entradas"],
+              ["account", "Tengo cuenta"],
+            ] as const
+          ).map(([value, label]) => (
+            <label
+              key={value}
+              className={`flex min-h-12 cursor-pointer items-center justify-center rounded-xl border px-3 text-sm font-bold ${who === value ? "border-brand bg-brand-soft text-brand" : "border-line bg-white"}`}
+            >
+              <input
+                type="radio"
+                name="who"
+                className="sr-only"
+                checked={who === value}
+                onChange={() => setWho(value)}
+              />
+              {label}
+            </label>
+          ))}
+        </fieldset>
+        {who === "buyer" ? (
+          <p className="mt-4 text-slate-600">
+            Use el correo con que compró: le enviamos un código para confirmar que es usted. Se
+            borran su correo, su teléfono y el acceso a sus órdenes. Las ventas se conservan sin
+            datos suyos, por obligaciones municipales y tributarias.
+          </p>
+        ) : (
+          <>
+            <p className="mt-4 text-slate-600">
+              Para personal de puerta, organizadores y fiscalizadores. Use el correo con que entra a
+              PassRipple: le enviamos un código para confirmar que es usted.
+            </p>
+            <p className="mt-2 text-sm text-slate-600">
+              Se borran su correo y el acceso de sus teléfonos. Las validaciones y ventas se
+              conservan sin datos suyos, por obligaciones municipales y tributarias. También puede
+              hacerlo desde la app: Cuenta → Eliminar mi cuenta.
+            </p>
+          </>
+        )}
         <div className="mt-6 rounded-2xl border border-line bg-white p-5 shadow-sm">
           {step === "email" && (
             <form onSubmit={sendCode}>
@@ -268,17 +331,37 @@ export function DeleteDataPage() {
                 disabled={busy}
                 className="mt-4 min-h-12 w-full rounded-xl bg-red-700 font-bold text-white disabled:opacity-60"
               >
-                Eliminar mi cuenta
+                {who === "buyer" ? "Eliminar mis datos" : "Eliminar mi cuenta"}
               </button>
             </form>
           )}
           {step === "done" && (
             <div className="text-center">
               <ShieldCheck size={40} className="mx-auto text-valid" aria-hidden />
-              <p className="mt-3 font-black">Su cuenta fue eliminada</p>
-              <p className="mt-1 text-sm text-slate-600">
-                Se borraron su correo y el acceso de sus teléfonos.
+              <p className="mt-3 font-black">
+                {who === "buyer" ? "Sus datos fueron eliminados" : "Su cuenta fue eliminada"}
               </p>
+              <p className="mt-1 text-sm text-slate-600">
+                {who === "buyer"
+                  ? "Se borraron su correo, su teléfono y el acceso a sus órdenes."
+                  : "Se borraron su correo y el acceso de sus teléfonos."}
+              </p>
+            </div>
+          )}
+          {openOrders.length > 0 && (
+            <div role="alert" className="mt-4 text-sm">
+              <p className="font-bold">Todavía no podemos borrar sus datos.</p>
+              <p className="mt-1 text-slate-600">
+                Tiene órdenes abiertas o entradas para eventos que no han terminado. Vuelva después
+                del evento:
+              </p>
+              <ul className="mt-2 list-disc pl-5">
+                {openOrders.map((order) => (
+                  <li key={order.orderCode}>
+                    {order.eventName} · orden {order.orderCode}
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
           {error !== null && (

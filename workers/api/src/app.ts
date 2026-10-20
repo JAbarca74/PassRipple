@@ -13,6 +13,7 @@ import type { MailSender } from "./ports/mail.ts";
 import { accountRoutes } from "./routes/account.ts";
 import { adminRoutes } from "./routes/admin.ts";
 import { authRoutes } from "./routes/auth.ts";
+import { buyerRoutes } from "./routes/buyer.ts";
 import { eventRoutes } from "./routes/events.ts";
 import { gateRoutes } from "./routes/gate.ts";
 import { healthRoutes } from "./routes/health.ts";
@@ -80,6 +81,7 @@ export function createApp(services: Services): Hono<AppEnv> {
   });
   app.use("/auth/*", browserCors);
   app.use("/account", browserCors);
+  app.use("/buyer/*", browserCors);
 
   // The app (app.<domain>) calls the buyer's routes: events, orders and the wallet. Only the
   // origins in APP_ORIGINS may. The idempotency key and the order's token travel in headers.
@@ -102,6 +104,7 @@ export function createApp(services: Services): Hono<AppEnv> {
   app.route("/gate", gateRoutes);
   app.route("/account", accountRoutes);
   app.route("/admin", adminRoutes);
+  app.route("/buyer", buyerRoutes);
   app.route("/events", eventRoutes);
   app.route("/orders", orderRoutes);
   app.route("/wallet", walletRoutes);
