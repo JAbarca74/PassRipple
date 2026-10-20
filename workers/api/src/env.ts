@@ -20,6 +20,14 @@ export interface Env {
   readonly SERVER_PUBLIC_KEYS?: string;
 
   /**
+   * The private key that signs ticket certificates (ADR 0035): a 32-byte Ed25519 seed in
+   * base64url. Secret. Its public key must be in SERVER_PUBLIC_KEYS under
+   * SERVER_SIGNING_KEY_ID. Locally, the development key printed by `pnpm dev:fixtures seed`.
+   */
+  readonly SERVER_SIGNING_KEY?: string;
+  readonly SERVER_SIGNING_KEY_ID?: string;
+
+  /**
    * Browser origins allowed to call sign-in and account erasure, comma-separated: the
    * public site (for /eliminar-datos). Empty allows none.
    */

@@ -34,3 +34,23 @@ GMAIL_SENDER_USER=
 SES_REGION=
 SES_ACCESS_KEY_ID=
 SES_SECRET_ACCESS_KEY=
+
+# The server's private key that signs ticket certificates (ADR 0035): a 32-byte Ed25519 seed
+# in base64url, and its id in SERVER_PUBLIC_KEYS. Locally, the development key printed by
+# `node scripts/dev-fixtures.ts seed`. Secret; the production key is not decided yet.
+SERVER_SIGNING_KEY=
+SERVER_SIGNING_KEY_ID=
+
+# Origins of the app allowed to call the buyer's routes (events, orders, wallet).
+APP_ORIGINS=http://localhost:5174
+
+# The fee schedule (ADR 0033), as JSON. Business data: fill it in locally, never in Git.
+# {"id":"<name>","rateBps":<basis points>,"fixedCrc":<colones>,"taxRateBps":<basis points>,"taxMode":"added"|"included"}
+FEE_SCHEDULE=
+
+# The platform's SINPE Móvil number buyers pay to. Not in Git.
+SINPE_NUMBER=
+
+# How many colones above its price an order may be charged so no two pending orders share an
+# amount (ADR 0031). 0 or empty: never more than the price.
+UNIQUE_AMOUNT_MAX_OFFSET_CRC=

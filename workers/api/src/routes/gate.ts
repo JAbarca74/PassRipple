@@ -5,14 +5,12 @@
 import {
   DEVICE_STATUSES,
   type DeviceStatus,
-  decodeServerKeys,
   encodeGateManifest,
   encodeGateManifestDelta,
   type GateBatchItemResult,
   type GateBatchResponse,
   type GateSessionResponse,
   gateBatchRequest,
-  type ManifestServerKey,
   manifestCursor,
 } from "@passripple/contracts";
 import {
@@ -26,8 +24,8 @@ import { type Context, Hono } from "hono";
 import type { AppEnv } from "../app.ts";
 import { type AuthenticatedDevice, deviceActor, gateDeviceView } from "../auth.ts";
 import type { Tx } from "../db.ts";
-import { type Env, required } from "../env.ts";
 import { ApiError } from "../errors.ts";
+import { serverKeys } from "../server-keys.ts";
 import { jsonBody, param } from "../validation.ts";
 
 /** Runs `work` for the device behind the request's token, if its status is allowed. */
@@ -48,18 +46,6 @@ export async function forDevice<T>(
 
 // The envelope was checked; the database checks each operation (it is plain JSON).
 type JsonArray = Parameters<Tx["json"]>[0];
-
-function serverKeys(env: Env): ManifestServerKey[] {
-  let json: unknown;
-  try {
-    json = JSON.parse(required(env, "SERVER_PUBLIC_KEYS"));
-  } catch {
-    json = null;
-  }
-  const keys = decodeServerKeys(json);
-  if (keys === null) throw new Error("SERVER_PUBLIC_KEYS is not a valid key ring");
-  return keys;
-}
 
 export const gateRoutes = new Hono<AppEnv>()
   // The device's status and the server clock. Every status may ask.
