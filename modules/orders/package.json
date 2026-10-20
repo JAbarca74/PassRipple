@@ -16,6 +16,7 @@
     "@passripple/pricing": "workspace:*",
     "@passripple/events": "workspace:*",
     "@passripple/catalog": "workspace:*",
-    "@passripple/inventory": "workspace:*"
+    "@passripple/inventory": "workspace:*",
+    "@passripple/ticketing": "workspace:*"
   }
 }

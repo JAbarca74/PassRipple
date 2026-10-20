@@ -154,3 +154,18 @@ export {
   verifySignInRequest,
 } from "./staff-api.ts";
 export { bytesToUuid, uuidToBytes, uuidv7 } from "./uuid.ts";
+export {
+  type BindRequest,
+  bindRequest,
+  type RecoveryRequest,
+  type RecoveryVerifyRequest,
+  type RecoveryVerifyResponse,
+  recoveryRequest,
+  recoveryVerifyRequest,
+  recoveryVerifyResponse,
+  WALLET_TICKET_STATUSES,
+  type WalletTicket,
+  type WalletView,
+  walletTicket,
+  walletView,
+} from "./wallet-api.ts";

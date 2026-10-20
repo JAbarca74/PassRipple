@@ -18,6 +18,7 @@ import { gateRoutes } from "./routes/gate.ts";
 import { healthRoutes } from "./routes/health.ts";
 import { orderRoutes } from "./routes/orders.ts";
 import { staffRoutes } from "./routes/staff.ts";
+import { walletRoutes } from "./routes/wallet.ts";
 
 /** What the app needs from outside, built per request from the Worker's bindings. */
 export interface Services {
@@ -92,6 +93,8 @@ export function createApp(services: Services): Hono<AppEnv> {
   app.use("/events/*", appCors);
   app.use("/orders", appCors);
   app.use("/orders/*", appCors);
+  app.use("/wallet", appCors);
+  app.use("/wallet/*", appCors);
 
   app.route("/health", healthRoutes);
   app.route("/auth", authRoutes);
@@ -101,6 +104,7 @@ export function createApp(services: Services): Hono<AppEnv> {
   app.route("/admin", adminRoutes);
   app.route("/events", eventRoutes);
   app.route("/orders", orderRoutes);
+  app.route("/wallet", walletRoutes);
 
   app.notFound((c) => c.json({ error: { code: "not_found", message: "Not found." } }, 404));
   app.onError((error, c) => {

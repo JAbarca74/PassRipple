@@ -1,5 +1,7 @@
 // Public API of @passripple/crypto.
 // Only what is exported here may be used by other packages.
+
+export { isAcceptableHolderKey } from "./bytes.ts";
 export {
   type CertificateInput,
   eventRef,
