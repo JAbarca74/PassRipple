@@ -20,6 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
+      actions: read # private repositories: CodeQL reads the workflow run it reports for
       contents: read
       security-events: write
     strategy:
