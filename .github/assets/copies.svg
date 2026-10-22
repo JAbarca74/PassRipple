@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 380" role="img" aria-labelledby="t d">
+  <title id="t">Why copies fail</title>
+  <desc id="d">A gate scans two QR codes. The live one on the buyer's phone is admitted; a printed copy of an old QR is rejected as expired.</desc>
+  <defs>
+    <g id="qr">
+      <rect width="76" height="76" rx="6" fill="#fff"/>
+      <g fill="currentColor">
+        <rect x="6" y="6" width="20" height="20" rx="3"/>
+        <rect x="50" y="6" width="20" height="20" rx="3"/>
+        <rect x="6" y="50" width="20" height="20" rx="3"/>
+      </g>
+      <g fill="#fff">
+        <rect x="10" y="10" width="12" height="12" rx="2"/>
+        <rect x="54" y="10" width="12" height="12" rx="2"/>
+        <rect x="10" y="54" width="12" height="12" rx="2"/>
+      </g>
+      <g fill="currentColor">
+        <rect x="13" y="13" width="6" height="6"/>
+        <rect x="57" y="13" width="6" height="6"/>
+        <rect x="13" y="57" width="6" height="6"/>
+        <rect x="34" y="8" width="7" height="7"/>
+        <rect x="34" y="22" width="7" height="7"/>
+        <rect x="8" y="34" width="7" height="7"/>
+        <rect x="22" y="34" width="7" height="7"/>
+        <rect x="34" y="34" width="7" height="7"/>
+        <rect x="55" y="34" width="7" height="7"/>
+        <rect x="44" y="46" width="7" height="7"/>
+        <rect x="62" y="52" width="7" height="7"/>
+        <rect x="34" y="60" width="7" height="7"/>
+        <rect x="52" y="62" width="7" height="7"/>
+      </g>
+    </g>
+  </defs>
+  <style>
+    text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+    .q{font-size:24px;font-weight:700;fill:#fff;text-anchor:middle}
+    .lb{font-size:15px;font-weight:500;fill:#B3A6E0;text-anchor:middle}
+    .pill{font-size:14px;font-weight:700;letter-spacing:.06em}
+    .timer{transform-box:fill-box;transform-origin:left center;animation:timer 3s linear infinite}
+    .res{animation:res 6s ease-out infinite}
+    @keyframes timer{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+    @keyframes res{0%,22%{opacity:0;transform:translateY(6px)}27%,88%{opacity:1;transform:none}100%{opacity:0}}
+    /* biome-ignore lint/complexity/noImportantStyles: reduced motion must override every animation */
+    @media (prefers-reduced-motion:reduce){*{animation:none!important}}
+  </style>
+
+  <rect x="1" y="1" width="1198" height="378" rx="24" fill="#0F0828" stroke="#2A1A66" stroke-width="2"/>
+  <text class="q" x="600" y="54">The paper is not the ticket. <tspan fill="#00E5D8">The database record is.</tspan></text>
+
+  <!-- Live credential on the buyer's phone -->
+  <text class="lb" x="300" y="98">Live QR on the buyer's phone</text>
+  <rect x="246" y="114" width="108" height="164" rx="18" fill="#1C1050" stroke="#fff" stroke-width="3"/>
+  <rect x="285" y="122" width="30" height="5" rx="2.5" fill="#fff" opacity=".5"/>
+  <use href="#qr" x="262" y="140" color="#5B1FE0"/>
+  <rect x="262" y="234" width="76" height="6" rx="3" fill="#3A2A85"/>
+  <rect class="timer" x="262" y="234" width="76" height="6" rx="3" fill="#00E5D8"/>
+  <rect x="262" y="140" width="76" height="3" rx="1.5" fill="#00E5D8" opacity="0">
+    <animate attributeName="y" values="140;213;213" keyTimes="0;.2;1" dur="6s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="1;1;0;0" keyTimes="0;.2;.21;1" dur="6s" repeatCount="indefinite"/>
+  </rect>
+  <g class="res">
+    <rect x="205" y="304" width="190" height="40" rx="20" fill="#00E5D8" fill-opacity=".14" stroke="#00E5D8" stroke-width="2"/>
+    <path d="M230 324l7 7 14-15" fill="none" stroke="#00E5D8" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <text class="pill" x="262" y="329" fill="#00E5D8">ADMITTED</text>
+  </g>
+
+  <circle cx="600" cy="196" r="24" fill="none" stroke="#3A2A85" stroke-width="2"/>
+  <text x="600" y="202" text-anchor="middle" font-size="16" font-weight="700" fill="#B3A6E0">vs</text>
+
+  <!-- Printed copy or screenshot of an old QR -->
+  <text class="lb" x="900" y="98">Screenshot or reprint of an old QR</text>
+  <g transform="rotate(-5 900 196)">
+    <rect x="846" y="114" width="108" height="164" rx="4" fill="#E9E4F7"/>
+    <rect x="846" y="114" width="108" height="164" rx="4" fill="none" stroke="#B3A6E0" stroke-width="2" stroke-dasharray="5 6"/>
+    <use href="#qr" x="862" y="140" color="#6B6585"/>
+    <text x="900" y="252" text-anchor="middle" font-size="10" font-weight="700" letter-spacing=".03em" fill="#6B6585">SIGNED 31 S AGO</text>
+    <rect x="862" y="140" width="76" height="3" rx="1.5" fill="#00E5D8" opacity="0">
+      <animate attributeName="y" values="140;213;213" keyTimes="0;.2;1" dur="6s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="1;1;0;0" keyTimes="0;.2;.21;1" dur="6s" repeatCount="indefinite"/>
+    </rect>
+  </g>
+  <g class="res">
+    <rect x="790" y="304" width="220" height="40" rx="20" fill="#FF6B8A" fill-opacity=".14" stroke="#FF6B8A" stroke-width="2"/>
+    <path d="M815 317l14 14M829 317l-14 14" fill="none" stroke="#FF6B8A" stroke-width="3.5" stroke-linecap="round"/>
+    <text class="pill" x="843" y="329" fill="#FF6B8A">REJECTED · EXPIRED</text>
+  </g>
+</svg>

@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 220" role="img" aria-labelledby="t d">
+  <title id="t">PassRipple roadmap</title>
+  <desc id="d">Eleven phases from 0 to 10. Phases 0 and 1 are done, phase 2 is built and in field trial, phase 3 is being built, and phases 4 to 10 are planned.</desc>
+  <style>
+    text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+    .h{font-size:22px;font-weight:700;fill:#fff}
+    .lg{font-size:14px;font-weight:500;fill:#B3A6E0}
+    .num{font-size:15px;font-weight:700;text-anchor:middle}
+    .nm{font-size:14px;font-weight:600;fill:#EDE8FF;text-anchor:middle}
+    .nm.pl{fill:#9C8FCC}
+    .tg{font-size:12px;font-weight:700;fill:#00E5D8;text-anchor:middle;letter-spacing:.05em}
+    .nd{animation:rise .6s cubic-bezier(.2,.7,.2,1) both}
+    .prog{stroke-dasharray:1;animation:draw 1.4s .3s cubic-bezier(.6,0,.2,1) both}
+    @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+    @keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+    /* biome-ignore lint/complexity/noImportantStyles: reduced motion must override every animation */
+    @media (prefers-reduced-motion:reduce){*{animation:none!important}}
+  </style>
+  <rect x="1" y="1" width="1198" height="218" rx="24" fill="#0F0828" stroke="#2A1A66" stroke-width="2"/>
+  <text class="h" x="40" y="51">Roadmap</text>
+    <circle cx="800" cy="44" r="7" fill="#00E5D8" stroke="#00E5D8" stroke-width="2"/><text class="lg" x="814" y="49">done</text>
+    <circle cx="862" cy="44" r="7" fill="#5B1FE0" stroke="#00E5D8" stroke-width="2"/><text class="lg" x="876" y="49">built</text>
+    <circle cx="932" cy="44" r="7" fill="#170C3F" stroke="#00E5D8" stroke-width="2"/><text class="lg" x="946" y="49">building</text>
+    <circle cx="1026" cy="44" r="7" fill="#0F0828" stroke="#3A2A85" stroke-width="2"/><text class="lg" x="1040" y="49">planned</text>
+  <line x1="90" y1="112" x2="1110" y2="112" stroke="#2E1D74" stroke-width="4" stroke-linecap="round"/>
+  <line class="prog" pathLength="1" x1="90" y1="112" x2="396" y2="112" stroke="#00E5D8" stroke-width="4" stroke-linecap="round"/>
+    <g class="nd" style="animation-delay:0.20s">
+      <circle cx="90" cy="112" r="18" fill="#00E5D8" stroke="#00E5D8" stroke-width="3"/>
+      <path d="M82 112l5 5 11-11" fill="none" stroke="#0F0828" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <text class="nm" x="90" y="158">Foundations</text>
+    </g>
+    <g class="nd" style="animation-delay:0.28s">
+      <circle cx="192" cy="112" r="18" fill="#00E5D8" stroke="#00E5D8" stroke-width="3"/>
+      <path d="M184 112l5 5 11-11" fill="none" stroke="#0F0828" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <text class="nm" x="192" y="158">Cryptography</text>
+    </g>
+    <g class="nd" style="animation-delay:0.36s">
+      <circle cx="294" cy="112" r="18" fill="#5B1FE0" stroke="#00E5D8" stroke-width="3"/>
+      <text class="num" x="294" y="117" fill="#fff">2</text>
+      <text class="nm" x="294" y="158">Gate + API</text>
+      <text class="tg" x="294" y="178">field trial</text>
+    </g>
+    <g class="nd" style="animation-delay:0.44s">
+      <circle cx="396" cy="112" r="18" fill="none" stroke="#00E5D8" stroke-width="2"><animate attributeName="r" values="18;34" dur="1.8s" repeatCount="indefinite"/><animate attributeName="opacity" values=".8;0" dur="1.8s" repeatCount="indefinite"/></circle>
+      <circle cx="396" cy="112" r="18" fill="#170C3F" stroke="#00E5D8" stroke-width="3"/>
+      <text class="num" x="396" y="117" fill="#fff">3</text>
+      <text class="nm" x="396" y="158">Checkout</text>
+      <text class="tg" x="396" y="178">building</text>
+    </g>
+    <g class="nd" style="animation-delay:0.52s">
+      <circle cx="498" cy="112" r="18" fill="#0F0828" stroke="#3A2A85" stroke-width="2"/>
+      <text class="num" x="498" y="117" fill="#9C8FCC">4</text>
+      <text class="nm pl" x="498" y="158">Payouts</text>
+    </g>
+    <g class="nd" style="animation-delay:0.60s">
+      <circle cx="600" cy="112" r="18" fill="#0F0828" stroke="#3A2A85" stroke-width="2"/>
+      <text class="num" x="600" y="117" fill="#9C8FCC">5</text>
+      <text class="nm pl" x="600" y="158">Public site</text>
+    </g>
+    <g class="nd" style="animation-delay:0.68s">
+      <circle cx="702" cy="112" r="18" fill="#0F0828" stroke="#3A2A85" stroke-width="2"/>
+      <text class="num" x="702" y="117" fill="#9C8FCC">6</text>
+      <text class="nm pl" x="702" y="158">Load tests</text>
+    </g>
+    <g class="nd" style="animation-delay:0.76s">
+      <circle cx="804" cy="112" r="18" fill="#0F0828" stroke="#3A2A85" stroke-width="2"/>
+      <text class="num" x="804" y="117" fill="#9C8FCC">7</text>
+      <text class="nm pl" x="804" y="158">Door sales</text>
+    </g>
+    <g class="nd" style="animation-delay:0.84s">
+      <circle cx="906" cy="112" r="18" fill="#0F0828" stroke="#3A2A85" stroke-width="2"/>
+      <text class="num" x="906" y="117" fill="#9C8FCC">8</text>
+      <text class="nm pl" x="906" y="158">Municipal</text>
+    </g>
+    <g class="nd" style="animation-delay:0.92s">
+      <circle cx="1008" cy="112" r="18" fill="#0F0828" stroke="#3A2A85" stroke-width="2"/>
+      <text class="num" x="1008" y="117" fill="#9C8FCC">9</text>
+      <text class="nm pl" x="1008" y="158">Multi-gate</text>
+    </g>
+    <g class="nd" style="animation-delay:1.00s">
+      <circle cx="1110" cy="112" r="18" fill="#0F0828" stroke="#3A2A85" stroke-width="2"/>
+      <text class="num" x="1110" y="117" fill="#9C8FCC">10</text>
+      <text class="nm pl" x="1110" y="158">Cards</text>
+    </g>
+</svg>

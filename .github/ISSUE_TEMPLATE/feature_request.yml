@@ -1,0 +1,25 @@
+name: Feature request
+description: Suggest an idea or an improvement.
+labels: ["enhancement", "triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Who has this problem (buyer, organizer, gate staff, municipality), and when?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What should PassRipple do? Sketches and examples are welcome.
+    validations:
+      required: true
+  - type: checkboxes
+    id: invariants
+    attributes:
+      label: Invariants
+      description: Could this affect any of the invariants I1 to I9 listed in the README?
+      options:
+        - label: I checked the invariants, and this proposal keeps all of them.

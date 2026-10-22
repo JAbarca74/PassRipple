@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 24" role="presentation" aria-hidden="true">
+  <defs>
+    <linearGradient id="f" x1="0" y1="0" x2="1200" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#00D1C7" stop-opacity="0"/>
+      <stop offset=".3" stop-color="#00D1C7"/>
+      <stop offset=".7" stop-color="#5B1FE0"/>
+      <stop offset="1" stop-color="#5B1FE0" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <style>
+    .w{fill:none;stroke-width:3;stroke-linecap:round;animation:flow 3s linear infinite}
+    @keyframes flow{to{transform:translateX(-40px)}}
+    @media (prefers-reduced-motion:reduce){.w{animation:none}}
+  </style>
+  <path class="w" d="M-40 12q10-8 20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0t20 0" stroke="url(#f)"/>
+</svg>

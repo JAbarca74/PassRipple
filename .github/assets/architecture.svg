@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 440" role="img" aria-labelledby="t d">
+  <title id="t">PassRipple architecture</title>
+  <desc id="d">A modular monolith in four layers: apps, Cloudflare Workers, domain modules and pure core packages, over PostgreSQL with one schema per module. Pulses flow downward because dependencies only point down.</desc>
+  <style>
+    text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+    .h{font-size:22px;font-weight:700;fill:#fff}
+    .hs{font-size:15px;font-weight:500;fill:#B3A6E0}
+    .ln{font-size:18px;font-weight:700;fill:#fff}
+    .ls{font-size:13px;font-weight:500;fill:#9C8FCC}
+    .chip{font-size:14px;font-weight:600;fill:#EDE8FF;text-anchor:middle}
+    .db{font-size:15px;font-weight:600;fill:#B9F7F2}
+    .layer{animation:rise .7s cubic-bezier(.2,.7,.2,1) both}
+    .pulse{fill:#00E5D8}
+    @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+    /* biome-ignore lint/complexity/noImportantStyles: reduced motion must override every animation */
+    @media (prefers-reduced-motion:reduce){*{animation:none!important}}
+  </style>
+  <rect x="1" y="1" width="1198" height="438" rx="24" fill="#0F0828" stroke="#2A1A66" stroke-width="2"/>
+  <text class="h" x="40" y="50">A modular monolith</text>
+  <text class="hs" x="272" y="50">dependencies only point down · each module owns one schema</text>
+  <g stroke="#3A2A85" stroke-width="2" stroke-dasharray="3 6">
+    <line x1="300" y1="136" x2="300" y2="400"/>
+    <line x1="520" y1="136" x2="520" y2="400"/>
+    <line x1="760" y1="136" x2="760" y2="400"/>
+    <line x1="1000" y1="136" x2="1000" y2="400"/>
+  </g>
+  <g class="pulse">
+    <circle cx="300" cy="136" r="5"><animate attributeName="cy" values="136;388" dur="2.4s" begin="0.0s" repeatCount="indefinite"/></circle>
+    <circle cx="520" cy="136" r="5"><animate attributeName="cy" values="136;388" dur="2.4s" begin="0.6s" repeatCount="indefinite"/></circle>
+    <circle cx="760" cy="136" r="5"><animate attributeName="cy" values="136;388" dur="2.4s" begin="1.2s" repeatCount="indefinite"/></circle>
+    <circle cx="1000" cy="136" r="5"><animate attributeName="cy" values="136;388" dur="2.4s" begin="1.8s" repeatCount="indefinite"/></circle>
+  </g>
+  <g class="layer" style="animation-delay:0.15s">
+    <rect x="40" y="78" width="1120" height="58" rx="14" fill="#170C3F" stroke="#2E1D74" stroke-width="2"/>
+    <text class="ln" x="64" y="104">Apps</text>
+    <text class="ls" x="64" y="123">what people use</text>
+    <rect x="220" y="92" width="207" height="30" rx="15" fill="#24145F" stroke="#5B1FE0" stroke-width="1.5"/>
+    <text class="chip" x="323.5" y="112">app · checkout + wallet</text>
+    <rect x="437" y="92" width="61" height="30" rx="15" fill="#24145F" stroke="#5B1FE0" stroke-width="1.5"/>
+    <text class="chip" x="467.5" y="112">site</text>
+    <rect x="508" y="92" width="169" height="30" rx="15" fill="#24145F" stroke="#5B1FE0" stroke-width="1.5"/>
+    <text class="chip" x="592.5" y="112">scanner · gate app</text>
+    <rect x="687" y="92" width="115" height="30" rx="15" fill="#24145F" stroke="#5B1FE0" stroke-width="1.5"/>
+    <text class="chip" x="744.5" y="112">coordinator</text>
+  </g>
+  <g class="layer" style="animation-delay:0.3s">
+    <rect x="40" y="162" width="1120" height="58" rx="14" fill="#170C3F" stroke="#2E1D74" stroke-width="2"/>
+    <text class="ln" x="64" y="188">Workers</text>
+    <text class="ls" x="64" y="207">Cloudflare edge</text>
+    <rect x="220" y="176" width="53" height="30" rx="15" fill="#24145F" stroke="#5B1FE0" stroke-width="1.5"/>
+    <text class="chip" x="246.5" y="196">api</text>
+    <rect x="283" y="176" width="115" height="30" rx="15" fill="#24145F" stroke="#5B1FE0" stroke-width="1.5"/>
+    <text class="chip" x="340.5" y="196">payments-in</text>
+    <rect x="408" y="176" width="61" height="30" rx="15" fill="#24145F" stroke="#5B1FE0" stroke-width="1.5"/>
+    <text class="chip" x="438.5" y="196">jobs</text>
+  </g>
+  <g class="layer" style="animation-delay:0.44999999999999996s">
+    <rect x="40" y="246" width="1120" height="58" rx="14" fill="#170C3F" stroke="#2E1D74" stroke-width="2"/>
+    <text class="ln" x="64" y="272">Modules</text>
+    <text class="ls" x="64" y="291">levels 1 to 4</text>
+    <rect x="220" y="260" width="92" height="30" rx="15" fill="#24145F" stroke="#5B1FE0" stroke-width="1.5"/>
+    <text class="chip" x="266" y="280">identity</text>
+    <rect x="322" y="260" width="76" height="30" rx="15" fill="#24145F" stroke="#5B1FE0" stroke-width="1.5"/>
+    <text class="chip" x="360" y="280">events</text>
+    <rect x="408" y="260" width="84" height="30" rx="15" fill="#24145F" stroke="#5B1FE0" stroke-width="1.5"/>
+    <text class="chip" x="450" y="280">catalog</text>
+    <rect x="502" y="260" width="76" height="30" rx="15" fill="#24145F" stroke="#5B1FE0" stroke-width="1.5"/>
+    <text class="chip" x="540" y="280">orders</text>
+    <rect x="588" y="260" width="92" height="30" rx="15" fill="#24145F" stroke="#5B1FE0" stroke-width="1.5"/>
+    <text class="chip" x="634" y="280">payments</text>
+    <rect x="690" y="260" width="99" height="30" rx="15" fill="#24145F" stroke="#5B1FE0" stroke-width="1.5"/>
+    <text class="chip" x="739.5" y="280">ticketing</text>
+    <rect x="799" y="260" width="107" height="30" rx="15" fill="#24145F" stroke="#5B1FE0" stroke-width="1.5"/>
+    <text class="chip" x="852.5" y="280">redemption</text>
+    <rect x="916" y="260" width="107" height="30" rx="15" fill="#24145F" stroke="#5B1FE0" stroke-width="1.5"/>
+    <text class="chip" x="969.5" y="280">settlement</text>
+    <rect x="1033" y="260" width="99" height="30" rx="15" fill="none" stroke="#5B4BA0" stroke-width="1.5" stroke-dasharray="4 4"/>
+    <text class="chip" x="1082.5" y="280">+ 14 more</text>
+  </g>
+  <g class="layer" style="animation-delay:0.6s">
+    <rect x="40" y="330" width="1120" height="58" rx="14" fill="#170C3F" stroke="#2E1D74" stroke-width="2"/>
+    <text class="ln" x="64" y="356">Core</text>
+    <text class="ls" x="64" y="375">pure, level 0</text>
+    <rect x="220" y="344" width="99" height="30" rx="15" fill="#24145F" stroke="#5B1FE0" stroke-width="1.5"/>
+    <text class="chip" x="269.5" y="364">contracts</text>
+    <rect x="329" y="344" width="76" height="30" rx="15" fill="#24145F" stroke="#5B1FE0" stroke-width="1.5"/>
+    <text class="chip" x="367" y="364">crypto</text>
+    <rect x="415" y="344" width="84" height="30" rx="15" fill="#24145F" stroke="#5B1FE0" stroke-width="1.5"/>
+    <text class="chip" x="457" y="364">pricing</text>
+    <rect x="509" y="344" width="53" height="30" rx="15" fill="#24145F" stroke="#5B1FE0" stroke-width="1.5"/>
+    <text class="chip" x="535.5" y="364">tax</text>
+    <rect x="572" y="344" width="122" height="30" rx="15" fill="#24145F" stroke="#5B1FE0" stroke-width="1.5"/>
+    <text class="chip" x="633" y="364">bank-parsers</text>
+    <rect x="704" y="344" width="76" height="30" rx="15" fill="#24145F" stroke="#5B1FE0" stroke-width="1.5"/>
+    <text class="chip" x="742" y="364">outbox</text>
+  </g>
+  <g class="layer" style="animation-delay:.75s">
+    <rect x="40" y="398" width="1120" height="1" fill="none"/>
+    <g fill="none" stroke="#00E5D8" stroke-width="2.5">
+      <ellipse cx="452" cy="404" rx="12" ry="4"/>
+      <path d="M440 404v14c0 2.2 5.4 4 12 4s12-1.8 12-4v-14"/>
+    </g>
+    <text class="db" x="474" y="420">PostgreSQL · Row Level Security · invariants in SQL</text>
+  </g>
+</svg>

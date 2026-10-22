@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 340" role="img" aria-labelledby="t d">
+  <title id="t">How a PassRipple ticket gets you in</title>
+  <desc id="d">Four steps connected by a moving dot: buy in three taps, the ticket is bound to a key on the phone, the QR is re-signed every 30 seconds, and the gate validates it offline.</desc>
+  <style>
+    text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+    .h{font-size:22px;font-weight:700;fill:#fff}
+    .ti{font-size:20px;font-weight:700;fill:#fff;text-anchor:middle}
+    .ca{font-size:15px;font-weight:500;fill:#B3A6E0;text-anchor:middle}
+    .n{fill:#1C1050;stroke:#5B1FE0;stroke-width:3;animation:hl 6s ease-out infinite}
+    .n2{animation-delay:1.667s}.n3{animation-delay:3.333s}.n4{animation-delay:5s}
+    .ic{fill:none;stroke:#fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+    .tap{fill:#00E5D8;animation:tap 1.8s infinite}
+    .tap2{animation-delay:.6s}.tap3{animation-delay:1.2s}
+    .ring{fill:none;stroke:#00E5D8;stroke-width:4;stroke-linecap:round;stroke-dasharray:1;animation:count 2s linear infinite}
+    .qa{animation:qa 4s step-end infinite}.qb{animation:qb 4s step-end infinite}
+    .ck{fill:none;stroke:#00E5D8;stroke-width:6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;animation:ck 6s infinite}
+    @keyframes hl{0%{stroke:#00E5D8;stroke-width:6}25%{stroke:#5B1FE0;stroke-width:3}100%{stroke:#5B1FE0;stroke-width:3}}
+    @keyframes tap{0%{opacity:1}35%{opacity:.25}100%{opacity:.25}}
+    @keyframes count{from{stroke-dashoffset:0}to{stroke-dashoffset:1}}
+    @keyframes qa{0%{opacity:1}50%{opacity:0}100%{opacity:0}}
+    @keyframes qb{0%{opacity:0}50%{opacity:1}100%{opacity:1}}
+    @keyframes ck{0%,80%{stroke-dashoffset:1;opacity:0}81%{opacity:1}90%,100%{stroke-dashoffset:0;opacity:1}}
+    /* biome-ignore lint/complexity/noImportantStyles: reduced motion must override every animation */
+    @media (prefers-reduced-motion:reduce){*{animation:none!important}.ck{stroke-dashoffset:0}}
+  </style>
+
+  <rect x="1" y="1" width="1198" height="338" rx="24" fill="#0F0828" stroke="#2A1A66" stroke-width="2"/>
+  <text class="h" x="60" y="58">How a ticket gets you in</text>
+
+  <line x1="208" y1="160" x2="992" y2="160" stroke="#3A2A85" stroke-width="3" stroke-dasharray="6 9" stroke-linecap="round"/>
+  <circle cx="150" cy="160" r="8" fill="#00E5D8">
+    <animate attributeName="cx" values="150;1050;1050" keyTimes="0;.8333;1" dur="6s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.03;.8;.8333;1" dur="6s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- 1. Buy in three taps -->
+  <circle class="n" cx="150" cy="160" r="58"/>
+  <rect class="ic" x="132" y="128" width="36" height="64" rx="8"/>
+  <line class="ic" x1="145" y1="135" x2="155" y2="135"/>
+  <circle class="tap" cx="150" cy="150" r="5"/>
+  <circle class="tap tap2" cx="150" cy="164" r="5"/>
+  <circle class="tap tap3" cx="150" cy="178" r="5"/>
+  <text class="ti" x="150" y="262">Buy in 3 taps</text>
+  <text class="ca" x="150" y="290">No account, no password</text>
+
+  <!-- 2. Bound to the phone -->
+  <circle class="n n2" cx="450" cy="160" r="58"/>
+  <circle class="ic" cx="434" cy="160" r="13"/>
+  <circle cx="434" cy="160" r="4" fill="#00E5D8"/>
+  <path class="ic" d="M447 160H474M464 160v9M472 160v6"/>
+  <text class="ti" x="450" y="262">Bound to the phone</text>
+  <text class="ca" x="450" y="290">Non-extractable device key</text>
+
+  <!-- 3. QR re-signed on a countdown -->
+  <circle class="n n3" cx="750" cy="160" r="58"/>
+  <circle class="ring" cx="750" cy="160" r="47" pathLength="1" transform="rotate(-90 750 160)"/>
+  <rect x="724" y="134" width="52" height="52" rx="7" fill="#fff"/>
+  <g fill="#5B1FE0">
+    <rect x="729" y="139" width="15" height="15" rx="2"/>
+    <rect x="756" y="139" width="15" height="15" rx="2"/>
+    <rect x="729" y="166" width="15" height="15" rx="2"/>
+  </g>
+  <g fill="#fff">
+    <rect x="732.5" y="142.5" width="8" height="8" rx="1"/>
+    <rect x="759.5" y="142.5" width="8" height="8" rx="1"/>
+    <rect x="732.5" y="169.5" width="8" height="8" rx="1"/>
+  </g>
+  <g fill="#1B0A52">
+    <g class="qa">
+      <rect x="747" y="140" width="6" height="6"/>
+      <rect x="747" y="157" width="6" height="6"/>
+      <rect x="757" y="166" width="6" height="6"/>
+      <rect x="765" y="175" width="6" height="6"/>
+      <rect x="730" y="157" width="6" height="6"/>
+    </g>
+    <g class="qb">
+      <rect x="747" y="148" width="6" height="6"/>
+      <rect x="738" y="157" width="6" height="6"/>
+      <rect x="765" y="166" width="6" height="6"/>
+      <rect x="757" y="175" width="6" height="6"/>
+      <rect x="747" y="175" width="6" height="6"/>
+    </g>
+  </g>
+  <text class="ti" x="750" y="262">QR re-signed every 30 s</text>
+  <text class="ca" x="750" y="290">Screenshots expire in seconds</text>
+
+  <!-- 4. Validated offline -->
+  <circle class="n n4" cx="1050" cy="160" r="58"/>
+  <path class="ck" pathLength="1" d="M1028 162l15 15 30-32"/>
+  <circle cx="1098" cy="114" r="18" fill="#0F0828" stroke="#3A2A85" stroke-width="2"/>
+  <g fill="none" stroke="#B3A6E0" stroke-width="2.5" stroke-linecap="round">
+    <path d="M1088 112a14 14 0 0 1 20 0M1092.5 117a7.5 7.5 0 0 1 11 0"/>
+    <path d="M1088 104L1108 124" stroke="#FF6B8A"/>
+  </g>
+  <circle cx="1098" cy="121" r="2" fill="#B3A6E0"/>
+  <text class="ti" x="1050" y="262">Validated offline</text>
+  <text class="ca" x="1050" y="290">Gates hold public keys only</text>
+</svg>
