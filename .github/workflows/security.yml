@@ -50,8 +50,10 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install Semgrep (pinned)
-        run: pip install semgrep==1.178.0
+      # Every package, Semgrep's dependencies included, is checked against its hash.
+      # Regenerate .github/requirements/semgrep.txt on Linux with pip-compile --generate-hashes.
+      - name: Install Semgrep (pinned by hash)
+        run: pip install --require-hashes --no-deps -r .github/requirements/semgrep.txt
 
       - name: Scan
         run: |

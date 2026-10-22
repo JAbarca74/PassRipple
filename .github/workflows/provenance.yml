@@ -1,0 +1,109 @@
+# SLSA build provenance (Build L2) for what PassRipple ships to Cloudflare: the two Worker
+# bundles and the public site. GitHub's hosted runner builds them from a clean checkout and
+# signs an in-toto provenance attestation with a short-lived Sigstore certificate tied to this
+# workflow. Check any file later with:
+#   gh attestation verify <file> -R JAbarca74/PassRipple
+#
+# The provenance proves what this workflow built; it covers what runs in production only once
+# the deploy uses these files (docs/private/devsecops-plan.md, section 4).
+name: provenance
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: provenance-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write # Sigstore signing certificate
+      attestations: write # store the attestation on GitHub
+      artifact-metadata: write # storage record for the attested files
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: lts/*
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # --dry-run bundles exactly as `wrangler deploy` would, without credentials or upload.
+      - name: Bundle the Workers
+        run: |
+          for worker in api jobs; do
+            (cd "workers/$worker" && pnpm exec wrangler deploy --dry-run --outdir "$GITHUB_WORKSPACE/out/worker-$worker")
+            tar -C out -czf "out/worker-$worker.tar.gz" "worker-$worker"
+          done
+
+      # The coming-soon build is what passripple.com serves today.
+      - name: Build the site
+        run: |
+          pnpm build:coming-soon
+          tar -C apps/site/dist -czf out/site.tar.gz .
+
+      - name: Checksums
+        working-directory: out
+        run: |
+          find . -type f -print0 | sort -z | xargs -0 sha256sum > "$RUNNER_TEMP/SHA256SUMS"
+          mv "$RUNNER_TEMP/SHA256SUMS" SHA256SUMS
+
+      - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        id: attest
+        with:
+          subject-checksums: out/SHA256SUMS
+
+      - name: Keep the signed bundle with the files
+        run: cp "${{ steps.attest.outputs.bundle-path }}" out/passripple-provenance.sigstore.json
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: passripple-build-${{ github.sha }}
+          path: out/
+          retention-days: 30
+          if-no-files-found: error
+
+  # On a release tag, attach the files, checksums and signed provenance to the GitHub release,
+  # which also lifts the Scorecard Signed-Releases check.
+  release-assets:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # upload release assets
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: passripple-build-${{ github.sha }}
+          path: out
+
+      - name: Attach to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          cd out
+          # A pushed tag has no release yet: open a draft for it, published by hand after review.
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1 \
+            || gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --draft --generate-notes
+          gh release upload "$TAG" worker-api.tar.gz worker-jobs.tar.gz site.tar.gz SHA256SUMS \
+            passripple-provenance.sigstore.json \
+            --repo "$GITHUB_REPOSITORY" --clobber

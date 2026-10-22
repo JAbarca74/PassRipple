@@ -22,6 +22,18 @@ updates:
       day: monday
     labels: ["dependencies", "database"]
 
+  - package-ecosystem: pip
+    cooldown:
+      default-days: 7
+    directory: "/.github/requirements"
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      semgrep:
+        patterns: ["*"]
+    labels: ["dependencies", "ci"]
+
   - package-ecosystem: github-actions
     cooldown:
       default-days: 7
