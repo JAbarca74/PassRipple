@@ -8,9 +8,11 @@
 # the deploy uses these files (docs/private/devsecops-plan.md, section 4).
 name: provenance
 
+# GitHub only lets you run a workflow by hand once it is on the default branch. Until Phase 3
+# reaches main, a push to Phase-Purchase runs it too; drop that branch when merging.
 on:
   push:
-    branches: [main]
+    branches: [main, Phase-Purchase]
     tags: ["v*"]
   workflow_dispatch:
 
