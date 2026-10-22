@@ -116,14 +116,14 @@ describe("gmailMailSender", () => {
   test("acts as GMAIL_SENDER_USER when set", async () => {
     const google = fakeGoogle();
     await gmailMailSender(
-      env({ GMAIL_SENDER_USER: "jabarcap@passripple.com" }),
+      env({ GMAIL_SENDER_USER: "mailbox@passripple.com" }),
       google.fetchImpl,
     ).send(message);
     const form = new URLSearchParams(String(google.calls[0]?.init.body));
     const claims = JSON.parse(
       decodeUtf8Base64url(String(form.get("assertion")).split(".")[1] ?? ""),
     );
-    expect(claims.sub).toBe("jabarcap@passripple.com");
+    expect(claims.sub).toBe("mailbox@passripple.com");
   });
 
   test("accepts a private key with \\n escapes, as pasted from the JSON key file", async () => {
