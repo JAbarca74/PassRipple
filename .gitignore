@@ -22,8 +22,17 @@ coverage/
 *.pem
 *.key
 *.p12
-*.jks
 *.keystore
+# Apple signing material and App Store Connect API keys
+*.p8
+*.cer
+*.mobileprovision
+# Signed app builds: they carry the signing certificate and must come from CI only
+*.apk
+*.aab
+*.ipa
+# Package manager credentials
+.npmrc
 google-services.json
 GoogleService-Info.plist
 credentials*.json
