@@ -1,0 +1,13 @@
+# Every change needs the maintainer's review. With branch protection on main, this
+# blocks merges that nobody has reviewed, including changes to CI and security rules.
+*                     @JAbarca74
+
+# Security-critical paths, listed so they stay owned if the default above ever changes.
+/.github/             @JAbarca74
+/.gitleaks.toml       @JAbarca74
+/.semgrep/            @JAbarca74
+/packages/crypto/     @JAbarca74
+/modules/payments/    @JAbarca74
+/modules/redemption/  @JAbarca74
+/modules/settlement/  @JAbarca74
+/db/                  @JAbarca74

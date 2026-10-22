@@ -1,0 +1,51 @@
+name: Bug report
+description: Something does not work as described.
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for the report. **If this is a security problem, stop here** and use [private vulnerability reporting](https://github.com/JAbarca74/PassRipple/security/advisories/new) instead.
+
+        Never paste secrets, real bank notices, phone numbers, emails or other personal data in an issue.
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - Checkout or wallet (apps/app)
+        - Gate app (apps/scanner)
+        - Public site (apps/site)
+        - API or workers
+        - Database or migrations
+        - Core packages (crypto, pricing, contracts...)
+        - Tooling, CI or docs
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. pnpm db:up && pnpm db:migrate
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Commit, operating system, Node.js version, device or emulator.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Relevant output, with any personal data removed.
+      render: shell
