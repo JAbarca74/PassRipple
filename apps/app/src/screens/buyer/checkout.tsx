@@ -128,7 +128,12 @@ export function Purchase() {
         },
       });
       keepOrder(storedFromPlaced(placed, data.event.name));
-      navigate(`/pagar?orden=${encodeURIComponent(placed.orderCode)}`);
+      // A free order is paid on the spot: the wallet binds its tickets as they are issued.
+      navigate(
+        placed.status === "paid"
+          ? "/entradas"
+          : `/pagar?orden=${encodeURIComponent(placed.orderCode)}`,
+      );
     } catch (failure) {
       setError(checkoutError(failure));
       if (failure instanceof ApiFailure && failure.code === "terms_changed") load();
@@ -257,7 +262,11 @@ export function Purchase() {
         </p>
         {error && <p className="mt-3 text-sm font-bold text-red-700">{error}</p>}
         <Button submit className="mt-4 w-full" disabled={!selected || submitting}>
-          {submitting ? "Reservando…" : "Aceptar y pagar con SINPE"}
+          {submitting
+            ? "Reservando…"
+            : selected && tickets + serviceCharge === 0
+              ? "Aceptar y obtener entradas"
+              : "Aceptar y pagar con SINPE"}
         </Button>
       </Card>
     </form>

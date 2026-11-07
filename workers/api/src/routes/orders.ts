@@ -96,6 +96,12 @@ export const orderRoutes = new Hono<AppEnv>()
       await tx`SELECT privacy.record_consent(${placed.order_id}, 'terms', true, ${legal.termsVersion}, 'checkout')`;
       await tx`SELECT privacy.record_consent(${placed.order_id}, 'privacy', true, ${legal.privacyVersion}, 'checkout')`;
       await tx`SELECT privacy.record_consent(${placed.order_id}, 'marketing', ${input.marketing}, ${legal.privacyVersion}, 'checkout')`;
+
+      // Nothing to pay: the order is paid now and its tickets are issued like any other.
+      if (placed.amount_crc === 0) {
+        await tx`SELECT orders.settle_free(${placed.order_id})`;
+        return { row: { ...placed, status: "paid" as const }, created: true };
+      }
       return { row: { ...placed, status: "pending" as const }, created: true };
     });
 
