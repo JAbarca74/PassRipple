@@ -35,3 +35,9 @@ export {
   payCode,
 } from "./pay-code.ts";
 export type { ServerKeyRing, ServerSigner, Signer } from "./signer.ts";
+export {
+  signTransferProof,
+  TRANSFER_PROOF_MAX_SKEW_SECONDS,
+  type TransferProofInput,
+  verifyTransferProof,
+} from "./transfer.ts";
