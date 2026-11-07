@@ -1,4 +1,4 @@
-import type { WalletTicket, WalletView } from "@passripple/contracts";
+import type { TransferPreview, WalletTicket, WalletView } from "@passripple/contracts";
 import {
   ChevronRight,
   Download,
@@ -11,10 +11,19 @@ import {
   WalletCards,
 } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
-import { demoEvent, demoTickets } from "../../demo.ts";
 import { ApiFailure, serverNow } from "../../lib/api.ts";
 import { formatEventDate } from "../../lib/format.ts";
 import { keepOrder, type StoredOrder, storedOrders } from "../../lib/orders.ts";
+import {
+  cancelTransfer,
+  claimTransfer,
+  type HeldTicket,
+  heldTickets,
+  offerTransfer,
+  previewTransfer,
+  readHeld,
+  transferLink,
+} from "../../lib/transfers.ts";
 import {
   bindWallet,
   heldHere,
@@ -23,7 +32,7 @@ import {
   requestRecoveryCode,
   verifyRecoveryCode,
 } from "../../lib/wallet.ts";
-import { Link } from "../../router.tsx";
+import { Link, navigate } from "../../router.tsx";
 import { QrCanvas } from "../../ui/QrCanvas.tsx";
 import {
   Badge,
@@ -44,11 +53,28 @@ const ISSUING_POLL_MS = 5000;
 /** Burst mode shows one ticket per second (6.5). */
 const BURST_MS = 1000;
 
+/** What the wallet shows for an order, or for one ticket received by transfer (6.6). */
 interface WalletEntry {
-  readonly order: StoredOrder;
-  readonly view: WalletView;
+  /** The query that opens it: `orden=…` or `recibida=…`. */
+  readonly query: string;
+  /** The order's or the receiver's token. */
+  readonly token: string;
+  readonly label: string;
+  readonly eventName: string;
+  readonly order: StoredOrder | null;
+  readonly view: Pick<WalletView, "event" | "serverKeys" | "tickets"> & {
+    readonly order: WalletView["order"] | null;
+  };
   /** Ticket ids bound to this device. */
   readonly here: ReadonlySet<string>;
+}
+
+async function boundHere(tickets: readonly WalletTicket[]): Promise<Set<string>> {
+  const here = new Set<string>();
+  for (const ticket of tickets) {
+    if (ticket.status === "bound" && (await heldHere(ticket.holderKey))) here.add(ticket.id);
+  }
+  return here;
 }
 
 async function loadEntry(order: StoredOrder): Promise<WalletEntry> {
@@ -57,11 +83,38 @@ async function loadEntry(order: StoredOrder): Promise<WalletEntry> {
   if (view.order.status === "paid" && view.tickets.some((ticket) => ticket.status === "issued")) {
     view = await bindWallet(order.token);
   }
-  const here = new Set<string>();
-  for (const ticket of view.tickets) {
-    if (ticket.status === "bound" && (await heldHere(ticket.holderKey))) here.add(ticket.id);
-  }
-  return { order, view, here };
+  return {
+    query: `orden=${encodeURIComponent(order.orderCode)}`,
+    token: order.token,
+    label: `Orden ${order.orderCode}`,
+    eventName: order.eventName,
+    order,
+    view,
+    here: await boundHere(view.tickets),
+  };
+}
+
+async function loadHeldEntry(held: HeldTicket): Promise<WalletEntry> {
+  const { event, serverKeys, ticket } = await readHeld(held.token);
+  return {
+    query: `recibida=${encodeURIComponent(held.code)}`,
+    token: held.token,
+    label: "Recibida por transferencia",
+    eventName: held.eventName,
+    order: null,
+    view: { order: null, event, serverKeys, tickets: [ticket] },
+    here: await boundHere([ticket]),
+  };
+}
+
+/** The entry a ticket screen's query names, or null. */
+function findEntry(params: URLSearchParams): Promise<WalletEntry> | null {
+  const orderCode = params.get("orden");
+  const order = orderCode ? storedOrders().find((o) => o.orderCode === orderCode) : undefined;
+  if (order) return loadEntry(order);
+  const heldCode = params.get("recibida");
+  const held = heldCode ? heldTickets().find((h) => h.code === heldCode) : undefined;
+  return held ? loadHeldEntry(held) : null;
 }
 
 /** Every order this device holds, refreshed while some paid order still waits for tickets. */
@@ -73,12 +126,15 @@ function useWallet(): { entries: WalletEntry[] | null; error: string | null } {
     let timer = 0;
     const load = async () => {
       try {
-        const loaded = await Promise.all(storedOrders().map(loadEntry));
+        const loaded = await Promise.all([
+          ...storedOrders().map(loadEntry),
+          ...heldTickets().map(loadHeldEntry),
+        ]);
         if (stopped) return;
         setEntries(loaded);
         setError(null);
         const waiting = loaded.some(
-          (entry) => entry.view.order.status === "paid" && entry.view.tickets.length === 0,
+          (entry) => entry.view.order?.status === "paid" && entry.view.tickets.length === 0,
         );
         if (waiting) timer = window.setTimeout(load, ISSUING_POLL_MS);
       } catch (failure) {
@@ -101,6 +157,7 @@ function useWallet(): { entries: WalletEntry[] | null; error: string | null } {
 function statusBadge(ticket: WalletTicket, here: boolean) {
   if (ticket.status === "void") return <Badge tone="rejected">Anulada</Badge>;
   if (ticket.status === "issued") return <Badge tone="verify">Preparando</Badge>;
+  if (!here && ticket.transferred) return <Badge tone="verify">Transferida</Badge>;
   if (!here) return <Badge tone="verify">En otro teléfono</Badge>;
   return <Badge tone="valid">Activa</Badge>;
 }
@@ -130,17 +187,19 @@ export function Wallet() {
     );
   }
   const elsewhere = entries.some((entry) =>
-    entry.view.tickets.some((ticket) => ticket.status === "bound" && !entry.here.has(ticket.id)),
+    entry.view.tickets.some(
+      (ticket) => ticket.status === "bound" && !ticket.transferred && !entry.here.has(ticket.id),
+    ),
   );
   return (
     <div className="space-y-4">
-      {entries.map(({ order, view, here }) => (
-        <div key={order.orderCode} className="space-y-3">
+      {entries.map(({ query, label, eventName, order, view, here }) => (
+        <div key={query} className="space-y-3">
           <div className="rounded-2xl bg-ink p-5 text-white">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm text-slate-300">Su billetera · Orden {order.orderCode}</p>
-                <h1 className="mt-1 text-xl font-black">{view.event?.name ?? order.eventName}</h1>
+                <p className="text-sm text-slate-300">Su billetera · {label}</p>
+                <h1 className="mt-1 text-xl font-black">{view.event?.name ?? eventName}</h1>
                 {view.event && (
                   <p className="mt-1 text-sm text-slate-300">
                     {formatEventDate(new Date(view.event.startsAt))}
@@ -150,7 +209,7 @@ export function Wallet() {
               <WalletCards className="text-wave" aria-hidden />
             </div>
           </div>
-          {view.order.status === "pending" && (
+          {order && view.order?.status === "pending" && (
             <ButtonLink
               to={`/pagar?orden=${encodeURIComponent(order.orderCode)}`}
               variant="secondary"
@@ -159,7 +218,7 @@ export function Wallet() {
               Esperando el pago · ver datos para pagar
             </ButtonLink>
           )}
-          {view.order.status === "paid" && view.tickets.length === 0 && (
+          {view.order?.status === "paid" && view.tickets.length === 0 && (
             <Notice icon={ShieldCheck} title="Pago confirmado" tone="valid">
               Estamos emitiendo sus entradas. Aparecen aquí en un momento.
             </Notice>
@@ -167,7 +226,7 @@ export function Wallet() {
           {view.tickets.map((ticket) => (
             <Link
               key={ticket.id}
-              to={`/entradas/abierta?orden=${encodeURIComponent(order.orderCode)}&entrada=${ticket.id}`}
+              to={`/entradas/abierta?${query}&entrada=${ticket.id}`}
               className="flex items-center gap-4 rounded-2xl border border-line bg-white p-5 shadow-sm hover:border-brand"
             >
               <span className="grid size-14 shrink-0 place-items-center rounded-xl bg-slate-100">
@@ -182,11 +241,7 @@ export function Wallet() {
             </Link>
           ))}
           {here.size > 1 && (
-            <ButtonLink
-              to={`/entradas/abierta?orden=${encodeURIComponent(order.orderCode)}`}
-              variant="secondary"
-              className="w-full"
-            >
+            <ButtonLink to={`/entradas/abierta?${query}`} variant="secondary" className="w-full">
               Mostrar todas en la puerta ({here.size})
             </ButtonLink>
           )}
@@ -241,9 +296,8 @@ function useTick(intervalMs: number): number {
  * held here, one per second (6.5).
  */
 export function TicketView() {
-  const params = new URLSearchParams(window.location.search);
-  const orderCode = params.get("orden") ?? "";
-  const ticketId = params.get("entrada");
+  const search = window.location.search;
+  const ticketId = new URLSearchParams(search).get("entrada");
   const [entry, setEntry] = useState<WalletEntry | null>(null);
   const [failed, setFailed] = useState(false);
   const [qr, setQr] = useState<string | null>(null);
@@ -251,15 +305,13 @@ export function TicketView() {
   const burst = useTick(BURST_MS);
 
   useEffect(() => {
-    const order = storedOrders().find((stored) => stored.orderCode === orderCode);
-    if (!order) {
+    const loading = findEntry(new URLSearchParams(search));
+    if (!loading) {
       setFailed(true);
       return;
     }
-    loadEntry(order)
-      .then(setEntry)
-      .catch(() => setFailed(true));
-  }, [orderCode]);
+    loading.then(setEntry).catch(() => setFailed(true));
+  }, [search]);
 
   const shown = entry
     ? entry.view.tickets.filter((ticket) =>
@@ -320,7 +372,9 @@ export function TicketView() {
               <p className="text-center text-sm text-slate-600">
                 {here
                   ? "Preparando el código…"
-                  : "Esta entrada está vinculada a otro teléfono. Recupérela para usarla aquí."}
+                  : ticket.transferred
+                    ? "Esta entrada se transfirió a otra persona."
+                    : "Esta entrada está vinculada a otro teléfono. Recupérela para usarla aquí."}
               </p>
             )}
           </div>
@@ -361,28 +415,107 @@ export function TicketView() {
       <Notice icon={ShieldCheck} title="Una captura de pantalla no sirve">
         El código cambia cada 30 segundos y se usa una sola vez. Muestre esta pantalla en la puerta.
       </Notice>
+      {here && shown.length === 1 && canTransfer(entry, ticket) && (
+        <ButtonLink
+          to={`/transferir?${entry.query}&entrada=${ticket.id}`}
+          variant="secondary"
+          className="w-full"
+        >
+          <Link2 size={17} aria-hidden /> Transferir a otra persona
+        </ButtonLink>
+      )}
     </div>
   );
 }
 
-/** Free transfer through a private link (6.6). Demonstration data: transfers arrive later. */
+/** A ticket held here may be given away before its event, while it has rebindings left. */
+function canTransfer(entry: WalletEntry, ticket: WalletTicket): boolean {
+  const startsAt = entry.view.event ? Date.parse(entry.view.event.startsAt) : 0;
+  return ticket.status === "bound" && ticket.keyVersion < 6 && startsAt > serverNow();
+}
+
+/**
+ * Free transfer through a private link (6.6). The phone holding the ticket signs the offer;
+ * whoever opens the link receives the ticket on their own phone, and it stops working here.
+ */
 export function Transfer() {
-  const ticket = demoTickets[1];
-  const [link, setLink] = useState<string | null>(null);
-  const message = encodeURIComponent(`Le paso una entrada para ${demoEvent.name}: ${link ?? ""}`);
+  const search = window.location.search;
+  const ticketId = new URLSearchParams(search).get("entrada");
+  const [entry, setEntry] = useState<WalletEntry | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [offer, setOffer] = useState<{ link: string; expiresAt: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loading = findEntry(new URLSearchParams(search));
+    if (!loading) {
+      setFailed(true);
+      return;
+    }
+    loading.then(setEntry).catch(() => setFailed(true));
+  }, [search]);
+
+  const ticket = entry?.view.tickets.find((t) => t.id === ticketId);
+  if (failed || (entry && (!ticket || !entry.here.has(ticket.id)))) {
+    return (
+      <Notice icon={TriangleAlert} title="Esta entrada no está en este teléfono" tone="verify">
+        Solo el teléfono que tiene la entrada puede transferirla.
+      </Notice>
+    );
+  }
+  if (!entry || !ticket) return <p className="text-slate-600">Cargando…</p>;
+
+  const eventName = entry.view.event?.name ?? entry.eventName;
+  const failure = (caught: unknown) =>
+    caught instanceof ApiFailure ? caught.message : "No pudimos crear el enlace. Intente de nuevo.";
+  const create = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const offered = await offerTransfer(entry.token, ticket.id, ticket.keyVersion);
+      setOffer({ link: transferLink(offered.offerToken), expiresAt: offered.expiresAt });
+    } catch (caught) {
+      setError(failure(caught));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const cancel = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await cancelTransfer(entry.token, ticket.id, ticket.keyVersion);
+      setOffer(null);
+    } catch (caught) {
+      setError(failure(caught));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const message = encodeURIComponent(
+    `Le paso una entrada para ${eventName}. Ábrala en su teléfono: ${offer?.link ?? ""}`,
+  );
+
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-black">Transferir entrada</h1>
       <Card>
-        <Row label="Entrada" value={`${ticket.type} · ${ticket.holder}`} />
+        <Row label="Evento" value={eventName} />
+        <Row label="Entrada" value={`${ticket.typeName} · ${ticket.humanCode}`} />
         <Row label="Costo" value="Sin cobro" />
         <p className="mt-3 text-sm text-slate-600">
           Al recibirla, la entrada queda en el teléfono de la otra persona y deja de funcionar en el
-          suyo.
+          suyo. No se puede recuperar después.
         </p>
-        {link ? (
+        {error && <p className="mt-3 text-sm font-bold text-red-700">{error}</p>}
+        {offer ? (
           <div className="mt-4 space-y-3">
-            <p className="break-all rounded-xl bg-slate-50 p-4 font-mono text-sm">{link}</p>
+            <p className="break-all rounded-xl bg-slate-50 p-4 font-mono text-sm">{offer.link}</p>
+            <p className="text-sm text-slate-600">
+              Envíelo solo a quien va a recibir la entrada. Sirve una sola vez, hasta el{" "}
+              {formatEventDate(new Date(offer.expiresAt))}
+            </p>
             <a
               className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-valid px-5 font-bold text-white"
               href={`https://wa.me/?text=${message}`}
@@ -391,25 +524,108 @@ export function Transfer() {
             >
               Enviar por WhatsApp
             </a>
+            <Button variant="secondary" className="w-full" disabled={busy} onClick={cancel}>
+              Anular el enlace
+            </Button>
           </div>
         ) : (
-          <Button
-            className="mt-4 w-full"
-            onClick={() => setLink("https://app.passripple.example/r/demo")}
-          >
-            <Link2 size={17} aria-hidden /> Crear enlace privado
+          <Button className="mt-4 w-full" disabled={busy} onClick={create}>
+            <Link2 size={17} aria-hidden /> {busy ? "Creando…" : "Crear enlace privado"}
           </Button>
         )}
       </Card>
+    </div>
+  );
+}
+
+/** The receiver's side of a transfer: what the link offers, then the ticket on this phone. */
+export function Receive() {
+  const [offerToken] = useState(() => window.location.hash.slice(1));
+  const [preview, setPreview] = useState<TransferPreview | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!offerToken) {
+      setError("Este enlace está incompleto. Pida a quien se lo envió que lo copie de nuevo.");
+      return;
+    }
+    previewTransfer(offerToken)
+      .then(setPreview)
+      .catch((caught) =>
+        setError(
+          caught instanceof ApiFailure && caught.status === 404
+            ? "Este enlace no existe. Pida a quien se lo envió uno nuevo."
+            : "No pudimos abrir el enlace. Revise su señal e intente de nuevo.",
+        ),
+      );
+  }, [offerToken]);
+
+  const receive = async () => {
+    if (!preview) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await claimTransfer(offerToken, preview.eventName);
+      // The secret is spent: keep it out of the history.
+      window.history.replaceState(null, "", window.location.pathname);
+      navigate("/entradas");
+    } catch (caught) {
+      setError(
+        caught instanceof ApiFailure && caught.status === 409
+          ? "Este enlace ya no sirve: se usó, se anuló o venció."
+          : caught instanceof ApiFailure
+            ? caught.message
+            : "No pudimos recibir la entrada. Intente de nuevo.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!preview) {
+    return error ? (
+      <Notice icon={TriangleAlert} title="No se puede recibir" tone="verify">
+        {error}
+      </Notice>
+    ) : (
+      <p className="text-slate-600">Abriendo el enlace…</p>
+    );
+  }
+  const closed = {
+    claimed: "Esta entrada ya se recibió en otro teléfono.",
+    cancelled: "Quien le envió el enlace lo anuló.",
+    expired: "Este enlace venció. Pida uno nuevo.",
+    open: null,
+  }[preview.state];
+  return (
+    <div className="space-y-4">
+      <h1 className="text-2xl font-black">Recibir entrada</h1>
       <Card>
-        <h2 className="font-bold">Así lo ve quien la recibe</h2>
+        <p className="text-sm text-slate-600">Le pasaron una entrada para</p>
+        <h2 className="mt-1 text-xl font-black">{preview.eventName}</h2>
         <p className="mt-1 text-sm text-slate-600">
-          {ticket.holder} le pasó una entrada General para {demoEvent.name}.
+          {preview.venueName} · {formatEventDate(new Date(preview.startsAt))}
         </p>
-        <Button variant="brand" className="mt-4 w-full" disabled>
-          Recibir en este teléfono
-        </Button>
+        <div className="mt-3">
+          <Row label="Entrada" value={preview.typeName} />
+          <Row label="Costo" value="Sin cobro" />
+        </div>
+        {error && <p className="mt-3 text-sm font-bold text-red-700">{error}</p>}
+        {closed ? (
+          <Notice icon={TriangleAlert} title="Este enlace ya no sirve" tone="verify">
+            {closed}
+          </Notice>
+        ) : (
+          <Button variant="brand" className="mt-4 w-full" disabled={busy} onClick={receive}>
+            {busy ? "Recibiendo…" : "Recibir en este teléfono"}
+          </Button>
+        )}
       </Card>
+      <Notice icon={ShieldCheck} title="Queda solo en este teléfono">
+        La entrada se liga a este teléfono. Instale PassRipple en la pantalla de inicio para no
+        perderla.
+      </Notice>
     </div>
   );
 }

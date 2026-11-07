@@ -24,6 +24,7 @@ import { Payment, Purchase, WaitingRoom } from "./screens/buyer/checkout.tsx";
 import {
   AssignAttendee,
   MyData,
+  Receive,
   Recover,
   TicketView,
   Transfer,
@@ -92,6 +93,13 @@ const routes: readonly Route[] = [
     area: "Billetera",
     icon: Link2,
     render: buyer(<Transfer />),
+  },
+  {
+    path: "/recibir",
+    title: "Recibir entrada",
+    area: "Billetera",
+    icon: Link2,
+    render: buyer(<Receive />),
   },
   {
     path: "/recuperar",

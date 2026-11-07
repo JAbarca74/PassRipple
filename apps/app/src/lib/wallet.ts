@@ -30,7 +30,7 @@ export async function heldHere(holderKey: string | null): Promise<boolean> {
   return holderKey !== null && holderKey === (await devicePublicKey());
 }
 
-function ring(view: WalletView): ServerKeyRing {
+function ring(view: Pick<WalletView, "serverKeys">): ServerKeyRing {
   const keys = new Map<number, Uint8Array>();
   for (const key of view.serverKeys) {
     const bytes = decodeBase64url(key.publicKey);
@@ -40,7 +40,10 @@ function ring(view: WalletView): ServerKeyRing {
 }
 
 /** The QR text of a ticket for the current 30-second window, or null if it cannot be shown. */
-export async function presentTicket(view: WalletView, certificate: string): Promise<string | null> {
+export async function presentTicket(
+  view: Pick<WalletView, "serverKeys">,
+  certificate: string,
+): Promise<string | null> {
   const bytes = decodeBase64url(certificate);
   if (!bytes) return null;
   const decoded = decodeCertificate(bytes);
