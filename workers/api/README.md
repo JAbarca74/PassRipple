@@ -46,14 +46,18 @@ Every response carries the server's clock in `X-Server-Time` (milliseconds), whi
 | `POST /v1/orders` | anyone, with `Idempotency-Key` | Holds the tickets (30 min), places the order with a unique amount and a payment code, records the consents. Returns the order's token (`pro_…`), the code, the exact amount and the SINPE number. The same key returns the same order and token (ADR 0033) |
 | `GET /v1/orders/current` | order token | The order's status, for the payment screen's polling |
 | `GET /v1/wallet` | order token | The order's tickets with their certificates, signed now, and the server key ring (ADR 0030, 0035) |
-| `POST /v1/wallet/bind` | order token | Binds the order's unbound tickets to the device key; with a recovery token, rebinds them (ADR 0032, 0036) |
+| `POST /v1/wallet/bind` | order token | Binds the order's unbound tickets to the device key; with a recovery token, rebinds them (ADR 0032, 0036), except tickets it transferred, which belong to their receivers |
 | `POST /v1/wallet/recovery`, `POST /v1/wallet/recovery/verify` | anyone | A code to the order's email, then one recovery token per paid order (ADR 0036). Phone only: `422` |
+| `POST /v1/transfers`, `POST /v1/transfers/cancel` | order or receiver token | Offers one ticket through a private link, or withdraws the offer (6.6). Needs the holder's signature over the ticket, its key version and the time (`@passripple/crypto`, five minutes either way); otherwise `403 not_holder` |
+| `POST /v1/transfers/preview` | anyone with the link | The event, ticket type, expiry and state of an offer |
+| `POST /v1/transfers/claim` | anyone with the link | Binds the ticket to the caller's device key and returns a receiver token (`prh_`) for that ticket; an offer no longer open: `409 not_open` |
+| `GET /v1/transfers/held` | receiver token | The receiver's ticket with its certificate, signed now, and the server key ring |
 | `POST /v1/buyer/erasure/code`, `POST /v1/buyer/erasure` | anyone | A buyer's erasure by email code; `409 open_orders` while an order is open or a ticket's event has not ended (ADR 0037) |
 | `POST /v1/admin/payments/notices` | administrator | A bank notice typed by hand, recorded once (I4) and reconciled (ADR 0034) |
 
 Organizers send their organization in `X-Org-Id`; `identity.set_actor` checks the membership.
 
-The public site calls `/v1/auth/*`, `/v1/account` and `/v1/buyer/*` from the browser for `/eliminar-datos`; only the origins in `ALLOWED_ORIGINS` may (CORS). The app calls `/v1/events/*`, `/v1/orders` and `/v1/wallet`; only the origins in `APP_ORIGINS` may.
+The public site calls `/v1/auth/*`, `/v1/account` and `/v1/buyer/*` from the browser for `/eliminar-datos`; only the origins in `ALLOWED_ORIGINS` may (CORS). The app calls `/v1/events/*`, `/v1/orders`, `/v1/wallet` and `/v1/transfers`; only the origins in `APP_ORIGINS` may.
 
 ## Tokens and codes
 

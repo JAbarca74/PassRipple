@@ -43,7 +43,7 @@ interface AccessRow {
   can_rebind: boolean;
 }
 
-interface TicketRow {
+export interface TicketRow {
   ticket_id: string;
   event_id: string;
   event_name: string;
@@ -72,12 +72,21 @@ function walletTickets(tx: Tx, token: string): Promise<TicketRow[]> {
   return tx<TicketRow[]>`SELECT * FROM orders.wallet_tickets(${token})`;
 }
 
-function sameKey(a: Uint8Array | null, b: Uint8Array): boolean {
+/** Which of these tickets were ever transferred (6.6): they belong to their receivers. */
+export async function transferredIds(tx: Tx, rows: readonly TicketRow[]): Promise<Set<string>> {
+  if (rows.length === 0) return new Set();
+  const ids = `{${rows.map((row) => row.ticket_id).join(",")}}`;
+  const found = await tx<{ id: string }[]>`
+    SELECT id FROM ticketing.transferred_tickets(${ids}::uuid[]) AS id`;
+  return new Set(found.map((row) => row.id));
+}
+
+export function sameKey(a: Uint8Array | null, b: Uint8Array): boolean {
   if (a === null || a.length !== b.length) return false;
   return a.every((byte, index) => byte === b[index]);
 }
 
-async function ticketView(
+export async function ticketView(
   row: TicketRow,
   signer: ServerSigner | null,
   transferred = false,
@@ -117,6 +126,7 @@ async function view(
   c: Context<AppEnv>,
   access: AccessRow,
   rows: TicketRow[],
+  transferred: Set<string>,
   boundElsewhere: number,
 ): Promise<WalletView> {
   const signer = rows.some((row) => row.status === "bound") ? await serverSigner(c.env) : null;
@@ -140,7 +150,9 @@ async function view(
       id: key.id,
       publicKey: encodeBase64url(key.publicKey),
     })),
-    tickets: await Promise.all(rows.map((row) => ticketView(row, signer))),
+    tickets: await Promise.all(
+      rows.map((row) => ticketView(row, signer, transferred.has(row.ticket_id))),
+    ),
     boundElsewhere,
   };
 }
@@ -148,12 +160,13 @@ async function view(
 export const walletRoutes = new Hono<AppEnv>()
   .get("/", async (c) => {
     const token = bearer(c, TOKEN_PREFIX);
-    const { access, rows } = await c.var.db.transaction(SYSTEM_ACTOR, async (tx) => ({
-      access: await walletAccess(tx, token),
-      rows: await walletTickets(tx, token),
-    }));
+    const { access, rows, transferred } = await c.var.db.transaction(SYSTEM_ACTOR, async (tx) => {
+      const access = await walletAccess(tx, token);
+      const rows = await walletTickets(tx, token);
+      return { access, rows, transferred: await transferredIds(tx, rows) };
+    });
     c.header("Cache-Control", "no-store");
-    return c.json(await view(c, access, rows, 0));
+    return c.json(await view(c, access, rows, transferred, 0));
   })
 
   // Ties the order's tickets to this device's key (ADR 0032).
@@ -171,11 +184,14 @@ export const walletRoutes = new Hono<AppEnv>()
       }
       let boundElsewhere = 0;
       let rebound = false;
-      for (const row of await walletTickets(tx, token)) {
+      const before = await walletTickets(tx, token);
+      // A ticket the buyer gave away belongs to its receiver: recovery does not reach it.
+      const given = await transferredIds(tx, before);
+      for (const row of before) {
         if (row.status === "issued") {
           await tx`SELECT ticketing.bind(${row.ticket_id}, ${key}, 'bind')`;
         } else if (row.status === "bound" && !sameKey(row.holder_pubkey, key)) {
-          if (access.can_rebind) {
+          if (access.can_rebind && !given.has(row.ticket_id)) {
             await tx`SELECT ticketing.bind(${row.ticket_id}, ${key}, 'recovery')`;
             rebound = true;
           } else {
@@ -185,10 +201,11 @@ export const walletRoutes = new Hono<AppEnv>()
       }
       // A recovery token rebinds once: a second device with the same token cannot.
       if (rebound) await tx`SELECT orders.consume_rebind(${token})`;
-      return { access, rows: await walletTickets(tx, token), boundElsewhere };
+      const rows = await walletTickets(tx, token);
+      return { access, rows, given, boundElsewhere };
     });
     c.header("Cache-Control", "no-store");
-    return c.json(await view(c, result.access, result.rows, result.boundElsewhere));
+    return c.json(await view(c, result.access, result.rows, result.given, result.boundElsewhere));
   })
 
   // Recovery on a new device (6.6, ADR 0036): a code to the order's email.

@@ -19,6 +19,7 @@ import { gateRoutes } from "./routes/gate.ts";
 import { healthRoutes } from "./routes/health.ts";
 import { orderRoutes } from "./routes/orders.ts";
 import { staffRoutes } from "./routes/staff.ts";
+import { transferRoutes } from "./routes/transfers.ts";
 import { walletRoutes } from "./routes/wallet.ts";
 
 /** What the app needs from outside, built per request from the Worker's bindings. */
@@ -83,7 +84,7 @@ export function createApp(services: Services): Hono<AppEnv> {
   app.use("/account", browserCors);
   app.use("/buyer/*", browserCors);
 
-  // The app (app.<domain>) calls the buyer's routes: events, orders and the wallet. Only the
+  // The app (app.<domain>) calls the buyer's routes: events, orders, the wallet and transfers. Only the
   // origins in APP_ORIGINS may. The idempotency key and the order's token travel in headers.
   const appCors = cors({
     origin: (origin, c) => (origins(c.env.APP_ORIGINS).includes(origin) ? origin : null),
@@ -97,6 +98,8 @@ export function createApp(services: Services): Hono<AppEnv> {
   app.use("/orders/*", appCors);
   app.use("/wallet", appCors);
   app.use("/wallet/*", appCors);
+  app.use("/transfers", appCors);
+  app.use("/transfers/*", appCors);
 
   app.route("/health", healthRoutes);
   app.route("/auth", authRoutes);
@@ -108,6 +111,7 @@ export function createApp(services: Services): Hono<AppEnv> {
   app.route("/events", eventRoutes);
   app.route("/orders", orderRoutes);
   app.route("/wallet", walletRoutes);
+  app.route("/transfers", transferRoutes);
 
   app.notFound((c) => c.json({ error: { code: "not_found", message: "Not found." } }, 404));
   app.onError((error, c) => {
