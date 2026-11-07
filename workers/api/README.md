@@ -54,6 +54,7 @@ Every response carries the server's clock in `X-Server-Time` (milliseconds), whi
 | `GET /v1/transfers/held` | receiver token | The receiver's ticket with its certificate, signed now, and the server key ring |
 | `POST /v1/buyer/erasure/code`, `POST /v1/buyer/erasure` | anyone | A buyer's erasure by email code; `409 open_orders` while an order is open or a ticket's event has not ended (ADR 0037) |
 | `POST /v1/admin/payments/notices` | administrator | A bank notice typed by hand, recorded once (I4) and reconciled (ADR 0034) |
+| `POST /v1/admin/payments/statements` | administrator | The bank statement's credits for a period, already parsed; answers the payments of those days it does not back (`missing`, `amount_differs`), recorded as incidents (design 10.4). The same import again changes nothing |
 
 Organizers send their organization in `X-Org-Id`; `identity.set_actor` checks the membership.
 

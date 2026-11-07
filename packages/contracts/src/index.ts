@@ -119,6 +119,13 @@ export {
   type PaymentProvider,
   RECONCILE_RESULTS,
   type ReconcileResult,
+  STATEMENT_FINDINGS,
+  type StatementImportRequest,
+  type StatementImportResponse,
+  type StatementLine,
+  statementImportRequest,
+  statementImportResponse,
+  statementLine,
 } from "./payments.ts";
 export {
   type ApiErrorBody,

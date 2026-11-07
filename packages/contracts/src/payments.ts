@@ -83,3 +83,46 @@ export const manualNoticeResponse = z.object({
   orderCode: z.string().nullable(),
 });
 export type ManualNoticeResponse = z.infer<typeof manualNoticeResponse>;
+
+// ── Bank statement (design 10.4) ─────────────────────────────────────────────
+
+const isoDate = z.iso.date();
+
+/** One credit of the account's statement, already parsed from the bank's export. */
+export const statementLine = z.object({
+  bookedOn: isoDate,
+  reference: z
+    .string()
+    .trim()
+    .regex(/^[0-9A-Za-z-]{1,64}$/),
+  amountCrc: z.int().positive().max(100_000_000),
+  description: optionalText(500),
+});
+export type StatementLine = z.output<typeof statementLine>;
+
+/** POST /v1/admin/payments/statements: the credits of the days from `from` to `to`. */
+export const statementImportRequest = z
+  .object({
+    from: isoDate,
+    to: isoDate,
+    lines: z.array(statementLine).max(5000),
+  })
+  .refine((statement) => statement.from <= statement.to, { message: "from is after to" });
+export type StatementImportRequest = z.output<typeof statementImportRequest>;
+
+export const STATEMENT_FINDINGS = ["missing", "amount_differs"] as const;
+
+export const statementImportResponse = z.object({
+  statementId: z.uuid(),
+  /** Payments of the period the statement does not back. */
+  findings: z.array(
+    z.object({
+      orderCode: z.string(),
+      reference: z.string(),
+      amountCrc: z.int().positive(),
+      paidOn: isoDate,
+      finding: z.enum(STATEMENT_FINDINGS),
+    }),
+  ),
+});
+export type StatementImportResponse = z.infer<typeof statementImportResponse>;
