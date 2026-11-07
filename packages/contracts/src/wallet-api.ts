@@ -26,6 +26,8 @@ export const walletTicket = z.object({
   holderKey: base64url.nullable(),
   /** The server's certificate (126 bytes) for a bound ticket. */
   certificate: base64url.nullable(),
+  /** Whether the ticket was ever transferred: then it belongs to its receiver (6.6). */
+  transferred: z.boolean(),
 });
 export type WalletTicket = z.infer<typeof walletTicket>;
 
@@ -72,3 +74,63 @@ export const recoveryVerifyResponse = z.object({
   orders: z.array(z.object({ orderCode: z.string(), token: z.string() })),
 });
 export type RecoveryVerifyResponse = z.infer<typeof recoveryVerifyResponse>;
+
+// ── Transfers (design 6.6) ───────────────────────────────────────────────────
+// The holder offers one ticket; the link carries the offer's secret after `#`, so it never
+// reaches a server log. Whoever claims it binds the ticket to their own device and gets a
+// token that reaches that ticket only.
+
+/** Prefix of a receiver's token: it reaches one transferred ticket. */
+export const HELD_TOKEN_PREFIX = "prh_";
+/** Prefix of a transfer offer's secret, the part of the link after `#`. */
+export const OFFER_TOKEN_PREFIX = "prx_";
+
+const token = (prefix: string) => z.string().startsWith(prefix).max(128);
+
+/**
+ * POST /v1/transfers and POST /v1/transfers/cancel, with the order's or the receiver's
+ * token: the holder's signature over the ticket, its key version and the time.
+ */
+export const transferProof = z.object({
+  ticketId: z.uuid(),
+  publicKey: base64url.length(43),
+  /** Unix time in whole seconds, as signed. */
+  issuedAt: z.int().nonnegative(),
+  signature: base64url.length(86),
+});
+export type TransferProof = z.infer<typeof transferProof>;
+
+export const transferOffered = z.object({
+  offerToken: token(OFFER_TOKEN_PREFIX),
+  expiresAt: isoTime,
+});
+export type TransferOffered = z.infer<typeof transferOffered>;
+
+export const TRANSFER_OFFER_STATES = ["open", "claimed", "cancelled", "expired"] as const;
+
+/** POST /v1/transfers/preview and /v1/transfers/claim: the offer's secret. */
+export const offerRequest = z.object({ offerToken: token(OFFER_TOKEN_PREFIX) });
+export type OfferRequest = z.infer<typeof offerRequest>;
+
+/** What the receiver sees before claiming. */
+export const transferPreview = z.object({
+  eventName: z.string(),
+  venueName: z.string(),
+  startsAt: isoTime,
+  typeName: z.string(),
+  expiresAt: isoTime,
+  state: z.enum(TRANSFER_OFFER_STATES),
+});
+export type TransferPreview = z.infer<typeof transferPreview>;
+
+export const claimRequest = offerRequest.extend({ publicKey: base64url.length(43) });
+export type ClaimRequest = z.infer<typeof claimRequest>;
+
+export const claimResponse = z.object({ token: token(HELD_TOKEN_PREFIX) });
+export type ClaimResponse = z.infer<typeof claimResponse>;
+
+/** GET /v1/transfers/held, with the receiver's token. */
+export const heldView = walletView.pick({ event: true, serverKeys: true }).extend({
+  ticket: walletTicket,
+});
+export type HeldView = z.infer<typeof heldView>;

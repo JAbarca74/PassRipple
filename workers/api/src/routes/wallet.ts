@@ -77,7 +77,11 @@ function sameKey(a: Uint8Array | null, b: Uint8Array): boolean {
   return a.every((byte, index) => byte === b[index]);
 }
 
-async function ticketView(row: TicketRow, signer: ServerSigner | null): Promise<WalletTicket> {
+async function ticketView(
+  row: TicketRow,
+  signer: ServerSigner | null,
+  transferred = false,
+): Promise<WalletTicket> {
   let certificate: string | null = null;
   if (row.status === "bound" && row.holder_pubkey !== null && signer !== null) {
     const signed = await signCertificate(
@@ -105,6 +109,7 @@ async function ticketView(row: TicketRow, signer: ServerSigner | null): Promise<
     holderKey:
       row.holder_pubkey === null ? null : encodeBase64url(new Uint8Array(row.holder_pubkey)),
     certificate,
+    transferred,
   };
 }
 
