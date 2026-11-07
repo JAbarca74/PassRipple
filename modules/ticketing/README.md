@@ -32,7 +32,7 @@ Whether a key is an acceptable Ed25519 point is checked by `@passripple/crypto`,
 |---|---|---|
 | `ticketing.issue(event, ticket_type, order, origin, code_human)` | system | Issues one ticket, unbound |
 | `ticketing.issue_order(message, order, event, lines)` | system | Handles `order.paid`: issues the order's tickets, one per code the Worker drew, and emits `ticket.issued` for each. Idempotent by the message and by the order |
-| `ticketing.bind(ticket, holder_pubkey, reason)` | system | Binds a ticket to a device key and returns its new key version. `bind` on an issued ticket; `transfer` or `recovery` on a bound one |
+| `ticketing.bind(ticket, holder_pubkey, reason)` | system | Binds a ticket to a device key and returns its new key version. `bind` on an issued ticket; `transfer` or `recovery` on a bound one. Emits `ticket.bound` (`bind`, `recovery`) or `ticket.transferred` in the same transaction |
 | `ticketing.void(ticket)` | organizer, admin | Voids a ticket, online only |
 
 ## Handles
