@@ -150,6 +150,17 @@ export const buyerExport = z.object({
 });
 export type BuyerExport = z.infer<typeof buyerExport>;
 
+/**
+ * GET and POST /v1/wallet/preferences with the order's token: the news choice of the
+ * person behind the order, for all their orders. null when nothing was ever recorded.
+ */
+export const walletPreferences = z.object({ marketing: z.boolean().nullable() });
+export type WalletPreferences = z.infer<typeof walletPreferences>;
+
+/** POST /v1/wallet/preferences. */
+export const walletPreferencesRequest = z.object({ marketing: z.boolean() });
+export type WalletPreferencesRequest = z.infer<typeof walletPreferencesRequest>;
+
 // ── Transfers (design 6.6) ───────────────────────────────────────────────────
 // The holder offers one ticket; the link carries the offer's secret after `#`, so it never
 // reaches a server log. Whoever claims it binds the ticket to their own device and gets a

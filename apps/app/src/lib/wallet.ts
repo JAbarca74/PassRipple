@@ -7,6 +7,7 @@ import {
   decodeBase64url,
   decodeCertificate,
   type RecoveryVerifyResponse,
+  type WalletPreferences,
   type WalletView,
 } from "@passripple/contracts";
 import { presentCredential, type ServerKeyRing, verifyCertificate } from "@passripple/crypto";
@@ -59,6 +60,19 @@ export async function presentTicket(
 
 export function requestRecoveryCode(contact: string): Promise<unknown> {
   return api("/wallet/recovery", { method: "POST", body: { contact } });
+}
+
+/** The news choice of the person behind the order (14.4), for all their orders. */
+export function readPreferences(token: string): Promise<WalletPreferences> {
+  return api<WalletPreferences>("/wallet/preferences", { token });
+}
+
+export function savePreferences(token: string, marketing: boolean): Promise<WalletPreferences> {
+  return api<WalletPreferences>("/wallet/preferences", {
+    method: "POST",
+    token,
+    body: { marketing },
+  });
 }
 
 /** Right of access (14.7): a code to the email, then everything kept about it. */

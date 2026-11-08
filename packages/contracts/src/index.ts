@@ -192,8 +192,12 @@ export {
   transferPreview,
   transferProof,
   WALLET_TICKET_STATUSES,
+  type WalletPreferences,
+  type WalletPreferencesRequest,
   type WalletTicket,
   type WalletView,
+  walletPreferences,
+  walletPreferencesRequest,
   walletTicket,
   walletView,
 } from "./wallet-api.ts";

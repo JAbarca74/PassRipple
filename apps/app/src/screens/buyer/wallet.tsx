@@ -28,16 +28,28 @@ import {
   bindWallet,
   heldHere,
   presentTicket,
+  readPreferences,
   readWallet,
   requestExportCode,
   requestRecoveryCode,
   saveExport,
+  savePreferences,
   verifyExportCode,
   verifyRecoveryCode,
 } from "../../lib/wallet.ts";
 import { Link, navigate } from "../../router.tsx";
 import { QrCanvas } from "../../ui/QrCanvas.tsx";
-import { Badge, Button, ButtonLink, Card, Field, Notice, Row, Steps } from "../../ui/ui.tsx";
+import {
+  Badge,
+  Button,
+  ButtonLink,
+  Card,
+  Checkbox,
+  Field,
+  Notice,
+  Row,
+  Steps,
+} from "../../ui/ui.tsx";
 
 const SITE_URL = import.meta.env.VITE_SITE_URL ?? "http://localhost:5173";
 const QR_WINDOW_MS = 30_000;
@@ -788,6 +800,61 @@ export function AssignAttendee() {
 }
 
 /**
+ * The news choice (14.4), with the newest order this phone holds: it applies to every order
+ * of the same contact. Hidden when the phone holds no order or the link no longer works.
+ */
+function NewsPreference() {
+  const [token] = useState(() => storedOrders()[0]?.token ?? null);
+  const [marketing, setMarketing] = useState<boolean | null>(null);
+  const [state, setState] = useState<"loading" | "ready" | "saving" | "saved" | "hidden">(
+    token ? "loading" : "hidden",
+  );
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!token) return;
+    readPreferences(token)
+      .then((read) => {
+        setMarketing(read.marketing);
+        setState("ready");
+      })
+      .catch(() => setState("hidden"));
+  }, [token]);
+
+  if (!token || state === "hidden") return null;
+
+  const change = async (next: boolean) => {
+    setState("saving");
+    setError(null);
+    try {
+      setMarketing((await savePreferences(token, next)).marketing);
+      setState("saved");
+    } catch {
+      setError("No pudimos guardar su preferencia. Intente de nuevo.");
+      setState("ready");
+    }
+  };
+
+  return (
+    <Card>
+      <h2 className="font-bold">Preferencias</h2>
+      <Checkbox
+        label="Recibir novedades de PassRipple"
+        checked={marketing === true}
+        disabled={state === "loading" || state === "saving"}
+        onChange={(event) => change(event.target.checked)}
+      />
+      <p className="text-xs text-slate-600">
+        {state === "saved"
+          ? "Guardado. Vale para todas sus compras con el mismo contacto."
+          : "Vale para todas sus compras con el mismo contacto. Puede cambiarlo cuando quiera."}
+      </p>
+      {error && <p className="mt-2 text-sm font-bold text-red-700">{error}</p>}
+    </Card>
+  );
+}
+
+/**
  * The buyer's own data (14.7): the order's email proves it with a code, as in recovery, and
  * the answer is everything kept about that address, shown in short and saved as a file.
  * Erasure is the public /eliminar-datos page.
@@ -913,6 +980,7 @@ export function MyData() {
           </div>
         )}
       </Card>
+      <NewsPreference />
       <Card>
         <h2 className="font-bold">Eliminar mis datos</h2>
         <p className="mt-1 text-sm text-slate-600">

@@ -16,8 +16,10 @@ import {
   recoveryRequest,
   recoveryVerifyRequest,
   ORDER_TOKEN_PREFIX as TOKEN_PREFIX,
+  type WalletPreferences,
   type WalletTicket,
   type WalletView,
+  walletPreferencesRequest,
 } from "@passripple/contracts";
 import {
   formatHumanCode,
@@ -30,6 +32,7 @@ import type { AppEnv } from "../app.ts";
 import { bearer } from "../auth.ts";
 import { SYSTEM_ACTOR, type Tx } from "../db.ts";
 import { ApiError } from "../errors.ts";
+import { currentLegalVersions } from "../legal.ts";
 import { emailOf } from "../ports/contact.ts";
 import { newToken } from "../secrets.ts";
 import { serverKeys, serverSigner } from "../server-keys.ts";
@@ -210,6 +213,35 @@ export const walletRoutes = new Hono<AppEnv>()
     return c.json(await view(c, result.access, result.rows, result.given, result.boundElsewhere));
   })
 
+  // The news choice (14.4): read it, or record a new one on every order of the same
+  // contact, against the privacy policy in force.
+  .get("/preferences", async (c) => {
+    const token = bearer(c, TOKEN_PREFIX);
+    const body = await c.var.db.transaction(SYSTEM_ACTOR, async (tx) => {
+      await walletAccess(tx, token);
+      return { marketing: await marketingOf(tx, token) };
+    });
+    c.header("Cache-Control", "no-store");
+    return c.json(body satisfies WalletPreferences);
+  })
+
+  .post("/preferences", async (c) => {
+    const token = bearer(c, TOKEN_PREFIX);
+    const { marketing } = await jsonBody(c, walletPreferencesRequest);
+    const body = await c.var.db.transaction(SYSTEM_ACTOR, async (tx) => {
+      await walletAccess(tx, token);
+      const { privacyVersion } = await currentLegalVersions(tx);
+      const orders = await tx<{ order_id: string }[]>`
+        SELECT order_id FROM orders.contact_orders(${token})`;
+      for (const { order_id } of orders) {
+        await tx`SELECT privacy.record_consent(${order_id}, 'marketing', ${marketing}, ${privacyVersion}, 'wallet')`;
+      }
+      return { marketing: await marketingOf(tx, token) };
+    });
+    c.header("Cache-Control", "no-store");
+    return c.json(body satisfies WalletPreferences);
+  })
+
   // Recovery on a new device (6.6, ADR 0036): a code to the order's email.
   .post("/recovery", async (c) => {
     const { contact } = await jsonBody(c, recoveryRequest);
@@ -280,6 +312,12 @@ export const walletRoutes = new Hono<AppEnv>()
     c.header("Cache-Control", "no-store");
     return c.json(body);
   });
+
+async function marketingOf(tx: Tx, token: string): Promise<boolean | null> {
+  const [row] = await tx<{ granted: boolean | null }[]>`
+    SELECT orders.marketing_preference(${token}) AS granted`;
+  return row?.granted ?? null;
+}
 
 /** The document as orders.buyer_export builds it: Postgres times, raw ticket codes. */
 type RawExport = Omit<BuyerExport, "format" | "generatedAt">;
