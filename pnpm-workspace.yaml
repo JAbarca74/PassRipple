@@ -24,14 +24,21 @@ onlyBuiltDependencies:
 # Security fixes for build-time tools. Every one lives in a dev or build tool (wrangler's
 # miniflare, React Native's devtools), never in the Worker bundle or the app binary.
 overrides:
-  undici@>=7.0.0 <7.29.1: "^7.29.1"
+  undici@>=7.0.0 <7.30.1: "^7.30.1"
+  node-forge@<1.4.1: "^1.4.1"
   sharp@<0.35.5: ">=0.35.5"
   shell-quote@>=1.8.4 <1.11.0: ">=1.11.0"
 
 # No patched version exists yet for these two. Both are reachable only through the Expo CLI
 # on a developer machine or in CI (node-forge for its dev HTTPS certificates, braces for
 # file globbing during bundling); neither is in the app. Revisit when a patch is published.
+# zod (GHSA-mrhx-c7xc-m3w5): our own packages pin a patched 4.x; the Expo CLI still pulls
+# zod 3, which has no patch and only validates the CLI's own config on a developer machine.
+# decode-uri-component (GHSA-qr28-fpjm-wq7f): the fix is ESM-only and query-string, under
+# expo-router, requires the CommonJS 0.2 line; the scanner only parses its own deep links.
 auditConfig:
   ignoreGhsas:
     - GHSA-86w9-cpqp-85rv
     - GHSA-vfj7-8cjw-p6xm
+    - GHSA-mrhx-c7xc-m3w5
+    - GHSA-qr28-fpjm-wq7f

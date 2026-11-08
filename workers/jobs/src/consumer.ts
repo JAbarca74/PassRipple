@@ -66,7 +66,7 @@ export async function consume(db: Database, batch: MessageBatch<unknown>): Promi
       await handle(db, envelope);
       message.ack();
     } catch (error) {
-      console.error(`domain event ${envelope.id} (${envelope.event.type}) failed`, error);
+      console.error("domain event %s (%s) failed", envelope.id, envelope.event.type, error);
       // Backs off with the attempts: 10 s, 20 s, 40 s…
       message.retry({ delaySeconds: Math.min(10 * 2 ** (message.attempts - 1), 600) });
     }
