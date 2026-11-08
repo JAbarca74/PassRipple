@@ -11,6 +11,7 @@ import {
   decodeBase64url,
   encodeBase64url,
   encodeCertificate,
+  HELD_TOKEN_PREFIX,
   type OrderStatus,
   type RecoveryVerifyResponse,
   recoveryRequest,
@@ -249,8 +250,9 @@ export const walletRoutes = new Hono<AppEnv>()
     return c.json({ expiresInSeconds: CONTACT_CODE_TTL_SECONDS }, 202);
   })
 
-  // The code matched: one new token per paid order of that email. Each may rebind its
-  // order's tickets to this device once, within an hour, through POST /wallet/bind.
+  // The code matched: one new token per paid order of that email, and one per ticket
+  // received with it and still held. Each may rebind its tickets to this device once,
+  // within an hour, through POST /wallet/bind or POST /transfers/held/bind.
   .post("/recovery/verify", async (c) => {
     const { contact, code } = await jsonBody(c, recoveryVerifyRequest);
     const email = emailOf(contact);
@@ -263,11 +265,18 @@ export const walletRoutes = new Hono<AppEnv>()
         throw new ApiError(401, "invalid_code", "The code is wrong, used or expired.");
       const orders = await tx<{ order_id: string; pay_code: string }[]>`
         SELECT * FROM orders.recoverable_orders(${codeId})`;
-      const response: RecoveryVerifyResponse = { orders: [] };
+      const response: RecoveryVerifyResponse = { orders: [], held: [] };
       for (const order of orders) {
         const token = newToken(TOKEN_PREFIX);
         await tx`SELECT orders.add_recovery_token(${codeId}, ${order.order_id}, ${token})`;
         response.orders.push({ orderCode: order.pay_code, token });
+      }
+      const held = await tx<{ transfer_id: string; event_name: string }[]>`
+        SELECT * FROM orders.recoverable_held(${codeId})`;
+      for (const claim of held) {
+        const token = newToken(HELD_TOKEN_PREFIX);
+        await tx`SELECT ticketing.recover_held(${claim.transfer_id}, ${token})`;
+        response.held.push({ eventName: claim.event_name, token });
       }
       return response;
     });
@@ -295,7 +304,9 @@ export const walletRoutes = new Hono<AppEnv>()
       const [row] = await tx<{ document: RawExport }[]>`
         SELECT orders.buyer_export(${codeId}) AS document`;
       if (!row) throw new Error("orders.buyer_export returned nothing");
-      return row.document;
+      const [received] = await tx<{ received: BuyerExport["received"] }[]>`
+        SELECT orders.received_export(${codeId}) AS received`;
+      return { ...row.document, received: received?.received ?? [] };
     });
     const body: BuyerExport = {
       format: BUYER_EXPORT_FORMAT,

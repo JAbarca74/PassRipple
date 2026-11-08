@@ -1,7 +1,8 @@
 // A buyer's data erasure (design 14.7, ADR 0037), from the public /eliminar-datos page. The
 // buyer has no account: they prove the order's email with a code, as in recovery. orders
 // erases what it holds; nothing else of the buyer is personal (consents name the order, the
-// ledger holds no contact). While the address has an order pending or a paid ticket for an
+// ledger holds no contact), and ticketing forgets the same email where a receiver left it.
+// While the address has an order pending or a paid ticket for an
 // event still to come, erasure answers 409 with those orders, so nobody loses a paid ticket
 // without knowing; the buyer can come back after the event.
 
@@ -41,6 +42,8 @@ export const buyerRoutes = new Hono<AppEnv>()
       if (!used?.used)
         throw new ApiError(401, "invalid_code", "The code is wrong, used or expired.");
       const [row] = await tx<{ erased: number }[]>`SELECT orders.erase_buyer(${codeId}) AS erased`;
+      // The same email left when receiving tickets: forgotten too (the tickets stay).
+      await tx`SELECT ticketing.forget_holder_email(${email})`;
       return { blockers: [], erased: row?.erased ?? 0 };
     });
     if (outcome.blockers.length > 0) {

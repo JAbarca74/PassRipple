@@ -72,6 +72,11 @@ export type RecoveryVerifyRequest = z.input<typeof recoveryVerifyRequest>;
 export const recoveryVerifyResponse = z.object({
   /** One new token per order of that contact; each may rebind its tickets to this device. */
   orders: z.array(z.object({ orderCode: z.string(), token: z.string() })),
+  /**
+   * One new receiver token per ticket received with that email and still held; each may
+   * move its ticket to this device once, within an hour, through POST /v1/transfers/held/bind.
+   */
+  held: z.array(z.object({ eventName: z.string(), token: z.string() })),
 });
 export type RecoveryVerifyResponse = z.infer<typeof recoveryVerifyResponse>;
 
@@ -147,6 +152,15 @@ export const buyerExport = z.object({
       usedAt: isoTime.nullable(),
     }),
   ),
+  /** Tickets received by transfer with this email; each stops when it was passed on. */
+  received: z.array(
+    z.object({
+      event: z.object({ name: z.string(), venueName: z.string(), startsAt: isoTime }),
+      typeName: z.string(),
+      claimedAt: isoTime,
+      status: z.enum(EXPORT_TICKET_STATUSES),
+    }),
+  ),
 });
 export type BuyerExport = z.infer<typeof buyerExport>;
 
@@ -209,7 +223,14 @@ export const transferPreview = z.object({
 });
 export type TransferPreview = z.infer<typeof transferPreview>;
 
-export const claimRequest = offerRequest.extend({ publicKey: base64url.length(43) });
+/**
+ * The receiver's device key and, optionally, an email: with it they can recover the ticket
+ * on a new phone, download their data and have it erased, like a buyer.
+ */
+export const claimRequest = offerRequest.extend({
+  publicKey: base64url.length(43),
+  email: z.string().trim().toLowerCase().pipe(z.email().max(254)).optional(),
+});
 export type ClaimRequest = z.infer<typeof claimRequest>;
 
 export const claimResponse = z.object({ token: token(HELD_TOKEN_PREFIX) });
@@ -220,3 +241,7 @@ export const heldView = walletView.pick({ event: true, serverKeys: true }).exten
   ticket: walletTicket,
 });
 export type HeldView = z.infer<typeof heldView>;
+
+/** POST /v1/transfers/held/bind, with a recovered receiver token: the new device's key. */
+export const heldBindRequest = z.object({ publicKey: base64url.length(43) });
+export type HeldBindRequest = z.infer<typeof heldBindRequest>;

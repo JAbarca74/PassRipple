@@ -10,6 +10,7 @@ import {
   encodeBase64url,
   HELD_TOKEN_PREFIX,
   type HeldView,
+  heldBindRequest,
   OFFER_TOKEN_PREFIX,
   ORDER_TOKEN_PREFIX,
   offerRequest,
@@ -147,11 +148,12 @@ export const transferRoutes = new Hono<AppEnv>()
 
   // Binds the ticket to the receiver's device and gives them their token.
   .post("/claim", async (c) => {
-    const { offerToken, publicKey } = await jsonBody(c, claimRequest);
+    const { offerToken, publicKey, email } = await jsonBody(c, claimRequest);
     const holderKey = key(publicKey);
     const token = newToken(HELD_TOKEN_PREFIX);
     await c.var.db.transaction(SYSTEM_ACTOR, async (tx) => {
-      await tx`SELECT ticketing.claim_transfer(${offerToken}, ${holderKey}, ${token})`;
+      await tx`SELECT ticketing.claim_transfer(${offerToken}, ${holderKey}, ${token},
+                                               ${email ?? null})`;
     });
     const body: ClaimResponse = { token };
     c.header("Cache-Control", "no-store");
@@ -159,28 +161,45 @@ export const transferRoutes = new Hono<AppEnv>()
   })
 
   // The receiver's wallet: their one ticket, with a fresh certificate while they hold it.
-  .get("/held", async (c) => {
-    const token = holderToken(c);
-    if (!token.startsWith(HELD_TOKEN_PREFIX)) throw UNAUTHORIZED();
-    const { row, transferred } = await c.var.db.transaction(SYSTEM_ACTOR, async (tx) => {
-      const [row] = await reachableTickets(tx, token);
-      if (!row) throw UNAUTHORIZED();
-      return { row, transferred: await transferredIds(tx, [row]) };
+  .get("/held", async (c) => heldView(c, receiverToken(c)))
+
+  // After recovery by email: moves the receiver's ticket to this device, once.
+  .post("/held/bind", async (c) => {
+    const token = receiverToken(c);
+    const { publicKey } = await jsonBody(c, heldBindRequest);
+    const holderKey = key(publicKey);
+    await c.var.db.transaction(SYSTEM_ACTOR, async (tx) => {
+      await tx`SELECT ticketing.rebind_held(${token}, ${holderKey})`;
     });
-    const signer = row.status === "bound" ? await serverSigner(c.env) : null;
-    const body: HeldView = {
-      event: {
-        id: row.event_id,
-        name: row.event_name,
-        venueName: row.venue_name,
-        startsAt: isoRequired(row.starts_at),
-      },
-      serverKeys: serverKeys(c.env).map((k) => ({
-        id: k.id,
-        publicKey: encodeBase64url(k.publicKey),
-      })),
-      ticket: await ticketView(row, signer, transferred.has(row.ticket_id)),
-    };
-    c.header("Cache-Control", "no-store");
-    return c.json(body);
+    return heldView(c, token);
   });
+
+function receiverToken(c: Context<AppEnv>): string {
+  const token = holderToken(c);
+  if (!token.startsWith(HELD_TOKEN_PREFIX)) throw UNAUTHORIZED();
+  return token;
+}
+
+async function heldView(c: Context<AppEnv>, token: string): Promise<Response> {
+  const { row, transferred } = await c.var.db.transaction(SYSTEM_ACTOR, async (tx) => {
+    const [row] = await reachableTickets(tx, token);
+    if (!row) throw UNAUTHORIZED();
+    return { row, transferred: await transferredIds(tx, [row]) };
+  });
+  const signer = row.status === "bound" ? await serverSigner(c.env) : null;
+  const body: HeldView = {
+    event: {
+      id: row.event_id,
+      name: row.event_name,
+      venueName: row.venue_name,
+      startsAt: isoRequired(row.starts_at),
+    },
+    serverKeys: serverKeys(c.env).map((k) => ({
+      id: k.id,
+      publicKey: encodeBase64url(k.publicKey),
+    })),
+    ticket: await ticketView(row, signer, transferred.has(row.ticket_id)),
+  };
+  c.header("Cache-Control", "no-store");
+  return c.json(body);
+}

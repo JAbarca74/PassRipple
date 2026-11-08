@@ -15,6 +15,7 @@ import { ApiFailure, serverNow } from "../../lib/api.ts";
 import { formatColones, formatEventDate } from "../../lib/format.ts";
 import { keepOrder, type StoredOrder, storedOrders } from "../../lib/orders.ts";
 import {
+  bindHeld,
   cancelTransfer,
   claimTransfer,
   type HeldTicket,
@@ -547,6 +548,7 @@ export function Transfer() {
 export function Receive() {
   const [offerToken] = useState(() => window.location.hash.slice(1));
   const [preview, setPreview] = useState<TransferPreview | null>(null);
+  const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -571,7 +573,7 @@ export function Receive() {
     setBusy(true);
     setError(null);
     try {
-      await claimTransfer(offerToken, preview.eventName);
+      await claimTransfer(offerToken, preview.eventName, email.trim() || undefined);
       // The secret is spent: keep it out of the history.
       window.history.replaceState(null, "", window.location.pathname);
       navigate("/entradas");
@@ -579,9 +581,11 @@ export function Receive() {
       setError(
         caught instanceof ApiFailure && caught.status === 409
           ? "Este enlace ya no sirve: se usó, se anuló o venció."
-          : caught instanceof ApiFailure
-            ? caught.message
-            : "No pudimos recibir la entrada. Intente de nuevo.",
+          : caught instanceof ApiFailure && caught.status === 400 && email.trim()
+            ? "Revise el correo: no parece una dirección válida."
+            : caught instanceof ApiFailure
+              ? caught.message
+              : "No pudimos recibir la entrada. Intente de nuevo.",
       );
     } finally {
       setBusy(false);
@@ -622,9 +626,19 @@ export function Receive() {
             {closed}
           </Notice>
         ) : (
-          <Button variant="brand" className="mt-4 w-full" disabled={busy} onClick={receive}>
-            {busy ? "Recibiendo…" : "Recibir en este teléfono"}
-          </Button>
+          <div className="mt-4 space-y-4">
+            <Field
+              label="Su correo (opcional)"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              hint="Con él puede recuperar la entrada si cambia de teléfono. Sin correo, solo vive en este teléfono."
+            />
+            <Button variant="brand" className="w-full" disabled={busy} onClick={receive}>
+              {busy ? "Recibiendo…" : "Recibir en este teléfono"}
+            </Button>
+          </div>
         )}
       </Card>
       <Notice icon={ShieldCheck} title="Queda solo en este teléfono">
@@ -678,7 +692,7 @@ export function Recover() {
     setBusy(true);
     setError(null);
     try {
-      const { orders } = await verifyRecoveryCode(contact.trim(), code.trim());
+      const { orders, held } = await verifyRecoveryCode(contact.trim(), code.trim());
       let count = 0;
       for (const recovered of orders) {
         const view = await bindWallet(recovered.token);
@@ -692,6 +706,10 @@ export function Recover() {
           eventName: view.event?.name ?? "",
         });
         count += view.tickets.filter((ticket) => ticket.status === "bound").length;
+      }
+      for (const received of held) {
+        const view = await bindHeld(received.token, received.eventName);
+        if (view.ticket.status === "bound") count += 1;
       }
       setMoved(count);
       setStep(2);
@@ -735,7 +753,7 @@ export function Recover() {
               pattern="[0-9]{6}"
               value={code}
               onChange={(event) => setCode(event.target.value)}
-              hint="Si el correo tiene compras, le llegó un código. Vence en 10 minutos."
+              hint="Si el correo tiene compras o entradas recibidas, le llegó un código. Vence en 10 minutos."
             />
             {error && <p className="text-sm font-bold text-red-700">{error}</p>}
             <Button submit className="w-full" disabled={busy}>
@@ -749,7 +767,7 @@ export function Recover() {
             <p className="mt-3 font-black">
               {moved > 0
                 ? `${moved === 1 ? "Su entrada está" : `Sus ${moved} entradas están`} en este teléfono`
-                : "No encontramos entradas pagadas con ese correo"}
+                : "No encontramos entradas con ese correo"}
             </p>
             <p className="mt-1 text-sm text-slate-600">El teléfono anterior ya no puede usarlas.</p>
             <ButtonLink to="/entradas" className="mt-5 w-full">

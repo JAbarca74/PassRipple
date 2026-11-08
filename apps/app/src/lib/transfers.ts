@@ -95,12 +95,34 @@ export function previewTransfer(offerToken: string): Promise<TransferPreview> {
   return api<TransferPreview>("/transfers/preview", { method: "POST", body: { offerToken } });
 }
 
-/** Moves the ticket to this device and keeps the receiver's token. */
-export async function claimTransfer(offerToken: string, eventName: string): Promise<HeldTicket> {
+/**
+ * Moves the ticket to this device and keeps the receiver's token. With an email, the
+ * receiver can recover the ticket on another phone later.
+ */
+export async function claimTransfer(
+  offerToken: string,
+  eventName: string,
+  email?: string,
+): Promise<HeldTicket> {
   const { token } = await api<ClaimResponse>("/transfers/claim", {
     method: "POST",
-    body: { offerToken, publicKey: await devicePublicKey() },
+    body: { offerToken, publicKey: await devicePublicKey(), ...(email ? { email } : {}) },
   });
+  return remember(token, eventName);
+}
+
+/** After recovery by email: moves a received ticket to this device and keeps its token. */
+export async function bindHeld(token: string, eventName: string): Promise<HeldView> {
+  const view = await api<HeldView>("/transfers/held/bind", {
+    method: "POST",
+    token,
+    body: { publicKey: await devicePublicKey() },
+  });
+  remember(token, eventName);
+  return view;
+}
+
+function remember(token: string, eventName: string): HeldTicket {
   const held = { token, code: `R${token.slice(4, 12)}`, eventName };
   keepHeld(held);
   return held;
