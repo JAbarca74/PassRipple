@@ -1,8 +1,9 @@
 // The server's keys (design 6.8, ADR 0014, 0035). The public key ring is configuration that
 // gate devices and wallets receive; the private key that signs certificates is a Worker
 // secret, wrapped in a ServerSigner so @passripple/crypto never holds it. Locally it is the
-// development key derived from a public label (scripts/dev-fixtures.ts); the production key
-// is still an open decision and is never generated here.
+// development key derived from a public label (scripts/dev-fixtures.ts), with id 1; the
+// deployed key has id 2, was drawn outside the repository, and exists only as Worker secrets.
+// Id 1 must never be in a deployed ring: anyone can derive its private half.
 
 import { decodeBase64url, decodeServerKeys, type ManifestServerKey } from "@passripple/contracts";
 import type { ServerSigner } from "@passripple/crypto";
