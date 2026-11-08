@@ -7,6 +7,7 @@ import {
   claimResponse,
   EXPORT_TICKET_STATUSES,
   HELD_TOKEN_PREFIX,
+  heldBindRequest,
   heldView,
   OFFER_TOKEN_PREFIX,
   offerRequest,
@@ -153,13 +154,39 @@ describe("wallet-api contracts", () => {
     });
   });
 
-  describe("claimRequest and claimResponse", () => {
-    test("accepts valid claimRequest", () => {
+  describe("claimRequest, heldBindRequest, and claimResponse", () => {
+    test("accepts valid claimRequest without email", () => {
       const req = {
         offerToken: `${OFFER_TOKEN_PREFIX}${"x".repeat(32)}`,
         publicKey: validKey,
       };
       expect(claimRequest.parse(req)).toEqual(req);
+    });
+
+    test("accepts and lowercases/trims email in claimRequest, and rejects invalid email", () => {
+      const req = {
+        offerToken: `${OFFER_TOKEN_PREFIX}${"x".repeat(32)}`,
+        publicKey: validKey,
+        email: "  Receiver@Example.COM  ",
+      };
+      expect(claimRequest.parse(req)).toEqual({
+        ...req,
+        email: "receiver@example.com",
+      });
+
+      expect(() =>
+        claimRequest.parse({
+          ...req,
+          email: "not-an-email",
+        }),
+      ).toThrow();
+
+      expect(() =>
+        claimRequest.parse({
+          ...req,
+          email: `${"a".repeat(245)}@example.com`,
+        }),
+      ).toThrow();
     });
 
     test("rejects claimRequest with invalid key or invalid offerToken", () => {
@@ -176,6 +203,13 @@ describe("wallet-api contracts", () => {
           publicKey: "short",
         }),
       ).toThrow();
+    });
+
+    test("heldBindRequest accepts a 43-char base64url key and rejects others", () => {
+      expect(heldBindRequest.parse({ publicKey: validKey })).toEqual({ publicKey: validKey });
+      expect(() => heldBindRequest.parse({ publicKey: "A".repeat(42) })).toThrow();
+      expect(() => heldBindRequest.parse({ publicKey: "A".repeat(44) })).toThrow();
+      expect(() => heldBindRequest.parse({ publicKey: `${"A".repeat(42)}+` })).toThrow();
     });
 
     test("accepts valid claimResponse with prh_ prefix", () => {
@@ -302,8 +336,15 @@ describe("wallet-api contracts", () => {
 
       const verifyRes = {
         orders: [{ orderCode: "28T5CW", token: "tok_12345678901234567890123456789012" }],
+        held: [{ eventName: "Concert", token: "prh_12345678901234567890123456789012" }],
       };
       expect(recoveryVerifyResponse.parse(verifyRes)).toEqual(verifyRes);
+
+      expect(() =>
+        recoveryVerifyResponse.parse({
+          orders: verifyRes.orders,
+        }),
+      ).toThrow();
     });
 
     test("WALLET_TICKET_STATUSES contains expected values", () => {
@@ -376,12 +417,44 @@ describe("wallet-api contracts", () => {
           usedAt: validIsoTime,
         },
       ],
+      received: [
+        {
+          event: {
+            name: "Festival",
+            venueName: "Park",
+            startsAt: validIsoTime,
+          },
+          typeName: "General",
+          claimedAt: validIsoTime,
+          status: "bound" as const,
+        },
+      ],
     };
 
     test("parses a full valid buyerExport document", () => {
       expect(BUYER_EXPORT_FORMAT).toBe("passripple.buyer-export/v1");
       expect(EXPORT_TICKET_STATUSES).toEqual(["unsold", "issued", "bound", "void", "transferred"]);
       expect(buyerExport.parse(validExport)).toEqual(validExport);
+    });
+
+    test("validates received entries status enum and rejects unknown status", () => {
+      const baseReceived = validExport.received[0];
+      if (!baseReceived) throw new Error("missing fixture");
+
+      for (const status of EXPORT_TICKET_STATUSES) {
+        const doc = {
+          ...validExport,
+          received: [{ ...baseReceived, status }],
+        };
+        expect(buyerExport.parse(doc)).toEqual(doc);
+      }
+
+      expect(() =>
+        buyerExport.parse({
+          ...validExport,
+          received: [{ ...baseReceived, status: "unknown_status" }],
+        }),
+      ).toThrow();
     });
 
     test("accepts null for humanCode, transferredAt, and paidAt", () => {
