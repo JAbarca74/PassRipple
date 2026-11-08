@@ -24,5 +24,9 @@ jobs:
       - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
         with:
           fail-on-severity: high
+          # Same exception as auditConfig in pnpm-workspace.yaml: the fix of
+          # decode-uri-component is ESM-only and query-string (under expo-router) requires the
+          # CommonJS 0.2 line; the scanner only parses its own deep links.
+          allow-ghsas: GHSA-qr28-fpjm-wq7f
           show-openssf-scorecard: true
           warn-on-openssf-scorecard-level: 3
