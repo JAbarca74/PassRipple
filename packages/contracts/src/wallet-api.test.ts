@@ -1,8 +1,11 @@
 import { describe, expect, test } from "vitest";
 import {
+  BUYER_EXPORT_FORMAT,
   bindRequest,
+  buyerExport,
   claimRequest,
   claimResponse,
+  EXPORT_TICKET_STATUSES,
   HELD_TOKEN_PREFIX,
   heldView,
   OFFER_TOKEN_PREFIX,
@@ -303,6 +306,159 @@ describe("wallet-api contracts", () => {
 
     test("WALLET_TICKET_STATUSES contains expected values", () => {
       expect(WALLET_TICKET_STATUSES).toEqual(["issued", "bound", "void"]);
+    });
+  });
+
+  describe("buyerExport", () => {
+    const validExport = {
+      format: BUYER_EXPORT_FORMAT,
+      generatedAt: validIsoTime,
+      contact: { email: "buyer@example.com" },
+      orders: [
+        {
+          orderCode: "28T5CW",
+          status: "paid" as const,
+          amountCrc: 5000,
+          contactPhone: "+50688887777",
+          createdAt: validIsoTime,
+          paidAt: validIsoTime,
+          expiresAt: validIsoTime,
+          event: {
+            name: "Festival",
+            venueName: "Park",
+            startsAt: validIsoTime,
+          },
+          items: [
+            {
+              typeName: "General",
+              quantity: 2,
+              unitPriceCrc: 2000,
+              unitFeeCrc: 400,
+              unitFeeTaxCrc: 100,
+            },
+          ],
+          tickets: [
+            {
+              typeName: "General",
+              humanCode: "4K7NP-9XR2M",
+              status: "bound" as const,
+              entryMode: "single_use" as const,
+              issuedAt: validIsoTime,
+              transferredAt: validIsoTime,
+              bindings: [{ reason: "bind" as const, boundAt: validIsoTime }],
+              transferOffers: [
+                {
+                  createdAt: validIsoTime,
+                  expiresAt: validIsoTime,
+                  cancelledAt: null,
+                  claimedAt: validIsoTime,
+                },
+              ],
+            },
+          ],
+          consents: [
+            {
+              purpose: "terms",
+              granted: true,
+              documentVersion: "v1",
+              source: "checkout",
+              recordedAt: validIsoTime,
+            },
+          ],
+        },
+      ],
+      contactCodes: [
+        {
+          purpose: "export" as const,
+          requestedAt: validIsoTime,
+          usedAt: validIsoTime,
+        },
+      ],
+    };
+
+    test("parses a full valid buyerExport document", () => {
+      expect(BUYER_EXPORT_FORMAT).toBe("passripple.buyer-export/v1");
+      expect(EXPORT_TICKET_STATUSES).toEqual(["unsold", "issued", "bound", "void", "transferred"]);
+      expect(buyerExport.parse(validExport)).toEqual(validExport);
+    });
+
+    test("accepts null for humanCode, transferredAt, and paidAt", () => {
+      const firstOrder = validExport.orders[0];
+      const firstTicket = firstOrder?.tickets[0];
+      if (!firstOrder || !firstTicket) throw new Error("missing fixture");
+
+      const withNulls = {
+        ...validExport,
+        orders: [
+          {
+            ...firstOrder,
+            contactPhone: null,
+            paidAt: null,
+            tickets: [
+              {
+                ...firstTicket,
+                humanCode: null,
+                status: "transferred" as const,
+                transferredAt: null,
+              },
+            ],
+          },
+        ],
+        contactCodes: [
+          {
+            purpose: "recovery" as const,
+            requestedAt: validIsoTime,
+            usedAt: null,
+          },
+        ],
+      };
+      expect(buyerExport.parse(withNulls)).toEqual(withNulls);
+    });
+
+    test("rejects wrong format literal", () => {
+      expect(() =>
+        buyerExport.parse({ ...validExport, format: "passripple.buyer-export/v2" }),
+      ).toThrow();
+    });
+
+    test("rejects bad ticket status", () => {
+      const firstOrder = validExport.orders[0];
+      const firstTicket = firstOrder?.tickets[0];
+      if (!firstOrder || !firstTicket) throw new Error("missing fixture");
+
+      expect(() =>
+        buyerExport.parse({
+          ...validExport,
+          orders: [
+            {
+              ...firstOrder,
+              tickets: [{ ...firstTicket, status: "invalid_status" }],
+            },
+          ],
+        }),
+      ).toThrow();
+    });
+
+    test("rejects negative amount", () => {
+      const firstOrder = validExport.orders[0];
+      if (!firstOrder) throw new Error("missing fixture");
+
+      expect(() =>
+        buyerExport.parse({
+          ...validExport,
+          orders: [{ ...firstOrder, amountCrc: -1 }],
+        }),
+      ).toThrow();
+    });
+
+    test("rejects non-ISO time", () => {
+      expect(() => buyerExport.parse({ ...validExport, generatedAt: "not-an-iso-time" })).toThrow();
+    });
+
+    test("rejects missing required field", () => {
+      const missingContact = { ...validExport };
+      delete (missingContact as Record<string, unknown>).contact;
+      expect(() => buyerExport.parse(missingContact)).toThrow();
     });
   });
 });
