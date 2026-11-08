@@ -18,6 +18,8 @@ import {
   transferPreview,
   transferProof,
   WALLET_TICKET_STATUSES,
+  walletPreferences,
+  walletPreferencesRequest,
   walletTicket,
   walletView,
 } from "./wallet-api.ts";
@@ -459,6 +461,29 @@ describe("wallet-api contracts", () => {
       const missingContact = { ...validExport };
       delete (missingContact as Record<string, unknown>).contact;
       expect(() => buyerExport.parse(missingContact)).toThrow();
+    });
+  });
+
+  describe("walletPreferences and walletPreferencesRequest", () => {
+    test("walletPreferences accepts true, false, and null", () => {
+      expect(walletPreferences.parse({ marketing: true })).toEqual({ marketing: true });
+      expect(walletPreferences.parse({ marketing: false })).toEqual({ marketing: false });
+      expect(walletPreferences.parse({ marketing: null })).toEqual({ marketing: null });
+    });
+
+    test("walletPreferences rejects string or missing marketing", () => {
+      expect(() => walletPreferences.parse({ marketing: "true" })).toThrow();
+      expect(() => walletPreferences.parse({})).toThrow();
+    });
+
+    test("walletPreferencesRequest accepts boolean", () => {
+      expect(walletPreferencesRequest.parse({ marketing: true })).toEqual({ marketing: true });
+      expect(walletPreferencesRequest.parse({ marketing: false })).toEqual({ marketing: false });
+    });
+
+    test("walletPreferencesRequest rejects null or missing marketing", () => {
+      expect(() => walletPreferencesRequest.parse({ marketing: null })).toThrow();
+      expect(() => walletPreferencesRequest.parse({})).toThrow();
     });
   });
 });
