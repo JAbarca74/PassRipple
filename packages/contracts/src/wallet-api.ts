@@ -75,6 +75,81 @@ export const recoveryVerifyResponse = z.object({
 });
 export type RecoveryVerifyResponse = z.infer<typeof recoveryVerifyResponse>;
 
+// ── Right of access (design 14.7) ────────────────────────────────────────────
+// POST /v1/wallet/export asks for a code to the email (same body as recovery); POST
+// /v1/wallet/export/verify with the code answers everything kept about that address. A
+// ticket the buyer gave away stops at the transfer: what came after is the receiver's.
+
+export const BUYER_EXPORT_FORMAT = "passripple.buyer-export/v1";
+
+export const EXPORT_TICKET_STATUSES = ["unsold", "issued", "bound", "void", "transferred"] as const;
+
+const exportTicket = z.object({
+  typeName: z.string(),
+  /** The fallback code, as shown; null for a ticket given away. */
+  humanCode: z.string().nullable(),
+  status: z.enum(EXPORT_TICKET_STATUSES),
+  entryMode: z.enum(["single_use", "multi_scan"]),
+  issuedAt: isoTime,
+  transferredAt: isoTime.nullable(),
+  bindings: z.array(
+    z.object({ reason: z.enum(["bind", "transfer", "recovery"]), boundAt: isoTime }),
+  ),
+  transferOffers: z.array(
+    z.object({
+      createdAt: isoTime,
+      expiresAt: isoTime,
+      cancelledAt: isoTime.nullable(),
+      claimedAt: isoTime.nullable(),
+    }),
+  ),
+});
+
+export const buyerExport = z.object({
+  format: z.literal(BUYER_EXPORT_FORMAT),
+  generatedAt: isoTime,
+  contact: z.object({ email: z.string() }),
+  orders: z.array(
+    z.object({
+      orderCode: z.string(),
+      status: z.enum(ORDER_STATUSES),
+      amountCrc: z.int().nonnegative(),
+      contactPhone: z.string().nullable(),
+      createdAt: isoTime,
+      paidAt: isoTime.nullable(),
+      expiresAt: isoTime,
+      event: z.object({ name: z.string(), venueName: z.string(), startsAt: isoTime }),
+      items: z.array(
+        z.object({
+          typeName: z.string(),
+          quantity: z.int().positive(),
+          unitPriceCrc: z.int().nonnegative(),
+          unitFeeCrc: z.int().nonnegative(),
+          unitFeeTaxCrc: z.int().nonnegative(),
+        }),
+      ),
+      tickets: z.array(exportTicket),
+      consents: z.array(
+        z.object({
+          purpose: z.string(),
+          granted: z.boolean(),
+          documentVersion: z.string(),
+          source: z.string(),
+          recordedAt: isoTime,
+        }),
+      ),
+    }),
+  ),
+  contactCodes: z.array(
+    z.object({
+      purpose: z.enum(["recovery", "erasure", "export"]),
+      requestedAt: isoTime,
+      usedAt: isoTime.nullable(),
+    }),
+  ),
+});
+export type BuyerExport = z.infer<typeof buyerExport>;
+
 // ── Transfers (design 6.6) ───────────────────────────────────────────────────
 // The holder offers one ticket; the link carries the offer's secret after `#`, so it never
 // reaches a server log. Whoever claims it binds the ticket to their own device and gets a

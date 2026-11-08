@@ -351,6 +351,9 @@ importers:
       '@passripple/pricing':
         specifier: workspace:*
         version: link:../../packages/pricing
+      '@passripple/privacy':
+        specifier: workspace:*
+        version: link:../privacy
       '@passripple/ticketing':
         specifier: workspace:*
         version: link:../ticketing

@@ -1,4 +1,4 @@
-import type { TransferPreview, WalletTicket, WalletView } from "@passripple/contracts";
+import type { BuyerExport, TransferPreview, WalletTicket, WalletView } from "@passripple/contracts";
 import {
   ChevronRight,
   Download,
@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
 import { ApiFailure, serverNow } from "../../lib/api.ts";
-import { formatEventDate } from "../../lib/format.ts";
+import { formatColones, formatEventDate } from "../../lib/format.ts";
 import { keepOrder, type StoredOrder, storedOrders } from "../../lib/orders.ts";
 import {
   cancelTransfer,
@@ -29,22 +29,15 @@ import {
   heldHere,
   presentTicket,
   readWallet,
+  requestExportCode,
   requestRecoveryCode,
+  saveExport,
+  verifyExportCode,
   verifyRecoveryCode,
 } from "../../lib/wallet.ts";
 import { Link, navigate } from "../../router.tsx";
 import { QrCanvas } from "../../ui/QrCanvas.tsx";
-import {
-  Badge,
-  Button,
-  ButtonLink,
-  Card,
-  Checkbox,
-  Field,
-  Notice,
-  Row,
-  Steps,
-} from "../../ui/ui.tsx";
+import { Badge, Button, ButtonLink, Card, Field, Notice, Row, Steps } from "../../ui/ui.tsx";
 
 const SITE_URL = import.meta.env.VITE_SITE_URL ?? "http://localhost:5173";
 const QR_WINDOW_MS = 30_000;
@@ -794,33 +787,137 @@ export function AssignAttendee() {
   );
 }
 
-/** The buyer's own data. Demonstration data except erasure, which is /eliminar-datos (14.7). */
+/**
+ * The buyer's own data (14.7): the order's email proves it with a code, as in recovery, and
+ * the answer is everything kept about that address, shown in short and saved as a file.
+ * Erasure is the public /eliminar-datos page.
+ */
 export function MyData() {
+  const [step, setStep] = useState(0);
+  const [contact, setContact] = useState("");
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<BuyerExport | null>(null);
+
+  const message = (failure: unknown) => {
+    if (failure instanceof ApiFailure) {
+      if (failure.code === "contact_channel_unavailable") {
+        return "Todavía no podemos enviar códigos a un teléfono. Escríbanos para pedir sus datos.";
+      }
+      if (failure.code === "invalid_code") return "El código no es correcto o ya venció.";
+      if (failure.code === "rate_limited") return "Pidió demasiados códigos. Espere unos minutos.";
+      return failure.message;
+    }
+    return "Algo salió mal. Intente de nuevo.";
+  };
+
+  const ask = async (event: FormEvent) => {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      await requestExportCode(contact.trim());
+      setStep(1);
+    } catch (failure) {
+      setError(message(failure));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const verify = async (event: FormEvent) => {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      setData(await verifyExportCode(contact.trim(), code.trim()));
+      setStep(2);
+    } catch (failure) {
+      setError(message(failure));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const tickets = data?.orders.reduce((sum, order) => sum + order.tickets.length, 0) ?? 0;
+  const marketing = data?.orders
+    .flatMap((order) => order.consents)
+    .filter((consent) => consent.purpose === "marketing")
+    .at(-1);
+
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-black">Mis datos</h1>
       <Card>
-        <Row label="Contacto" value="a•••@correo.com" />
-        <Row label="Órdenes" value="1" />
-      </Card>
-      <Card>
         <h2 className="font-bold">Descargar mis datos</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Un archivo con todo lo que guardamos sobre usted.
+          Un archivo con todo lo que guardamos sobre usted. Le enviamos un código al correo con que
+          compró para confirmar que es usted.
         </p>
-        <Button variant="secondary" className="mt-4 w-full">
-          <Download size={17} aria-hidden /> Descargar
-        </Button>
-      </Card>
-      <Card>
-        <h2 className="font-bold">Preferencias</h2>
-        <Checkbox label="Recibir novedades de PassRipple" />
+        <div className="mt-4">
+          <Steps steps={["Correo", "Código", "Listo"]} current={step} />
+        </div>
+        {step === 0 && (
+          <form onSubmit={ask} className="mt-4 space-y-4">
+            <Field
+              label="Correo con que compró"
+              required
+              autoComplete="email"
+              value={contact}
+              onChange={(event) => setContact(event.target.value)}
+            />
+            {error && <p className="text-sm font-bold text-red-700">{error}</p>}
+            <Button submit className="w-full" disabled={busy}>
+              Enviarme un código
+            </Button>
+          </form>
+        )}
+        {step === 1 && (
+          <form onSubmit={verify} className="mt-4 space-y-4">
+            <Field
+              label="Código de 6 dígitos"
+              required
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9]{6}"
+              value={code}
+              onChange={(event) => setCode(event.target.value)}
+              hint="Si el correo tiene compras, le llegó un código. Vence en 10 minutos."
+            />
+            {error && <p className="text-sm font-bold text-red-700">{error}</p>}
+            <Button submit className="w-full" disabled={busy}>
+              Ver mis datos
+            </Button>
+          </form>
+        )}
+        {step === 2 && data && (
+          <div className="mt-4">
+            <Row label="Correo" value={data.contact.email} />
+            <Row label="Órdenes" value={String(data.orders.length)} />
+            <Row label="Entradas" value={String(tickets)} />
+            <Row
+              label="Novedades de PassRipple"
+              value={
+                marketing ? (marketing.granted ? "Aceptadas" : "No aceptadas") : "Sin registro"
+              }
+            />
+            {data.orders.map((order) => (
+              <p key={order.orderCode} className="mt-2 text-sm text-slate-600">
+                {order.event.name} · {formatColones(order.amountCrc)} · orden {order.orderCode}
+              </p>
+            ))}
+            <Button variant="secondary" className="mt-4 w-full" onClick={() => saveExport(data)}>
+              <Download size={17} aria-hidden /> Descargar archivo
+            </Button>
+          </div>
+        )}
       </Card>
       <Card>
         <h2 className="font-bold">Eliminar mis datos</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Tiene entradas para un evento que todavía no ocurre. Puede transferirlas antes, o eliminar
-          sus datos cuando el evento termine.
+          Si tiene entradas para un evento que todavía no ocurre, puede transferirlas antes, o
+          eliminar sus datos cuando el evento termine.
         </p>
         <a
           href={`${SITE_URL}/eliminar-datos`}

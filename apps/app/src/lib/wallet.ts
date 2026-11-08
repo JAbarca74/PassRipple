@@ -3,6 +3,7 @@
 // the device key; the server's certificate is checked against the ring first.
 
 import {
+  type BuyerExport,
   decodeBase64url,
   decodeCertificate,
   type RecoveryVerifyResponse,
@@ -58,6 +59,26 @@ export async function presentTicket(
 
 export function requestRecoveryCode(contact: string): Promise<unknown> {
   return api("/wallet/recovery", { method: "POST", body: { contact } });
+}
+
+/** Right of access (14.7): a code to the email, then everything kept about it. */
+export function requestExportCode(contact: string): Promise<unknown> {
+  return api("/wallet/export", { method: "POST", body: { contact } });
+}
+
+export function verifyExportCode(contact: string, code: string): Promise<BuyerExport> {
+  return api<BuyerExport>("/wallet/export/verify", { method: "POST", body: { contact, code } });
+}
+
+/** Saves the document as a JSON file through the browser's download. */
+export function saveExport(document: BuyerExport): void {
+  const blob = new Blob([JSON.stringify(document, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = window.document.createElement("a");
+  link.href = url;
+  link.download = `passripple-mis-datos-${document.generatedAt.slice(0, 10)}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 export function verifyRecoveryCode(contact: string, code: string): Promise<RecoveryVerifyResponse> {

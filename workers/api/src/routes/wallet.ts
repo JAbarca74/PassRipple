@@ -5,6 +5,8 @@
 // signed on every read with the server key from the Worker's secrets.
 
 import {
+  BUYER_EXPORT_FORMAT,
+  type BuyerExport,
   bindRequest,
   decodeBase64url,
   encodeBase64url,
@@ -239,4 +241,59 @@ export const walletRoutes = new Hono<AppEnv>()
     });
     c.header("Cache-Control", "no-store");
     return c.json(body);
+  })
+
+  // Right of access (14.7): a code to the email, then everything kept about it.
+  .post("/export", async (c) => {
+    const { contact } = await jsonBody(c, recoveryRequest);
+    await sendContactCode(c, emailOf(contact), "export");
+    return c.json({ expiresInSeconds: CONTACT_CODE_TTL_SECONDS }, 202);
+  })
+
+  .post("/export/verify", async (c) => {
+    const { contact, code } = await jsonBody(c, recoveryVerifyRequest);
+    const email = emailOf(contact);
+    const codeId = await checkContactCode(c, email, "export", code);
+    const document = await c.var.db.transaction(SYSTEM_ACTOR, async (tx) => {
+      const [used] = await tx<
+        { used: boolean }[]
+      >`SELECT orders.use_contact_code(${codeId}) AS used`;
+      if (!used?.used)
+        throw new ApiError(401, "invalid_code", "The code is wrong, used or expired.");
+      const [row] = await tx<{ document: RawExport }[]>`
+        SELECT orders.buyer_export(${codeId}) AS document`;
+      if (!row) throw new Error("orders.buyer_export returned nothing");
+      return row.document;
+    });
+    const body: BuyerExport = {
+      format: BUYER_EXPORT_FORMAT,
+      generatedAt: new Date().toISOString(),
+      ...isoTimes(document),
+      orders: isoTimes(document.orders).map((order) => ({
+        ...order,
+        tickets: order.tickets.map((ticket) => ({
+          ...ticket,
+          humanCode: ticket.humanCode === null ? null : formatHumanCode(ticket.humanCode),
+        })),
+      })),
+    };
+    c.header("Cache-Control", "no-store");
+    return c.json(body);
   });
+
+/** The document as orders.buyer_export builds it: Postgres times, raw ticket codes. */
+type RawExport = Omit<BuyerExport, "format" | "generatedAt">;
+
+/** Rewrites every `…At` string of a JSON value as an ISO 8601 time in UTC. */
+function isoTimes<T>(value: T): T {
+  if (Array.isArray(value)) return value.map(isoTimes) as T;
+  if (value === null || typeof value !== "object") return value;
+  return Object.fromEntries(
+    Object.entries(value).map(([key, item]) => [
+      key,
+      key.endsWith("At") && typeof item === "string"
+        ? new Date(item).toISOString()
+        : isoTimes(item),
+    ]),
+  ) as T;
+}

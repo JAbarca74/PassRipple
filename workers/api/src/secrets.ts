@@ -119,7 +119,7 @@ export function newPayCodes(count: number): string[] {
 /** What the database stores for a buyer's contact code: bound to its purpose and address. */
 export function contactCodeHash(
   pepper: string,
-  purpose: "recovery" | "erasure",
+  purpose: "recovery" | "erasure" | "export",
   email: string,
   code: string,
 ): Promise<Uint8Array> {

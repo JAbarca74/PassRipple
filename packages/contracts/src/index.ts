@@ -163,11 +163,15 @@ export {
 export { bytesToUuid, uuidToBytes, uuidv7 } from "./uuid.ts";
 export {
   type BindRequest,
+  BUYER_EXPORT_FORMAT,
+  type BuyerExport,
   bindRequest,
+  buyerExport,
   type ClaimRequest,
   type ClaimResponse,
   claimRequest,
   claimResponse,
+  EXPORT_TICKET_STATUSES,
   HELD_TOKEN_PREFIX,
   type HeldView,
   heldView,

@@ -8,7 +8,7 @@ import type { BuyerContact } from "@passripple/contracts";
 import { ApiError } from "../errors.ts";
 import type { MailSender } from "./mail.ts";
 
-export type ContactPurpose = "recovery" | "erasure";
+export type ContactPurpose = "recovery" | "erasure" | "export";
 
 export interface ContactChannel {
   /** Sends a code to the address. */
@@ -18,11 +18,13 @@ export interface ContactChannel {
 const SUBJECTS: Record<ContactPurpose, string> = {
   recovery: "Su código para recuperar sus entradas",
   erasure: "Su código para eliminar sus datos",
+  export: "Su código para descargar sus datos",
 };
 
 const ACTIONS: Record<ContactPurpose, string> = {
   recovery: "pasar sus entradas a este teléfono",
   erasure: "eliminar sus datos de PassRipple",
+  export: "descargar sus datos de PassRipple",
 };
 
 export function emailChannel(mailer: MailSender): ContactChannel {
