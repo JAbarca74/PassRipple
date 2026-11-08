@@ -521,8 +521,8 @@ importers:
         specifier: 1.0.20
         version: 1.0.20
       hono:
-        specifier: 4.13.9
-        version: 4.13.9
+        specifier: 4.13.16
+        version: 4.13.16
       postgres:
         specifier: 3.4.9
         version: 3.4.9
@@ -3152,8 +3152,8 @@ packages:
   hermes-parser@0.36.1:
     resolution: {integrity: sha512-GApNk4zLHi2UWoWZZkx7LNCOSzLSc5lB55pZ/PhK7ycFeg7u5LcF88p/WbpIi1XUDtE0MpHE3uRR3u3KB7TjSQ==}
 
-  hono@4.13.9:
-    resolution: {integrity: sha512-7dMkQmZoC4E6F7AtaQSPhlWAdnBti+j7rreMZl8QB4jFiEhP9TWbGWUMi8WYzBCgmgulxuvLQupKqo+Co6Omyg==}
+  hono@4.13.16:
+    resolution: {integrity: sha512-AOLOEhvrV+iH92xXCnFr/5+3KjPKcI3xP63XJtX5spAnkznPdHijlIsUTpi7/9EhWqrTCekw5c5zh1K+YsVw7A==}
     engines: {node: '>=16.9.0'}
 
   hosted-git-info@7.0.2:
@@ -7207,7 +7207,7 @@ snapshots:
     dependencies:
       hermes-estree: 0.36.1
 
-  hono@4.13.9: {}
+  hono@4.13.16: {}
 
   hosted-git-info@7.0.2:
     dependencies:
