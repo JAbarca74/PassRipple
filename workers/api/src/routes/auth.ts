@@ -9,6 +9,7 @@ import { bearer } from "../auth.ts";
 import { SYSTEM_ACTOR } from "../db.ts";
 import { required } from "../env.ts";
 import { ApiError } from "../errors.ts";
+import { reviewerCode } from "../reviewer.ts";
 import {
   newSignInCode,
   newToken,
@@ -24,11 +25,14 @@ const SESSION_TTL_HOURS = 24;
 export const authRoutes = new Hono<AppEnv>()
   .post("/sign-in", async (c) => {
     const { email } = await jsonBody(c, signInRequest);
-    const code = newSignInCode();
+    // Play's reviewers get a fixed code and no mail (reviewer.ts).
+    const fixed = reviewerCode(c.env, email);
+    const code = fixed ?? newSignInCode();
     const hash = await signInCodeHash(required(c.env, "SIGN_IN_PEPPER"), email, code);
     await c.var.db.transaction(SYSTEM_ACTOR, async (tx) => {
       await tx`SELECT identity.request_sign_in(${email}, ${hash}, make_interval(secs => ${CODE_TTL_SECONDS}))`;
     });
+    if (fixed) return c.json({ expiresInSeconds: CODE_TTL_SECONDS }, 202);
     await c.var.mailer().send({
       to: email,
       subject: "Su código de PassRipple",

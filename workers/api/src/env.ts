@@ -69,6 +69,12 @@ export interface Env {
   readonly GMAIL_CLIENT_EMAIL?: string;
   readonly GMAIL_PRIVATE_KEY?: string;
   readonly GMAIL_SENDER_USER?: string;
+  /**
+   * Google Play's reviewers (reviewer.ts): this address signs in with this fixed six-digit
+   * code instead of a mailed one. Both secret; leave either unset to turn it off.
+   */
+  readonly REVIEW_SIGN_IN_EMAIL?: string;
+  readonly REVIEW_SIGN_IN_CODE?: string;
   /** Amazon SES. The access key is secret. */
   readonly SES_REGION?: string;
   readonly SES_ACCESS_KEY_ID?: string;
