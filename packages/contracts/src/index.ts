@@ -128,6 +128,24 @@ export {
   statementLine,
 } from "./payments.ts";
 export {
+  LEDGER_KINDS,
+  type LedgerEntry,
+  type LedgerKind,
+  type LedgerResponse,
+  ledgerEntry,
+  ledgerResponse,
+  type PayoutView,
+  type PlatformTotals,
+  payoutView,
+  platformTotals,
+  type RecordEntryRequest,
+  type RecordPayoutRequest,
+  recordEntryRequest,
+  recordPayoutRequest,
+  type SettlementStatement,
+  settlementStatement,
+} from "./settlement-api.ts";
+export {
   type ApiErrorBody,
   apiError,
   type CreatedStaffCode,

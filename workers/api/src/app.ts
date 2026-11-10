@@ -18,6 +18,7 @@ import { eventRoutes } from "./routes/events.ts";
 import { gateRoutes } from "./routes/gate.ts";
 import { healthRoutes } from "./routes/health.ts";
 import { orderRoutes } from "./routes/orders.ts";
+import { adminSettlementRoutes, settlementRoutes } from "./routes/settlement.ts";
 import { staffRoutes } from "./routes/staff.ts";
 import { transferRoutes } from "./routes/transfers.ts";
 import { walletRoutes } from "./routes/wallet.ts";
@@ -106,7 +107,9 @@ export function createApp(services: Services): Hono<AppEnv> {
   app.route("/staff", staffRoutes);
   app.route("/gate", gateRoutes);
   app.route("/account", accountRoutes);
+  app.route("/admin/settlement", adminSettlementRoutes);
   app.route("/admin", adminRoutes);
+  app.route("/settlement", settlementRoutes);
   app.route("/buyer", buyerRoutes);
   app.route("/events", eventRoutes);
   app.route("/orders", orderRoutes);
