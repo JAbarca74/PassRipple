@@ -18,6 +18,7 @@ import { eventRoutes } from "./routes/events.ts";
 import { gateRoutes } from "./routes/gate.ts";
 import { healthRoutes } from "./routes/health.ts";
 import { orderRoutes } from "./routes/orders.ts";
+import { reportingRoutes } from "./routes/reporting.ts";
 import { adminSettlementRoutes, settlementRoutes } from "./routes/settlement.ts";
 import { staffRoutes } from "./routes/staff.ts";
 import { transferRoutes } from "./routes/transfers.ts";
@@ -107,6 +108,7 @@ export function createApp(services: Services): Hono<AppEnv> {
   });
   app.use("/account/me", panelCors);
   app.use("/settlement/*", panelCors);
+  app.use("/reporting/*", panelCors);
   app.use("/admin/settlement/*", panelCors);
 
   // The app (app.<domain>) calls the buyer's routes: events, orders, the wallet and transfers. Only the
@@ -134,6 +136,7 @@ export function createApp(services: Services): Hono<AppEnv> {
   app.route("/admin/settlement", adminSettlementRoutes);
   app.route("/admin", adminRoutes);
   app.route("/settlement", settlementRoutes);
+  app.route("/reporting", reportingRoutes);
   app.route("/buyer", buyerRoutes);
   app.route("/events", eventRoutes);
   app.route("/orders", orderRoutes);

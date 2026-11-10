@@ -400,6 +400,21 @@ importers:
       '@passripple/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@passripple/events':
+        specifier: workspace:*
+        version: link:../events
+      '@passripple/inventory':
+        specifier: workspace:*
+        version: link:../inventory
+      '@passripple/redemption':
+        specifier: workspace:*
+        version: link:../redemption
+      '@passripple/staff':
+        specifier: workspace:*
+        version: link:../staff
+      '@passripple/ticketing':
+        specifier: workspace:*
+        version: link:../ticketing
 
   modules/seo:
     dependencies:

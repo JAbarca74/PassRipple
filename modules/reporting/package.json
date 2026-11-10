@@ -12,6 +12,11 @@
     "schema": "reporting"
   },
   "dependencies": {
-    "@passripple/contracts": "workspace:*"
+    "@passripple/contracts": "workspace:*",
+    "@passripple/events": "workspace:*",
+    "@passripple/inventory": "workspace:*",
+    "@passripple/ticketing": "workspace:*",
+    "@passripple/staff": "workspace:*",
+    "@passripple/redemption": "workspace:*"
   }
 }

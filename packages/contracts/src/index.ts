@@ -128,6 +128,16 @@ export {
   statementLine,
 } from "./payments.ts";
 export {
+  type EventCounters,
+  type EventDashboard,
+  eventCounters,
+  eventDashboard,
+  type GateDeviceStatus,
+  gateDeviceStatus,
+  type HourlySales,
+  hourlySales,
+} from "./reporting-api.ts";
+export {
   LEDGER_KINDS,
   type LedgerEntry,
   type LedgerKind,

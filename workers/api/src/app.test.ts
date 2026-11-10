@@ -94,7 +94,12 @@ describe("App", () => {
     const siteSignIn = await preflight("/auth/sign-in", "https://site.test", "POST");
     expect(siteSignIn.headers.get("Access-Control-Allow-Origin")).toBe("https://site.test");
 
-    for (const path of ["/account/me", "/settlement/events", "/admin/settlement/summary"]) {
+    for (const path of [
+      "/account/me",
+      "/settlement/events",
+      "/admin/settlement/summary",
+      "/reporting/events/x/dashboard",
+    ]) {
       const res = await preflight(path, "https://app.test");
       expect(res.headers.get("Access-Control-Allow-Origin")).toBe("https://app.test");
       expect(res.headers.get("Access-Control-Allow-Headers")).toContain("x-org-id");
