@@ -424,6 +424,9 @@ importers:
       '@passripple/identity':
         specifier: workspace:*
         version: link:../identity
+      '@passripple/jurisdictions':
+        specifier: workspace:*
+        version: link:../jurisdictions
       '@passripple/orders':
         specifier: workspace:*
         version: link:../orders
