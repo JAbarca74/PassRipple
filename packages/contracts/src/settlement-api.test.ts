@@ -6,6 +6,8 @@ import {
   platformTotals,
   recordEntryRequest,
   recordPayoutRequest,
+  settlementEvent,
+  settlementEventsResponse,
   settlementStatement,
 } from "./settlement-api.ts";
 
@@ -137,5 +139,27 @@ describe("settlement-api", () => {
     const totals = { custodyCrc: 10795, ownIncomeCrc: 0, overdueEvents: 1 };
     expect(platformTotals.parse(totals)).toEqual(totals);
     expect(platformTotals.safeParse({ ...totals, overdueEvents: -1 }).success).toBe(false);
+  });
+});
+
+describe("settlementEvent", () => {
+  test("an event before and after its payout", () => {
+    const event = {
+      eventId: EVENT_ID,
+      orgId: ENTRY_ID,
+      name: "Ended event",
+      startsAt: AT,
+      endsAt: AT,
+      collectedCrc: 10795,
+      balanceCrc: 10003,
+      dueAt: AT,
+      payoutPaidAt: null,
+      payoutConfirmedAt: null,
+    };
+    expect(settlementEventsResponse.parse({ events: [event] }).events[0]).toEqual(event);
+    expect(settlementEvent.parse({ ...event, balanceCrc: 0, payoutPaidAt: AT }).payoutPaidAt).toBe(
+      AT,
+    );
+    expect(settlementEvent.safeParse({ ...event, balanceCrc: -1 }).success).toBe(false);
   });
 });

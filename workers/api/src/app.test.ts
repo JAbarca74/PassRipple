@@ -72,6 +72,37 @@ describe("App", () => {
     expect(res2.headers.get("Access-Control-Allow-Origin")).toBeNull();
   });
 
+  test("sign-in and the panels accept the app's origins; the panels also accept X-Org-Id", async () => {
+    const app = createApp(fakeServices());
+    const env = { ALLOWED_ORIGINS: "https://site.test", APP_ORIGINS: "https://app.test" };
+    const preflight = (path: string, origin: string, method = "GET") =>
+      app.request(
+        `http://localhost/v1${path}`,
+        {
+          method: "OPTIONS",
+          headers: {
+            Origin: origin,
+            "Access-Control-Request-Method": method,
+            "Access-Control-Request-Headers": "authorization,x-org-id",
+          },
+        },
+        env,
+      );
+
+    const signIn = await preflight("/auth/sign-in", "https://app.test", "POST");
+    expect(signIn.headers.get("Access-Control-Allow-Origin")).toBe("https://app.test");
+    const siteSignIn = await preflight("/auth/sign-in", "https://site.test", "POST");
+    expect(siteSignIn.headers.get("Access-Control-Allow-Origin")).toBe("https://site.test");
+
+    for (const path of ["/account/me", "/settlement/events", "/admin/settlement/summary"]) {
+      const res = await preflight(path, "https://app.test");
+      expect(res.headers.get("Access-Control-Allow-Origin")).toBe("https://app.test");
+      expect(res.headers.get("Access-Control-Allow-Headers")).toContain("x-org-id");
+      const site = await preflight(path, "https://site.test");
+      expect(site.headers.get("Access-Control-Allow-Origin")).toBeNull();
+    }
+  });
+
   test("returns 404 with json error on not found", async () => {
     const app = createApp(fakeServices());
     const res = await app.request("http://localhost/v1/nowhere", {}, { ALLOWED_ORIGINS: "" });

@@ -6,6 +6,7 @@ import {
   enrollResponse,
   gateDevice,
   gateSessionResponse,
+  sessionProfile,
   signInRequest,
   verifySignInRequest,
 } from "./staff-api.ts";
@@ -132,5 +133,19 @@ describe("staff-api", () => {
       expect(apiError.parse(valid)).toEqual(valid);
       expect(() => apiError.parse({ error: { code: "not_found" } })).toThrow();
     });
+  });
+});
+
+describe("sessionProfile", () => {
+  test("lists the organizations a person acts for", () => {
+    const profile = {
+      userId: "12345678-1234-4234-8234-123456789001",
+      isAdmin: false,
+      organizations: [{ id: "12345678-1234-4234-8234-123456789002", name: "Org A" }],
+    };
+    expect(sessionProfile.parse(profile)).toEqual(profile);
+    expect(
+      sessionProfile.safeParse({ ...profile, organizations: [{ id: "x", name: "A" }] }).success,
+    ).toBe(false);
   });
 });

@@ -101,6 +101,27 @@ export const recordEntryRequest = z.discriminatedUnion("kind", [
 ]);
 export type RecordEntryRequest = z.output<typeof recordEntryRequest>;
 
+/**
+ * GET /v1/settlement/events (an organizer's events) and GET /v1/admin/settlement/events
+ * (every event that moved money): where the settlement screens start.
+ */
+export const settlementEvent = z.object({
+  eventId: z.uuid(),
+  orgId: z.uuid(),
+  name: z.string(),
+  startsAt: time,
+  endsAt: time,
+  collectedCrc: z.int().nonnegative(),
+  balanceCrc: z.int().nonnegative(),
+  dueAt: time,
+  payoutPaidAt: time.nullable(),
+  payoutConfirmedAt: time.nullable(),
+});
+export type SettlementEvent = z.infer<typeof settlementEvent>;
+
+export const settlementEventsResponse = z.object({ events: z.array(settlementEvent) });
+export type SettlementEventsResponse = z.infer<typeof settlementEventsResponse>;
+
 /** GET /v1/admin/settlement/summary: the two figures the platform never mixes (10.8). */
 export const platformTotals = z.object({
   /** Money in the collection account that belongs to organizers or is not yet settled. */

@@ -37,6 +37,15 @@ export const userSession = z.object({
 });
 export type UserSession = z.infer<typeof userSession>;
 
+/** GET /v1/account/me: who the session is, for the organizer and administration panels. */
+export const sessionProfile = z.object({
+  userId: z.uuid(),
+  isAdmin: z.boolean(),
+  /** The organizations this person acts for, by name. Each one goes in X-Org-Id. */
+  organizations: z.array(z.object({ id: z.uuid(), name: z.string() })),
+});
+export type SessionProfile = z.infer<typeof sessionProfile>;
+
 export const createStaffCodeRequest = z
   .object({
     eventId: z.uuid(),

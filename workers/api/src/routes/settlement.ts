@@ -9,6 +9,7 @@ import {
   type PlatformTotals,
   recordEntryRequest,
   recordPayoutRequest,
+  type SettlementEventsResponse,
   type SettlementStatement,
 } from "@passripple/contracts";
 import { Hono } from "hono";
@@ -50,6 +51,58 @@ interface PayoutRow {
   confirmed_at: Date | null;
 }
 
+interface EventRow {
+  event_id: string;
+  org_id: string;
+  name: string;
+  starts_at: Date;
+  ends_at: Date;
+  collected_crc: number;
+  balance_crc: number;
+  due_at: Date;
+  payout_paid_at: Date | null;
+  payout_confirmed_at: Date | null;
+}
+
+/** The events the actor of this transaction may settle (settlement checks who). */
+async function events(tx: Tx): Promise<SettlementEventsResponse> {
+  const rows = await tx<EventRow[]>`SELECT * FROM settlement.events_overview()`;
+  return {
+    events: rows.map((row) => ({
+      eventId: row.event_id,
+      orgId: row.org_id,
+      name: row.name,
+      startsAt: isoRequired(row.starts_at),
+      endsAt: isoRequired(row.ends_at),
+      collectedCrc: row.collected_crc,
+      balanceCrc: row.balance_crc,
+      dueAt: isoRequired(row.due_at),
+      payoutPaidAt: iso(row.payout_paid_at),
+      payoutConfirmedAt: iso(row.payout_confirmed_at),
+    })),
+  };
+}
+
+/** The event's movements the actor may read: RLS hides other organizations' events. */
+async function ledger(tx: Tx, eventId: string): Promise<LedgerResponse> {
+  const rows = await tx<LedgerRow[]>`
+    SELECT id, kind, amount_crc, reference, reason, created_at
+      FROM settlement.ledger_entries
+     WHERE event_id = ${eventId}
+     -- A sale's three entries share a time: the money in first, then what it pays.
+     ORDER BY created_at, amount_crc DESC, id`;
+  return {
+    entries: rows.map((row) => ({
+      id: row.id,
+      kind: row.kind,
+      amountCrc: row.amount_crc,
+      reference: row.reference,
+      reason: row.reason,
+      createdAt: isoRequired(row.created_at),
+    })),
+  };
+}
+
 /** The statement as the actor of this transaction may see it (settlement checks who). */
 async function statement(tx: Tx, eventId: string): Promise<SettlementStatement> {
   const [row] = await tx<StatementRow[]>`SELECT * FROM settlement.statement(${eventId})`;
@@ -83,27 +136,17 @@ async function statement(tx: Tx, eventId: string): Promise<SettlementStatement> 
 
 // ── Organizers (X-Org-Id names the organization; identity checks membership) ──
 export const settlementRoutes = new Hono<AppEnv>()
+  .get("/events", async (c) => {
+    const body = await c.var.db.transaction(await userActor(c, "organizer"), events);
+    return c.json(body);
+  })
+
   // Every movement of the event's money, oldest first, with its bank reference.
   .get("/events/:id/ledger", async (c) => {
     const eventId = param(c.req.param("id"), uuid);
-    const rows = await c.var.db.transaction(
-      await userActor(c, "organizer"),
-      (tx) => tx<LedgerRow[]>`
-        SELECT id, kind, amount_crc, reference, reason, created_at
-          FROM settlement.ledger_entries
-         WHERE event_id = ${eventId}
-         ORDER BY created_at, id`,
+    const body = await c.var.db.transaction(await userActor(c, "organizer"), (tx) =>
+      ledger(tx, eventId),
     );
-    const body: LedgerResponse = {
-      entries: rows.map((row) => ({
-        id: row.id,
-        kind: row.kind,
-        amountCrc: row.amount_crc,
-        reference: row.reference,
-        reason: row.reason,
-        createdAt: isoRequired(row.created_at),
-      })),
-    };
     return c.json(body);
   })
 
@@ -127,6 +170,11 @@ export const settlementRoutes = new Hono<AppEnv>()
 
 // ── Platform administrators ─────────────────────────────────────────────────
 export const adminSettlementRoutes = new Hono<AppEnv>()
+  .get("/events", async (c) => {
+    const body = await c.var.db.transaction(await userActor(c, "admin"), events);
+    return c.json(body);
+  })
+
   .get("/summary", async (c) => {
     const [row] = await c.var.db.transaction(
       await userActor(c, "admin"),
@@ -140,6 +188,14 @@ export const adminSettlementRoutes = new Hono<AppEnv>()
       ownIncomeCrc: Number(row.own_income_crc),
       overdueEvents: row.overdue_events,
     };
+    return c.json(body);
+  })
+
+  .get("/events/:id/ledger", async (c) => {
+    const eventId = param(c.req.param("id"), uuid);
+    const body = await c.var.db.transaction(await userActor(c, "admin"), (tx) =>
+      ledger(tx, eventId),
+    );
     return c.json(body);
   })
 

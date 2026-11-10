@@ -81,9 +81,33 @@ export function createApp(services: Services): Hono<AppEnv> {
     exposeHeaders: [SERVER_TIME_HEADER],
     maxAge: 600,
   });
-  app.use("/auth/*", browserCors);
+  // Sign-in also serves the organizer and administration panels of the app.
+  const signInCors = cors({
+    origin: (origin, c) =>
+      [...origins(c.env.ALLOWED_ORIGINS), ...origins(c.env.APP_ORIGINS)].includes(origin)
+        ? origin
+        : null,
+    allowMethods: ["POST"],
+    allowHeaders: ["content-type", "authorization"],
+    exposeHeaders: [SERVER_TIME_HEADER],
+    maxAge: 600,
+  });
+  app.use("/auth/*", signInCors);
   app.use("/account", browserCors);
   app.use("/buyer/*", browserCors);
+
+  // The panels of the app: who the session is and settlement. Organizers name their
+  // organization in X-Org-Id. Only the origins in APP_ORIGINS may.
+  const panelCors = cors({
+    origin: (origin, c) => (origins(c.env.APP_ORIGINS).includes(origin) ? origin : null),
+    allowMethods: ["GET", "POST"],
+    allowHeaders: ["content-type", "authorization", "x-org-id"],
+    exposeHeaders: [SERVER_TIME_HEADER],
+    maxAge: 600,
+  });
+  app.use("/account/me", panelCors);
+  app.use("/settlement/*", panelCors);
+  app.use("/admin/settlement/*", panelCors);
 
   // The app (app.<domain>) calls the buyer's routes: events, orders, the wallet and transfers. Only the
   // origins in APP_ORIGINS may. The idempotency key and the order's token travel in headers.
