@@ -6,23 +6,14 @@ import type {
   LedgerKind,
   LedgerResponse,
   SettlementEvent,
-  SettlementEventsResponse,
   SettlementStatement,
 } from "@passripple/contracts";
-import { LogOut, RefreshCw, TriangleAlert } from "lucide-react";
+import { RefreshCw, TriangleAlert } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { formatColones, formatEventDate } from "../../lib/format.ts";
 import { failureText, PanelGate, usePanel } from "../../lib/panel.tsx";
-import {
-  Badge,
-  Button,
-  Card,
-  CardTitle,
-  Notice,
-  PageHeader,
-  Row,
-  type Tone,
-} from "../../ui/ui.tsx";
+import { Badge, Button, Card, CardTitle, Notice, Row, type Tone } from "../../ui/ui.tsx";
+import { OrganizerEventScreen } from "./event-screen.tsx";
 import { OrganizerLayout } from "./organizer.tsx";
 
 /** How often the open screen asks for new movements: a live view without a socket. */
@@ -68,88 +59,14 @@ export function Settlement() {
 }
 
 function SettlementScreen() {
-  const panel = usePanel();
-  const [events, setEvents] = useState<readonly SettlementEvent[] | null>(null);
-  const [eventId, setEventId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    setEvents(null);
-    panel
-      .call<SettlementEventsResponse>("/settlement/events")
-      .then((body) => {
-        if (cancelled) return;
-        setEvents(body.events);
-        // Start on the most recent event that has moved money, else the most recent one.
-        const first = body.events.find((event) => event.collectedCrc > 0) ?? body.events[0];
-        setEventId(first?.eventId ?? null);
-      })
-      .catch((failure: unknown) => {
-        if (!cancelled) setError(failureText(failure));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [panel]);
-
-  const organizations = panel.profile.organizations;
-  const event = events?.find((candidate) => candidate.eventId === eventId) ?? null;
-
   return (
-    <>
-      <PageHeader
-        eyebrow={organizations.find((org) => org.id === panel.orgId)?.name ?? "Organizador"}
-        title="Liquidación"
-        action={
-          <div className="flex flex-wrap items-center gap-2">
-            {organizations.length > 1 && (
-              <select
-                aria-label="Organización"
-                className="h-10 rounded-xl border border-slate-300 bg-white px-3 text-sm"
-                value={panel.orgId ?? ""}
-                onChange={(change) => panel.setOrgId(change.target.value)}
-              >
-                {organizations.map((org) => (
-                  <option key={org.id} value={org.id}>
-                    {org.name}
-                  </option>
-                ))}
-              </select>
-            )}
-            {events && events.length > 0 && (
-              <select
-                aria-label="Evento"
-                className="h-10 rounded-xl border border-slate-300 bg-white px-3 text-sm"
-                value={eventId ?? ""}
-                onChange={(change) => setEventId(change.target.value)}
-              >
-                {events.map((candidate) => (
-                  <option key={candidate.eventId} value={candidate.eventId}>
-                    {candidate.name}
-                  </option>
-                ))}
-              </select>
-            )}
-            <Button variant="secondary" className="min-h-10 px-3 text-sm" onClick={panel.signOut}>
-              <LogOut size={16} aria-hidden /> Salir
-            </Button>
-          </div>
-        }
-      />
-      {error && (
-        <Notice icon={TriangleAlert} title="No pudimos cargar sus eventos" tone="verify">
-          {error}
-        </Notice>
-      )}
-      {events?.length === 0 && (
-        <Notice icon={TriangleAlert} title="Todavía no tiene eventos">
-          Cuando su organización venda entradas, cada cobro aparece aquí al momento.
-        </Notice>
-      )}
-      {!events && !error && <p className="text-sm text-slate-600">Cargando…</p>}
-      {event && <EventSettlement key={event.eventId} event={event} />}
-    </>
+    <OrganizerEventScreen
+      title="Liquidación"
+      // The most recent event that has moved money, else the most recent one.
+      pick={(events) => events.find((event) => event.collectedCrc > 0)}
+    >
+      {(event) => <EventSettlement event={event} />}
+    </OrganizerEventScreen>
   );
 }
 

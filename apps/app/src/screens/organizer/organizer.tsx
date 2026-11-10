@@ -6,25 +6,14 @@ import {
   LayoutDashboard,
   Lock,
   Receipt,
-  Share2,
   Smartphone,
 } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { demoEvent, ticketTypes } from "../../demo.ts";
 import { cn } from "../../lib/cn.ts";
-import { formatColones, formatEventDate } from "../../lib/format.ts";
+import { formatEventDate } from "../../lib/format.ts";
 import { PanelLayout, type PanelNavItem } from "../../ui/layouts.tsx";
-import {
-  Badge,
-  Button,
-  Card,
-  CardTitle,
-  Field,
-  Notice,
-  PageHeader,
-  Stat,
-  Steps,
-} from "../../ui/ui.tsx";
+import { Button, Card, CardTitle, Field, Notice, PageHeader, Steps } from "../../ui/ui.tsx";
 
 export const organizerNav: readonly PanelNavItem[] = [
   { to: "/organizador", label: "Dashboard", icon: LayoutDashboard },
@@ -38,160 +27,6 @@ export function OrganizerLayout({ children }: { children: ReactNode }) {
     <PanelLayout area="Organizador" nav={organizerNav}>
       {children}
     </PanelLayout>
-  );
-}
-
-const hourlySales = [35, 52, 42, 68, 55, 80, 72, 92, 84, 100];
-
-/** Fraction of the permitted capacity as a ring: a quick read of how full the event is. */
-function CapacityGauge({ committed, capacity }: { committed: number; capacity: number }) {
-  const ratio = Math.min(1, committed / capacity);
-  const radius = 42;
-  const circumference = 2 * Math.PI * radius;
-  return (
-    <div className="relative mx-auto size-44">
-      <svg viewBox="0 0 100 100" className="size-full -rotate-90" aria-hidden>
-        <circle
-          cx="50"
-          cy="50"
-          r={radius}
-          fill="none"
-          stroke="var(--color-line)"
-          strokeWidth="10"
-        />
-        <circle
-          cx="50"
-          cy="50"
-          r={radius}
-          fill="none"
-          stroke={ratio >= 0.9 ? "var(--color-verify)" : "var(--color-brand)"}
-          strokeWidth="10"
-          strokeDasharray={circumference}
-          strokeDashoffset={circumference * (1 - ratio)}
-          strokeLinecap="round"
-        />
-      </svg>
-      <div className="absolute inset-0 grid place-items-center text-center">
-        <div>
-          <p className="text-3xl font-black">{Math.round(ratio * 100)}%</p>
-          <p className="text-xs text-slate-600">
-            {committed} / {capacity}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export function OrganizerDashboard() {
-  const payments = [
-    { ref: "••••4821", amount: 10600, status: "Confirmado", tone: "valid" },
-    { ref: "••••1377", amount: 5300, status: "Confirmado", tone: "valid" },
-    { ref: "••••9054", amount: 14600, status: "En revisión", tone: "verify" },
-  ] as const;
-  const devices = [
-    { name: "Puerta principal · 1", sync: "Hace 1 min", pending: 0 },
-    { name: "Puerta principal · 2", sync: "Hace 3 min", pending: 4 },
-    { name: "Zona VIP", sync: "Hace 12 min", pending: 18 },
-  ];
-  return (
-    <OrganizerLayout>
-      <PageHeader
-        eyebrow="En vivo"
-        title={demoEvent.name}
-        description={`${formatEventDate(demoEvent.startsAt)} · ${demoEvent.venue}`}
-        action={
-          <Button variant="secondary">
-            <Share2 size={17} aria-hidden /> Compartir enlace del evento
-          </Button>
-        }
-      />
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Entradas vendidas" value="384" note="+12 en la última hora" />
-        <Stat label="Ingresaron" value="241" note="63 % de lo vendido" />
-        <Stat label="Cortesías" value="18 de 30" />
-        <Stat label="Venta en puerta" value={formatColones(420000)} />
-      </div>
-
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1.4fr_0.8fr]">
-        <Card>
-          <CardTitle action={<Badge tone="valid">Actualizado ahora</Badge>}>
-            Ventas por hora
-          </CardTitle>
-          <div className="mt-6 flex h-44 items-end gap-2 border-b border-line">
-            {hourlySales.map((height, index) => (
-              <div
-                // biome-ignore lint/suspicious/noArrayIndexKey: static demo series
-                key={index}
-                className="flex-1 rounded-t bg-brand/80"
-                style={{ height: `${height}%` }}
-              />
-            ))}
-          </div>
-          <div className="mt-2 flex justify-between text-xs text-slate-600">
-            <span>10 a. m.</span>
-            <span>12 p. m.</span>
-            <span>2 p. m.</span>
-            <span>4 p. m.</span>
-          </div>
-          <div className="mt-6 grid grid-cols-3 gap-3 text-center text-sm">
-            {[
-              ["WhatsApp", "61 %"],
-              ["Instagram", "24 %"],
-              ["Facebook", "15 %"],
-            ].map(([channel, share]) => (
-              <div key={channel} className="rounded-xl bg-slate-50 p-3">
-                <p className="text-slate-600">{channel}</p>
-                <p className="font-black">{share}</p>
-              </div>
-            ))}
-          </div>
-        </Card>
-        <Card>
-          <CardTitle>Aforo autorizado</CardTitle>
-          <div className="mt-4">
-            <CapacityGauge committed={402} capacity={demoEvent.capacity} />
-          </div>
-          <p className="mt-4 text-center text-sm text-slate-600">
-            Vendidas, cortesías y venta en puerta cuentan contra el aforo.
-          </p>
-        </Card>
-      </div>
-
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardTitle>Cobros en vivo</CardTitle>
-          <ul className="mt-3 divide-y divide-line">
-            {payments.map((payment) => (
-              <li key={payment.ref} className="flex items-center justify-between py-3 text-sm">
-                <span className="font-mono">{payment.ref}</span>
-                <span className="font-semibold">{formatColones(payment.amount)}</span>
-                <Badge tone={payment.tone}>{payment.status}</Badge>
-              </li>
-            ))}
-          </ul>
-        </Card>
-        <Card>
-          <CardTitle>Dispositivos de puerta</CardTitle>
-          <ul className="mt-3 divide-y divide-line">
-            {devices.map((device) => (
-              <li key={device.name} className="flex items-center justify-between py-3 text-sm">
-                <span>
-                  <span className="block font-semibold">{device.name}</span>
-                  <span className="text-slate-600">Sincronizó {device.sync.toLowerCase()}</span>
-                </span>
-                <Badge tone={device.pending > 10 ? "verify" : "valid"}>
-                  {device.pending} por enviar
-                </Badge>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-3 text-sm text-slate-600">
-            Para 500 personas en dos horas se recomiendan 3 validadores.
-          </p>
-        </Card>
-      </div>
-    </OrganizerLayout>
   );
 }
 

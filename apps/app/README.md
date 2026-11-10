@@ -5,7 +5,7 @@ Single-page application served on `app.<domain>`: three-tap checkout, the buyer 
 - Built with Vite, React and Tailwind.
 - No third-party scripts and a strict Content Security Policy (invariant I8), set in [`public/_headers`](public/_headers). `connect-src` allows this origin and the API's, which the build writes from `VITE_API_URL` in place of `__API_ORIGIN__` (`vite.config.ts`).
 
-**Status:** checkout and wallet run on the API (Phase 3). The organizer's settlement screen (`/organizador/liquidacion`) and administration (`/admin`) run on the API too (Phase 4). Named attendees, the waiting room, the rest of the organizer dashboard and the municipal portal still show static demonstration data ([`src/demo.ts`](src/demo.ts)).
+**Status:** checkout and wallet run on the API (Phase 3). The organizer's dashboard (`/organizador`: counters, sales by hour, latest payments, gate devices), settlement screen (`/organizador/liquidacion`) and administration (`/admin`) run on the API too (Phase 4). Named attendees, the waiting room, event creation, staff codes and the municipal portal still show static demonstration data ([`src/demo.ts`](src/demo.ts)).
 
 ## Organizer and administration panels (Phase 4, ADR 0039)
 

@@ -31,7 +31,8 @@ import {
   Wallet,
 } from "./screens/buyer/wallet.tsx";
 import { MunicipalPortal } from "./screens/municipal/municipal.tsx";
-import { CreateEvent, OrganizerDashboard, Staff } from "./screens/organizer/organizer.tsx";
+import { OrganizerDashboard } from "./screens/organizer/dashboard.tsx";
+import { CreateEvent, Staff } from "./screens/organizer/organizer.tsx";
 import { Settlement } from "./screens/organizer/settlement.tsx";
 import { Logo } from "./ui/Logo.tsx";
 import { BuyerLayout } from "./ui/layouts.tsx";
