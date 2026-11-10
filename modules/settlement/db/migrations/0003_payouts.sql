@@ -26,25 +26,25 @@ CREATE UNIQUE INDEX ledger_entries_payment_in_uidx
   WHERE kind = 'payment_in';
 
 -- ── Booking a confirmed sale ─────────────────────────────────────────────────
--- Handles payment.succeeded: records payment_in (+amount paid, including any unique-amount
--- offset), fee (-total service fee) and fee_tax (-total fee tax) for a paid order, skipping
--- zero-amount entries because ledger_entries forbids 0. Idempotent by message_id and by
--- payment_id: returns true when booked now, false when already handled.
+-- Handles payment.succeeded: reads the payment and its bank notice reference from payments,
+-- then records payment_in (+amount paid, including any unique-amount offset), fee (-total
+-- service fee) and fee_tax (-total fee tax) for the paid order, skipping zero-amount entries
+-- because ledger_entries forbids 0. Idempotent by message_id and by payment_id: returns true
+-- when booked now, false when already handled.
 CREATE FUNCTION settlement.record_sale(
   p_message_id uuid,
   p_payment_id uuid,
   p_order_id   uuid,
   p_event_id   uuid,
-  p_amount_crc integer,
-  p_reference  text
+  p_amount_crc integer
 ) RETURNS boolean
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = pg_catalog
 AS $$
 DECLARE
-  v_order record;
-  v_ref   text := nullif(btrim(p_reference), '');
+  v_payment record;
+  v_order   record;
 BEGIN
   IF app.actor_role() IS DISTINCT FROM 'system' THEN
     RAISE EXCEPTION 'only the system records sales' USING ERRCODE = 'insufficient_privilege';
@@ -68,6 +68,16 @@ BEGIN
     RETURN false;
   END IF;
 
+  SELECT p.order_id, p.amount_crc, n.reference
+    INTO v_payment
+    FROM payments.payments p
+    JOIN payments.bank_notices n ON n.id = p.notice_id
+   WHERE p.id = p_payment_id;
+  IF NOT FOUND OR v_payment.order_id <> p_order_id OR v_payment.amount_crc <> p_amount_crc THEN
+    RAISE EXCEPTION 'payment % does not match order % for amount %', p_payment_id, p_order_id, p_amount_crc
+      USING ERRCODE = 'object_not_in_prerequisite_state';
+  END IF;
+
   SELECT * INTO v_order FROM orders.order_fee_totals(p_order_id);
   IF NOT FOUND OR v_order.event_id IS DISTINCT FROM p_event_id OR v_order.status <> 'paid' THEN
     RAISE EXCEPTION 'order % is not a paid order of event %', p_order_id, p_event_id
@@ -75,7 +85,7 @@ BEGIN
   END IF;
 
   INSERT INTO settlement.ledger_entries (event_id, kind, amount_crc, reference, payment_id)
-  VALUES (p_event_id, 'payment_in', p_amount_crc, v_ref, p_payment_id)
+  VALUES (p_event_id, 'payment_in', p_amount_crc, v_payment.reference, p_payment_id)
   ON CONFLICT (payment_id) WHERE kind = 'payment_in' DO NOTHING;
   IF NOT FOUND THEN
     RETURN false;
@@ -83,12 +93,12 @@ BEGIN
 
   IF v_order.fee_crc > 0 THEN
     INSERT INTO settlement.ledger_entries (event_id, kind, amount_crc, reference)
-    VALUES (p_event_id, 'fee', -v_order.fee_crc, v_ref);
+    VALUES (p_event_id, 'fee', -v_order.fee_crc, v_payment.reference);
   END IF;
 
   IF v_order.fee_tax_crc > 0 THEN
     INSERT INTO settlement.ledger_entries (event_id, kind, amount_crc, reference)
-    VALUES (p_event_id, 'fee_tax', -v_order.fee_tax_crc, v_ref);
+    VALUES (p_event_id, 'fee_tax', -v_order.fee_tax_crc, v_payment.reference);
   END IF;
 
   RETURN true;
@@ -450,7 +460,7 @@ BEGIN
 END
 $$;
 
-GRANT EXECUTE ON FUNCTION settlement.record_sale(uuid, uuid, uuid, uuid, integer, text) TO passripple_api;
+GRANT EXECUTE ON FUNCTION settlement.record_sale(uuid, uuid, uuid, uuid, integer) TO passripple_api;
 GRANT EXECUTE ON FUNCTION settlement.payout_due_at(uuid, interval) TO passripple_api;
 GRANT EXECUTE ON FUNCTION settlement.record_payout(uuid, integer, text) TO passripple_api;
 GRANT EXECUTE ON FUNCTION settlement.confirm_payout(uuid) TO passripple_api;

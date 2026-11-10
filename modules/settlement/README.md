@@ -16,7 +16,7 @@ The `settlement` database schema. No other module writes to it (rule R1).
 
 Functions:
 - `settlement.record_entry(event, kind, amount, reference, reason)`: the system records movements; only an administrator records adjustments.
-- `settlement.record_sale(message, payment, order, event, amount, reference)`: system-only idempotent booking of a paid order's `payment_in`, `fee` and `fee_tax` (reading frozen fees through `orders.order_fee_totals`).
+- `settlement.record_sale(message, payment, order, event, amount)`: system-only idempotent booking of a paid order's `payment_in`, `fee` and `fee_tax`. It reads the bank reference and checks order and amount in `payments`, and the frozen fees through `orders.order_fee_totals`.
 - `settlement.payout_due_at(event, claims_window)`: next business day (Monday–Friday at 09:00 `America/Costa_Rica`) after `ends_at` plus the claims window (24 h default).
 - `settlement.record_payout(event, amount, sinpe_ref)`: admin-only, after the 24-hour claims window closes; records the negative `payout` ledger entry and the payout row in one transaction.
 - `settlement.confirm_payout(event)`: an organizer of the event's organization confirms receipt once.

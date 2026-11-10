@@ -6,6 +6,7 @@ import {
   type DomainEventEnvelope,
   decodeDomainEventEnvelope,
   type OrderPaid,
+  type PaymentSucceeded,
 } from "@passripple/contracts";
 import { HUMAN_CODE_ENTROPY_BYTES, humanCode } from "@passripple/crypto";
 import type { Database } from "./db.ts";
@@ -41,11 +42,32 @@ async function issueOrder(db: Database, messageId: string, event: OrderPaid): Pr
   });
 }
 
+/**
+ * payment.succeeded → settlement books the confirmed sale into the event ledger. settlement
+ * is level 4 and reads payments and orders itself (rule R2): it takes the bank reference
+ * from the payment and checks that the payment is this order's, for this amount.
+ */
+async function recordSale(
+  db: Database,
+  messageId: string,
+  event: PaymentSucceeded,
+): Promise<boolean> {
+  return db.system(async (tx) => {
+    const [row] = await tx<{ booked: boolean }[]>`
+      SELECT settlement.record_sale(${messageId}, ${event.paymentId}, ${event.orderId},
+                                    ${event.eventId}, ${event.amountCrc}) AS booked`;
+    return row?.booked ?? false;
+  });
+}
+
 /** Handles one envelope. Events with no consumer yet are acknowledged and dropped. */
 export async function handle(db: Database, envelope: DomainEventEnvelope): Promise<void> {
   switch (envelope.event.type) {
     case "order.paid":
       await issueOrder(db, envelope.id, envelope.event);
+      return;
+    case "payment.succeeded":
+      await recordSale(db, envelope.id, envelope.event);
       return;
     default:
       return;

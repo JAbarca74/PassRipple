@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(26);
+SELECT plan(28);
 
 -- ── Superuser setup ──────────────────────────────────────────────────────────
 INSERT INTO identity.organizations (id, name, verified_at) VALUES
@@ -42,6 +42,13 @@ INSERT INTO orders.orders (id, event_id, hold_id, contact_email, access_token_ha
 INSERT INTO orders.order_items (order_id, ticket_type_id, quantity, unit_price_crc, unit_fee_crc, unit_fee_tax_crc, fee_rule) VALUES
   ('00000000-0000-4000-8000-000000000040', '00000000-0000-4000-8000-000000000020', 2, 5000, 350, 46, 'standard_v1');
 
+-- The bank notice and the confirmed payment: record_sale takes the reference from here.
+INSERT INTO payments.bank_notices (id, source, reference, amount_crc, raw_sha256, status) VALUES
+  ('00000000-0000-4000-8000-000000000071', 'manual', 'BNCR-REF-1', 10795, sha256('notice-1'), 'applied');
+INSERT INTO payments.payments (id, order_id, notice_id, amount_crc) VALUES
+  ('00000000-0000-4000-8000-000000000070', '00000000-0000-4000-8000-000000000040',
+   '00000000-0000-4000-8000-000000000071', 10795);
+
 -- ── 1. record_sale and idempotency ───────────────────────────────────────────
 SET LOCAL SESSION AUTHORIZATION passripple_api;
 
@@ -52,18 +59,36 @@ SELECT throws_ok(
        '00000000-0000-4000-8000-000000000070',
        '00000000-0000-4000-8000-000000000040',
        '00000000-0000-4000-8000-000000000010',
-       10795, 'BNCR-REF-1') $$,
+       10795) $$,
   '42501', NULL, 'non-system actor cannot call record_sale'
 );
 
 SELECT identity.set_actor(NULL, 'system');
+SELECT throws_ok(
+  $$ SELECT settlement.record_sale(
+       '00000000-0000-4000-8000-000000000062',
+       '00000000-0000-4000-8000-000000000070',
+       '00000000-0000-4000-8000-000000000041',
+       '00000000-0000-4000-8000-000000000010',
+       10795) $$,
+  '55000', NULL, 'a payment cannot be booked for another order'
+);
+SELECT throws_ok(
+  $$ SELECT settlement.record_sale(
+       '00000000-0000-4000-8000-000000000063',
+       '00000000-0000-4000-8000-000000000070',
+       '00000000-0000-4000-8000-000000000040',
+       '00000000-0000-4000-8000-000000000010',
+       99999) $$,
+  '55000', NULL, 'a payment cannot be booked for another amount'
+);
 SELECT is(
   settlement.record_sale(
     '00000000-0000-4000-8000-000000000060',
     '00000000-0000-4000-8000-000000000070',
     '00000000-0000-4000-8000-000000000040',
     '00000000-0000-4000-8000-000000000010',
-    10795, 'BNCR-REF-1'
+    10795
   ),
   true,
   'record_sale books a confirmed sale and returns true'
@@ -88,7 +113,7 @@ SELECT is(
     '00000000-0000-4000-8000-000000000070',
     '00000000-0000-4000-8000-000000000040',
     '00000000-0000-4000-8000-000000000010',
-    10795, 'BNCR-REF-1'
+    10795
   ),
   false,
   'replaying the same message_id returns false'
@@ -100,7 +125,7 @@ SELECT is(
     '00000000-0000-4000-8000-000000000070',
     '00000000-0000-4000-8000-000000000040',
     '00000000-0000-4000-8000-000000000010',
-    10795, 'BNCR-REF-1'
+    10795
   ),
   false,
   'replaying the same payment_id with a new message_id returns false'
