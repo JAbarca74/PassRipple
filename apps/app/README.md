@@ -5,7 +5,13 @@ Single-page application served on `app.<domain>`: three-tap checkout, the buyer 
 - Built with Vite, React and Tailwind.
 - No third-party scripts and a strict Content Security Policy (invariant I8), set in [`public/_headers`](public/_headers). `connect-src` allows this origin and the API's, which the build writes from `VITE_API_URL` in place of `__API_ORIGIN__` (`vite.config.ts`).
 
-**Status:** checkout and wallet run on the API (Phase 3). Transfer, named attendees, the buyer's data screen, the waiting room, the organizer dashboard, administration and the municipal portal still show static demonstration data ([`src/demo.ts`](src/demo.ts)).
+**Status:** checkout and wallet run on the API (Phase 3). The organizer's settlement screen (`/organizador/liquidacion`) and administration (`/admin`) run on the API too (Phase 4). Named attendees, the waiting room, the rest of the organizer dashboard and the municipal portal still show static demonstration data ([`src/demo.ts`](src/demo.ts)).
+
+## Organizer and administration panels (Phase 4, ADR 0039)
+
+- Sign-in with a six-digit code to the email (`/v1/auth`); the session token is kept in `sessionStorage`, so closing the tab signs out (`src/lib/panel.tsx`).
+- `/v1/account/me` says whether the person administers the platform and which organizations they act for. An organizer's calls carry the chosen one in `X-Org-Id`, and the server checks the membership.
+- Settlement: the event's ledger with each bank reference, refreshed every 30 seconds while the tab is visible, the statement and "Confirmar que la recibí". Administration: custody and own income, every event that moved money, and the forms to record the SINPE payout and refunds made by hand. The platform never moves money.
 
 ```bash
 pnpm dev:app    # http://localhost:5174, the root lists every screen

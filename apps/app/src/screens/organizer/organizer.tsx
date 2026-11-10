@@ -8,7 +8,6 @@ import {
   Receipt,
   Share2,
   Smartphone,
-  TriangleAlert,
 } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { demoEvent, ticketTypes } from "../../demo.ts";
@@ -23,10 +22,8 @@ import {
   Field,
   Notice,
   PageHeader,
-  Row,
   Stat,
   Steps,
-  type Tone,
 } from "../../ui/ui.tsx";
 
 export const organizerNav: readonly PanelNavItem[] = [
@@ -36,7 +33,7 @@ export const organizerNav: readonly PanelNavItem[] = [
   { to: "/organizador/liquidacion", label: "Liquidación", icon: Receipt },
 ];
 
-function OrganizerLayout({ children }: { children: ReactNode }) {
+export function OrganizerLayout({ children }: { children: ReactNode }) {
   return (
     <PanelLayout area="Organizador" nav={organizerNav}>
       {children}
@@ -415,86 +412,6 @@ export function Staff() {
               </li>
             ))}
           </ul>
-        </Card>
-      </div>
-    </OrganizerLayout>
-  );
-}
-
-const settlementSteps: readonly { label: string; tone: Tone }[] = [
-  { label: "Evento terminado", tone: "valid" },
-  { label: "Cobros conciliados", tone: "valid" },
-  { label: "Periodo de reclamos", tone: "verify" },
-  { label: "Transferencia registrada", tone: "neutral" },
-  { label: "Recibido por usted", tone: "neutral" },
-];
-
-export function Settlement() {
-  const ledger = [
-    { date: "14 nov", concept: "Cobros por SINPE (384 entradas)", amount: 2035200 },
-    { date: "14 nov", concept: "Cargos por servicio", amount: -115200 },
-    { date: "15 nov", concept: "Devolución orden A2F8Q1", amount: -10600 },
-  ];
-  const payout = ledger.reduce((sum, entry) => sum + entry.amount, 0);
-  return (
-    <OrganizerLayout>
-      <PageHeader eyebrow={demoEvent.name} title="Liquidación" />
-      <Card>
-        <ol className="grid gap-3 sm:grid-cols-5">
-          {settlementSteps.map((step, index) => (
-            <li
-              key={step.label}
-              className="flex items-center gap-2 text-sm sm:flex-col sm:text-center"
-            >
-              <Badge tone={step.tone}>{index + 1}</Badge>
-              <span className="font-semibold">{step.label}</span>
-            </li>
-          ))}
-        </ol>
-      </Card>
-      <div className="mt-6 grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
-        <Card>
-          <CardTitle>Estado de liquidación</CardTitle>
-          <div className="mt-3 divide-y divide-line">
-            {ledger.map((entry) => (
-              <Row key={entry.concept} label={entry.concept} value={formatColones(entry.amount)} />
-            ))}
-          </div>
-          <div className="mt-2 border-t border-line pt-2">
-            <Row strong label="Monto a transferir" value={formatColones(payout)} />
-          </div>
-          <p className="mt-3 text-xs text-slate-600">
-            El impuesto municipal se calcula con las reglas del cantón y se muestra solo como
-            información: lo paga el organizador.
-          </p>
-          <Button className="mt-4 w-full" disabled>
-            Confirmar que la recibí
-          </Button>
-        </Card>
-        <Card>
-          <CardTitle action={<Badge>Solo lectura</Badge>}>Libro del evento</CardTitle>
-          <table className="mt-3 w-full text-left text-sm">
-            <thead className="text-xs uppercase text-slate-600">
-              <tr>
-                <th className="py-2 font-bold">Fecha</th>
-                <th className="py-2 font-bold">Concepto</th>
-                <th className="py-2 text-right font-bold">Monto</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {ledger.map((entry) => (
-                <tr key={entry.concept}>
-                  <td className="py-3">{entry.date}</td>
-                  <td className="py-3">{entry.concept}</td>
-                  <td className="py-3 text-right font-semibold">{formatColones(entry.amount)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <p className="mt-4 flex items-center gap-2 text-xs text-slate-600">
-            <TriangleAlert size={14} aria-hidden /> Los asientos no se editan: un error se corrige
-            con un ajuste.
-          </p>
         </Card>
       </div>
     </OrganizerLayout>
