@@ -1,11 +1,22 @@
 # Public site
 
-Templates for the public site: home, event pages, organizer pages and legal pages. Event pages are pre-rendered by the `seo` module when an event is published.
+Templates for the public site: home, event pages, organizer pages and legal pages. Event pages get their head (title, Open Graph, schema.org Event) and their data from the site's Worker at request time (ADR 0040).
 
 - Analytics run here only, and only after consent. The cookie banner stores the choice; no analytics is loaded yet.
 - Built with Vite, React and Tailwind. Pages use plain links, as the pre-rendered site will.
 
-**Status:** basic templates on static demonstration data ([`src/data.ts`](src/data.ts)). Pre-rendering arrives in Phase 5.
+**Status:** event pages and `sitemap.xml` run on real data through the Worker (Phase 5). Home and organizer pages still show static demonstration data ([`src/data.ts`](src/data.ts)); in production the demonstration events never appear.
+
+## Worker (ADR 0040)
+
+[`src/worker/handler.ts`](src/worker/handler.ts) runs only for `/eventos/*`, `/sitemap.xml`, `/privacidad`, `/terminos` and `/eliminar-datos` (`run_worker_first` in [`wrangler.jsonc`](wrangler.jsonc)); everything else is a static asset.
+
+- `/eventos/<slug>`: `index.html` with the event's title, description, canonical link, Open Graph, JSON-LD and the event as JSON (`#event-data`, read by [`src/event-data.ts`](src/event-data.ts)), from `GET /v1/events?slug=`. Unknown events get `404.html` with status 404.
+- `/sitemap.xml`: `/`, `/privacidad`, `/terminos` and every listed event; falls back to the static file if the API fails.
+- The legal pages: the full site's `index.html`.
+- In coming-soon mode it hands every path back to the static assets.
+
+To try it locally against `wrangler dev` of the API: build the full site (`pnpm build`), then start `site-worker-local` from `.claude/launch.json` (port 8789).
 
 ```bash
 pnpm dev:site   # http://localhost:5173
@@ -34,7 +45,7 @@ To publish the full site, build it with `pnpm build` instead and deploy the same
 
 ## Deploy
 
-The site is a Cloudflare Worker with static assets only, no script: [`wrangler.jsonc`](wrangler.jsonc) serves `dist/` on `passripple.com` and `www.passripple.com`. Build locally, check with a dry run that the upload lists only the expected files and no bindings, then deploy. Always pass `--config`: Wrangler otherwise uses the configuration of the directory it runs in, and `workers/api` holds the API's.
+The site is a Cloudflare Worker with static assets and the small script above: [`wrangler.jsonc`](wrangler.jsonc) serves `dist/` on `passripple.com` and `www.passripple.com`. Build locally, check with a dry run that the upload lists only the expected files and only the `ASSETS` binding and the three origin variables, then deploy. Always pass `--config`: Wrangler otherwise uses the configuration of the directory it runs in, and `workers/api` holds the API's.
 
 ```bash
 pnpm build:coming-soon

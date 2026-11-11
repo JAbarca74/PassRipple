@@ -2,6 +2,8 @@
 # Invariant I8: no third-party script may run where the buyer's keys and personal data live,
 # so every source is limited to this origin and, for connect-src, the API's origin, which
 # the build writes in place of __API_ORIGIN__ (vite.config.ts) from VITE_API_URL.
+# Every response is noindex (design 13.5): robots.txt must not block the app, or search
+# engines could never read this header.
 /*
   Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' __API_ORIGIN__; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
   Cross-Origin-Opener-Policy: same-origin
@@ -10,3 +12,4 @@
   X-Frame-Options: DENY
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  X-Robots-Tag: noindex

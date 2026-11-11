@@ -7,6 +7,7 @@ import { SiteLayout } from "../ui/layout.tsx";
 
 const statusLabels: Record<Exclude<EventStatus, "on-sale">, string> = {
   "sold-out": "Agotado",
+  closed: "Venta cerrada",
   cancelled: "Evento cancelado",
 };
 
@@ -20,6 +21,7 @@ export function EventPage({
 }) {
   const onSale = status === "on-sale";
   const shareText = encodeURIComponent(`${event.name}: entradas en PassRipple`);
+  const buyUrl = `${APP_URL}/comprar?evento=${encodeURIComponent(event.slug)}`;
   return (
     <SiteLayout>
       <main className="mx-auto max-w-6xl px-4 pb-28 pt-6 sm:px-8 md:pb-12">
@@ -58,13 +60,19 @@ export function EventPage({
                 icon={BadgeCheck}
                 label="Organiza"
                 value={
-                  <a className="underline" href={`/organizadores/${event.organizer.slug}`}>
-                    {event.organizer.name}
-                    {event.organizer.verified && " · verificado"}
-                  </a>
+                  event.organizer.slug ? (
+                    <a className="underline" href={`/organizadores/${event.organizer.slug}`}>
+                      {event.organizer.name}
+                      {event.organizer.verified && " · verificado"}
+                    </a>
+                  ) : (
+                    event.organizer.name
+                  )
                 }
               />
-              <Info icon={Users} label="Aforo autorizado" value={`${event.capacity} personas`} />
+              {event.capacity !== undefined && (
+                <Info icon={Users} label="Aforo autorizado" value={`${event.capacity} personas`} />
+              )}
             </dl>
 
             {event.adultsOnly && (
@@ -88,6 +96,17 @@ export function EventPage({
 
           <aside className="h-fit rounded-2xl border border-line bg-white p-5 shadow-sm">
             <h2 className="font-bold">Entradas</h2>
+            {event.ticketTypes.length === 0 && event.fromPrice != null && (
+              <p className="border-b border-slate-100 py-4">
+                {event.fromPrice === 0 ? (
+                  <b>Entrada gratuita</b>
+                ) : (
+                  <>
+                    Desde <b>{formatColones(event.fromPrice)}</b>
+                  </>
+                )}
+              </p>
+            )}
             <ul>
               {event.ticketTypes.map((type) => (
                 <li
@@ -116,7 +135,7 @@ export function EventPage({
             </p>
             {onSale && (
               <a
-                href={`${APP_URL}/comprar`}
+                href={buyUrl}
                 className="mt-4 hidden min-h-12 w-full items-center justify-center rounded-xl bg-ink font-bold text-white md:flex"
               >
                 Comprar
@@ -137,7 +156,7 @@ export function EventPage({
       {onSale && (
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/95 p-4 backdrop-blur md:hidden">
           <a
-            href={`${APP_URL}/comprar`}
+            href={buyUrl}
             className="flex min-h-12 w-full items-center justify-center rounded-xl bg-ink font-bold text-white"
           >
             Comprar
