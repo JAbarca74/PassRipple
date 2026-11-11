@@ -35,6 +35,11 @@ describe("toMapped", () => {
       code: "conflict",
       message: "The request conflicts with current state.",
     });
+    expect(toMapped({ code: "PR413" })).toMatchObject({ status: 400, code: "too_many_tickets" });
+    expect(toMapped({ code: "PRBUY" })).toMatchObject({
+      status: 409,
+      code: "too_many_open_orders",
+    });
   });
 
   test("maps unknown SQLSTATE to 500 internal", () => {

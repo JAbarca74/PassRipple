@@ -36,6 +36,13 @@ const SQLSTATE: Readonly<Record<string, Mapped>> = {
   },
   // Raised by module functions that limit how often something may happen.
   PR429: { status: 429, code: "rate_limited", message: "Too many attempts. Try again later." },
+  // Purchase limits of the event (design 9.3, point 5).
+  PR413: { status: 400, code: "too_many_tickets", message: "Too many tickets for one order." },
+  PRBUY: {
+    status: 409,
+    code: "too_many_open_orders",
+    message: "Pay or let expire your other orders for this event first.",
+  },
   // A transfer offer that was claimed, cancelled or expired, or an event already started.
   "55000": { status: 409, code: "not_open", message: "This is no longer possible." },
   "22023": { status: 400, code: "invalid_request", message: "Invalid request." },
