@@ -204,6 +204,12 @@ export {
 } from "./staff-api.ts";
 export { bytesToUuid, uuidToBytes, uuidv7 } from "./uuid.ts";
 export {
+  ATTENDEE_DOC_TYPES,
+  type AttendeeDocType,
+  type AttendeeRequest,
+  type AttendeeView,
+  attendeeRequest,
+  attendeeView,
   type BindRequest,
   BUYER_EXPORT_FORMAT,
   type BuyerExport,

@@ -53,6 +53,12 @@ APP_ORIGINS=http://localhost:5174
 # {"id":"<name>","rateBps":<basis points>,"fixedCrc":<colones>,"taxRateBps":<basis points>,"taxMode":"added"|"included"}
 FEE_SCHEDULE=
 
+# AES-256 key that encrypts attendees' document numbers (named tickets): 32 random bytes in
+# base64url. Generate one with:
+# node -e "console.log(crypto.randomBytes(32).toString('base64url'))"
+# A different value in every environment. Secret.
+ATTENDEE_DOC_KEY=
+
 # The platform's SINPE Móvil number buyers pay to. Not in Git.
 SINPE_NUMBER=
 

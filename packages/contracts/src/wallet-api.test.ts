@@ -1,5 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
+  attendeeRequest,
+  attendeeView,
   BUYER_EXPORT_FORMAT,
   bindRequest,
   buyerExport,
@@ -227,6 +229,40 @@ describe("wallet-api contracts", () => {
     });
   });
 
+  describe("attendees", () => {
+    const proof = {
+      ticketId: validTicketId,
+      publicKey: validKey,
+      issuedAt: 1_700_000_000,
+      signature: validSig,
+    };
+
+    test("attendeeRequest is a holder proof with the attendee, name trimmed", () => {
+      const parsed = attendeeRequest.parse({
+        ...proof,
+        fullName: "  Ana Mora ",
+        docType: "cedula",
+        docNumber: "1-2345-6789",
+      });
+      expect(parsed.fullName).toBe("Ana Mora");
+      expect(parsed.signature).toBe(validSig);
+    });
+
+    test("attendeeRequest rejects a missing proof, a short name or an unknown document", () => {
+      const valid = { ...proof, fullName: "Ana Mora", docType: "dimex", docNumber: "155812345678" };
+      expect(() => attendeeRequest.parse({ ...valid, signature: undefined })).toThrow();
+      expect(() => attendeeRequest.parse({ ...valid, fullName: " A " })).toThrow();
+      expect(() => attendeeRequest.parse({ ...valid, docType: "licencia" })).toThrow();
+      expect(() => attendeeRequest.parse({ ...valid, docNumber: "" })).toThrow();
+      expect(() => attendeeRequest.parse({ ...valid, docNumber: "1".repeat(41) })).toThrow();
+    });
+
+    test("attendeeView never carries the full number", () => {
+      const view = { ticketId: validTicketId, fullName: "Ana", docType: "tim", docLast4: "6789" };
+      expect(attendeeView.parse({ ...view, docNumber: "123456789" })).toEqual(view);
+    });
+  });
+
   describe("walletTicket and heldView", () => {
     const baseTicket = {
       id: validTicketId,
@@ -237,6 +273,8 @@ describe("wallet-api contracts", () => {
       holderKey: validKey,
       certificate: "cert_b64url",
       transferred: false,
+      named: false,
+      attendee: null,
     };
 
     test("walletTicket requires transferred field", () => {
@@ -313,6 +351,8 @@ describe("wallet-api contracts", () => {
             holderKey: validKey,
             certificate: "cert",
             transferred: false,
+            named: true,
+            attendee: { fullName: "Ana Mora", docType: "cedula" as const, docLast4: "6789" },
           },
         ],
         boundElsewhere: 0,

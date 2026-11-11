@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(19);
+SELECT plan(20);
 
 -- ── Superuser setup ──────────────────────────────────────────────────────────
 INSERT INTO identity.organizations (id, name, verified_at) VALUES
@@ -44,14 +44,19 @@ SELECT set_config('app.actor_role', 'system', true);
 SELECT ticketing.bind(id, decode(repeat('11', 32), 'hex'), 'bind')
   FROM ticketing.tickets WHERE code_human LIKE 'A77E%';
 
+SELECT results_eq(
+  $$SELECT ticket_id::text, named, full_name FROM ticketing.named_view(ARRAY['00000000-0000-4000-8000-000000000041'::uuid, '00000000-0000-4000-8000-000000000042'::uuid]) ORDER BY 1$$,
+  $$VALUES ('00000000-0000-4000-8000-000000000041', false, NULL::text), ('00000000-0000-4000-8000-000000000042', true, NULL::text)$$,
+  'named_view says which tickets are named, with no attendee yet');
+
 -- ── 2. Assigning ─────────────────────────────────────────────────────────────
 SELECT lives_ok(
   $$SELECT ticketing.assign_attendee('00000000-0000-4000-8000-000000000040', decode(repeat('11', 32), 'hex'),
       ' Ana Mora ', 'cedula', '4567', decode(repeat('ab', 40), 'hex'), 'buyer')$$,
   'the holder assigns the attendee of a named ticket');
 SELECT results_eq(
-  $$SELECT full_name, doc_type, doc_last4 FROM ticketing.attendee_view(ARRAY['00000000-0000-4000-8000-000000000040'::uuid])$$,
-  $$VALUES ('Ana Mora', 'cedula', '4567')$$,
+  $$SELECT named, full_name, doc_type, doc_last4 FROM ticketing.named_view(ARRAY['00000000-0000-4000-8000-000000000040'::uuid])$$,
+  $$VALUES (true, 'Ana Mora', 'cedula', '4567')$$,
   'the wallet view shows the name trimmed and the last digits');
 SELECT lives_ok(
   $$SELECT ticketing.assign_attendee('00000000-0000-4000-8000-000000000040', decode(repeat('11', 32), 'hex'),
@@ -87,7 +92,7 @@ SELECT throws_ok(
   $$SELECT ticketing.assign_attendee('00000000-0000-4000-8000-000000000040', decode(repeat('11', 32), 'hex'),
       'Eva Solis', 'cedula', '1234', decode(repeat('ab', 40), 'hex'), 'buyer')$$,
   '42501', NULL, 'only the system assigns');
-SELECT is((SELECT count(*)::int FROM ticketing.attendee_view(ARRAY['00000000-0000-4000-8000-000000000040'::uuid])),
+SELECT is((SELECT count(*)::int FROM ticketing.named_view(ARRAY['00000000-0000-4000-8000-000000000040'::uuid])),
           0, 'only the system reads the wallet view');
 SET LOCAL ROLE passripple_api;
 SELECT throws_ok($$SELECT * FROM ticketing.attendees$$, '42501', NULL,

@@ -83,18 +83,21 @@ BEGIN
 END
 $$;
 
--- What the wallet shows: the attendee of each of the given tickets, without the number.
--- The system only: the API passes the tickets the request's token reaches.
-CREATE FUNCTION ticketing.attendee_view(p_ticket_ids uuid[])
-RETURNS TABLE (ticket_id uuid, full_name text, doc_type text, doc_last4 text)
+-- What the wallet shows and signs: whether each of the given tickets is named, and its
+-- attendee if assigned, without the number. The system only: the API passes the tickets the
+-- request's token reaches.
+CREATE FUNCTION ticketing.named_view(p_ticket_ids uuid[])
+RETURNS TABLE (ticket_id uuid, named boolean, full_name text, doc_type text, doc_last4 text)
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
 SET search_path = pg_catalog
 AS $$
-  SELECT a.ticket_id, a.full_name, a.doc_type, a.doc_last4
-    FROM ticketing.attendees a
-   WHERE a.ticket_id = ANY (p_ticket_ids)
+  SELECT t.id, e.named_tickets, a.full_name, a.doc_type, a.doc_last4
+    FROM ticketing.tickets t
+    JOIN events.events e ON e.id = t.event_id
+    LEFT JOIN ticketing.attendees a ON a.ticket_id = t.id
+   WHERE t.id = ANY (p_ticket_ids)
      AND app.actor_role() = 'system'
 $$;
 
@@ -128,5 +131,5 @@ $$;
 
 GRANT EXECUTE ON FUNCTION ticketing.assign_attendee(uuid, bytea, text, text, text, bytea, text)
   TO passripple_api;
-GRANT EXECUTE ON FUNCTION ticketing.attendee_view(uuid[]) TO passripple_api;
+GRANT EXECUTE ON FUNCTION ticketing.named_view(uuid[]) TO passripple_api;
 GRANT EXECUTE ON FUNCTION ticketing.purge_attendee_documents(integer) TO passripple_api;

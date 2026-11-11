@@ -46,6 +46,13 @@ export interface Env {
    */
   readonly FEE_SCHEDULE?: string;
 
+  /**
+   * AES-256 key, 32 bytes in base64url, that encrypts attendees' document numbers before
+   * they reach the database (design 7.5). Secret; losing it only loses the numbers, which
+   * are erased after the retention period anyway.
+   */
+  readonly ATTENDEE_DOC_KEY?: string;
+
   /** The platform's SINPE Móvil number the buyer pays to (10.2). Set outside Git. */
   readonly SINPE_NUMBER?: string;
 

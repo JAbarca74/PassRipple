@@ -1,4 +1,10 @@
-import type { BuyerExport, TransferPreview, WalletTicket, WalletView } from "@passripple/contracts";
+import type {
+  AttendeeDocType,
+  BuyerExport,
+  TransferPreview,
+  WalletTicket,
+  WalletView,
+} from "@passripple/contracts";
 import {
   ChevronRight,
   Download,
@@ -8,6 +14,7 @@ import {
   Smartphone,
   Trash2,
   TriangleAlert,
+  UserRoundPen,
   WalletCards,
 } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
@@ -15,6 +22,7 @@ import { ApiFailure, serverNow } from "../../lib/api.ts";
 import { formatColones, formatEventDate } from "../../lib/format.ts";
 import { keepOrder, type StoredOrder, storedOrders } from "../../lib/orders.ts";
 import {
+  assignAttendee,
   bindHeld,
   cancelTransfer,
   claimTransfer,
@@ -421,6 +429,28 @@ export function TicketView() {
       <Notice icon={ShieldCheck} title="Una captura de pantalla no sirve">
         El código cambia cada 30 segundos y se usa una sola vez. Muestre esta pantalla en la puerta.
       </Notice>
+      {ticket.named && shown.length === 1 && (
+        <Card>
+          <Row
+            label="Asistente"
+            value={
+              ticket.attendee
+                ? `${ticket.attendee.fullName} · …${ticket.attendee.docLast4}`
+                : "Sin asignar"
+            }
+          />
+          {here && canAssign(entry, ticket) && (
+            <ButtonLink
+              to={`/asignar?${entry.query}&entrada=${ticket.id}`}
+              variant="secondary"
+              className="mt-3 w-full"
+            >
+              <UserRoundPen size={17} aria-hidden />{" "}
+              {ticket.attendee ? "Cambiar asistente" : "Asignar asistente"}
+            </ButtonLink>
+          )}
+        </Card>
+      )}
       {here && shown.length === 1 && canTransfer(entry, ticket) && (
         <ButtonLink
           to={`/transferir?${entry.query}&entrada=${ticket.id}`}
@@ -432,6 +462,12 @@ export function TicketView() {
       )}
     </div>
   );
+}
+
+/** The attendee of a ticket held here may be named until its event starts (7.3). */
+function canAssign(entry: WalletEntry, ticket: WalletTicket): boolean {
+  const startsAt = entry.view.event ? Date.parse(entry.view.event.startsAt) : 0;
+  return ticket.named && ticket.status === "bound" && startsAt > serverNow();
 }
 
 /** A ticket held here may be given away before its event, while it has rebindings left. */
@@ -780,16 +816,107 @@ export function Recover() {
   );
 }
 
-/** Named attendee for 18+ events: the gate checks the document against this name. */
+const DOC_TYPE_LABEL: Record<AttendeeDocType, string> = {
+  cedula: "Cédula",
+  dimex: "DIMEX",
+  pasaporte: "Pasaporte",
+  tim: "TIM (menores)",
+};
+
+/** Messages for the attendee route's errors, in the buyer's words. */
+function attendeeError(caught: unknown): string {
+  if (!(caught instanceof ApiFailure)) return "No pudimos guardar el asistente. Intente de nuevo.";
+  switch (caught.code) {
+    case "invalid_document":
+      return "Revise el número: no parece un documento de ese tipo.";
+    case "not_open":
+      return "El evento ya empezó: el asistente se registra en la puerta.";
+    case "not_holder":
+      return "Solo el teléfono que tiene la entrada puede asignar el asistente.";
+    default:
+      return caught.message;
+  }
+}
+
+/**
+ * Named attendee (design 7.3): who will use a ticket of a 12+ or 18+ event. The gate shows
+ * this name and the document's last digits, and checks them against the document itself.
+ */
 export function AssignAttendee() {
+  const search = window.location.search;
+  const ticketId = new URLSearchParams(search).get("entrada");
+  const [entry, setEntry] = useState<WalletEntry | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [fullName, setFullName] = useState("");
+  const [docType, setDocType] = useState<AttendeeDocType>("cedula");
+  const [docNumber, setDocNumber] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loading = findEntry(new URLSearchParams(search));
+    if (!loading) {
+      setFailed(true);
+      return;
+    }
+    loading
+      .then((found) => {
+        setEntry(found);
+        const current = found.view.tickets.find((t) => t.id === ticketId)?.attendee;
+        if (current) {
+          setFullName(current.fullName);
+          setDocType(current.docType);
+        }
+      })
+      .catch(() => setFailed(true));
+  }, [search, ticketId]);
+
+  const ticket = entry?.view.tickets.find((t) => t.id === ticketId);
+  if (failed || (entry && (!ticket?.named || !entry.here.has(ticket.id)))) {
+    return (
+      <Notice icon={TriangleAlert} title="No se puede asignar aquí" tone="verify">
+        Solo el teléfono que tiene una entrada nominativa puede asignar su asistente.
+      </Notice>
+    );
+  }
+  if (!entry || !ticket) return <p className="text-slate-600">Cargando…</p>;
+
+  const save = async (event: FormEvent) => {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      await assignAttendee(entry.token, ticket.id, ticket.keyVersion, {
+        fullName,
+        docType,
+        docNumber,
+      });
+      navigate(`/entradas/abierta?${entry.query}&entrada=${ticket.id}`);
+    } catch (caught) {
+      setError(attendeeError(caught));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
-    <form className="space-y-4" onSubmit={(event) => event.preventDefault()}>
+    <form className="space-y-4" onSubmit={save}>
       <h1 className="text-2xl font-black">Asignar asistente</h1>
       <p className="text-slate-600">
-        Este evento es para mayores de 18. En la puerta se revisa el documento de quien entra.
+        {entry.view.event?.name ?? entry.eventName}: en la puerta se revisa el documento de quien
+        entra contra este nombre.
       </p>
       <Card className="space-y-4">
-        <Field label="Nombre completo" required autoComplete="name" />
+        <Row label="Entrada" value={`${ticket.typeName} · ${ticket.humanCode}`} />
+        <Field
+          label="Nombre completo"
+          required
+          autoComplete="name"
+          minLength={2}
+          maxLength={120}
+          value={fullName}
+          onChange={(event) => setFullName(event.target.value)}
+        />
         <div>
           <label htmlFor="document-type" className="block text-sm font-bold">
             Tipo de documento
@@ -797,20 +924,36 @@ export function AssignAttendee() {
           <select
             id="document-type"
             className="mt-2 h-12 w-full rounded-xl border border-slate-300 bg-white px-4"
+            value={docType}
+            onChange={(event) => setDocType(event.target.value as AttendeeDocType)}
           >
-            <option>Cédula</option>
-            <option>DIMEX</option>
-            <option>Pasaporte</option>
-            <option>TIM</option>
+            {Object.entries(DOC_TYPE_LABEL).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
           </select>
         </div>
-        <Field label="Número de documento" required />
+        <Field
+          label="Número de documento"
+          required
+          inputMode={docType === "pasaporte" ? "text" : "numeric"}
+          autoComplete="off"
+          maxLength={40}
+          value={docNumber}
+          onChange={(event) => setDocNumber(event.target.value)}
+          {...(ticket.attendee && {
+            hint: `Hoy: ${ticket.attendee.fullName}, documento terminado en ${ticket.attendee.docLast4}. Escriba el número de nuevo para cambiarlo.`,
+          })}
+        />
         <p className="text-xs leading-5 text-slate-600">
-          Usamos estos datos solo para el control de edad de este evento y los borramos cuando
-          termina el plazo de conservación.
+          Usamos estos datos solo para el control de edad de este evento. Guardamos el número
+          cifrado y lo borramos cuando termina el plazo de conservación; la puerta solo ve los
+          últimos dígitos.
         </p>
-        <Button submit className="w-full">
-          Guardar asistente
+        {error && <p className="text-sm font-bold text-red-700">{error}</p>}
+        <Button submit className="w-full" disabled={busy}>
+          {busy ? "Guardando…" : "Guardar asistente"}
         </Button>
       </Card>
     </form>

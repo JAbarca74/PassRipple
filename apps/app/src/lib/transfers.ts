@@ -4,6 +4,8 @@
 // stays in this origin like an order's token (lib/orders.ts).
 
 import {
+  type AttendeeDocType,
+  type AttendeeView,
   type ClaimResponse,
   encodeBase64url,
   type HeldView,
@@ -83,6 +85,20 @@ export async function cancelTransfer(
     method: "POST",
     token,
     body: await proof(ticketId, keyVersion),
+  });
+}
+
+/** Names the attendee of a ticket held here (design 7.3), signed like a transfer. */
+export async function assignAttendee(
+  token: string,
+  ticketId: string,
+  keyVersion: number,
+  attendee: { fullName: string; docType: AttendeeDocType; docNumber: string },
+): Promise<AttendeeView> {
+  return api<AttendeeView>("/attendees", {
+    method: "POST",
+    token,
+    body: { ...(await proof(ticketId, keyVersion)), ...attendee },
   });
 }
 

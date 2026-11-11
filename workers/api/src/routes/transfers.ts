@@ -16,6 +16,7 @@ import {
   offerRequest,
   type TransferOffered,
   type TransferPreview,
+  type TransferProof,
   transferProof,
 } from "@passripple/contracts";
 import { isAcceptableHolderKey, verifyTransferProof } from "@passripple/crypto";
@@ -26,7 +27,7 @@ import { ApiError } from "../errors.ts";
 import { newToken } from "../secrets.ts";
 import { serverKeys, serverSigner } from "../server-keys.ts";
 import { isoRequired, jsonBody } from "../validation.ts";
-import { type TicketRow, ticketView, transferredIds } from "./wallet.ts";
+import { namedInfo, type TicketRow, ticketView, transferredIds } from "./wallet.ts";
 
 /** How long a transfer link stays open, unless the event starts first. */
 const OFFER_TTL_HOURS = 48;
@@ -34,7 +35,7 @@ const OFFER_TTL_HOURS = 48;
 const UNAUTHORIZED = () => new ApiError(401, "unauthorized", "This link is not valid.");
 
 /** The bearer token of a buyer's order or of a receiver, whichever the request carries. */
-function holderToken(c: Context<AppEnv>): string {
+export function holderToken(c: Context<AppEnv>): string {
   const match = /^Bearer (\S+)$/.exec(c.req.header("authorization") ?? "");
   const token = match?.[1];
   if (
@@ -64,14 +65,16 @@ function key(text: string): Uint8Array {
 
 /**
  * Checks the holder's signature and that the token reaches the ticket, and returns the
- * ticket's row and the signing key. The database checks again that the key holds it.
+ * ticket's row and the signing key. The database checks again that the key holds it. The
+ * proof is the request's body unless the caller already read it.
  */
-async function provenHolder(
+export async function provenHolder(
   c: Context<AppEnv>,
   tx: Tx,
+  given?: TransferProof,
 ): Promise<{ row: TicketRow; publicKey: Uint8Array }> {
   const token = holderToken(c);
-  const proof = await jsonBody(c, transferProof);
+  const proof = given ?? (await jsonBody(c, transferProof));
   const publicKey = key(proof.publicKey);
   const signature = decodeBase64url(proof.signature);
   const row = (await reachableTickets(tx, token)).find((t) => t.ticket_id === proof.ticketId);
@@ -181,10 +184,14 @@ function receiverToken(c: Context<AppEnv>): string {
 }
 
 async function heldView(c: Context<AppEnv>, token: string): Promise<Response> {
-  const { row, transferred } = await c.var.db.transaction(SYSTEM_ACTOR, async (tx) => {
+  const { row, transferred, named } = await c.var.db.transaction(SYSTEM_ACTOR, async (tx) => {
     const [row] = await reachableTickets(tx, token);
     if (!row) throw UNAUTHORIZED();
-    return { row, transferred: await transferredIds(tx, [row]) };
+    return {
+      row,
+      transferred: await transferredIds(tx, [row]),
+      named: await namedInfo(tx, [row]),
+    };
   });
   const signer = row.status === "bound" ? await serverSigner(c.env) : null;
   const body: HeldView = {
@@ -198,7 +205,7 @@ async function heldView(c: Context<AppEnv>, token: string): Promise<Response> {
       id: k.id,
       publicKey: encodeBase64url(k.publicKey),
     })),
-    ticket: await ticketView(row, signer, transferred.has(row.ticket_id)),
+    ticket: await ticketView(row, signer, transferred.has(row.ticket_id), named.get(row.ticket_id)),
   };
   c.header("Cache-Control", "no-store");
   return c.json(body);

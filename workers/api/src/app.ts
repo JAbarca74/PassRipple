@@ -13,6 +13,7 @@ import type { IntegrityVerifier } from "./ports/integrity.ts";
 import type { MailSender } from "./ports/mail.ts";
 import { accountRoutes } from "./routes/account.ts";
 import { adminRoutes } from "./routes/admin.ts";
+import { attendeeRoutes } from "./routes/attendees.ts";
 import { authRoutes } from "./routes/auth.ts";
 import { buyerRoutes } from "./routes/buyer.ts";
 import { eventRoutes } from "./routes/events.ts";
@@ -121,6 +122,7 @@ export function createApp(services: Services): Hono<AppEnv> {
   app.use("/wallet/*", appCors);
   app.use("/transfers", appCors);
   app.use("/transfers/*", appCors);
+  app.use("/attendees", appCors);
 
   // The event page and the public listing are read by every visitor: served from the edge
   // cache for as long as each route's Cache-Control allows (design 9.3). "/events/*" also
@@ -141,6 +143,7 @@ export function createApp(services: Services): Hono<AppEnv> {
   app.route("/orders", orderRoutes);
   app.route("/wallet", walletRoutes);
   app.route("/transfers", transferRoutes);
+  app.route("/attendees", attendeeRoutes);
 
   app.notFound((c) => c.json({ error: { code: "not_found", message: "Not found." } }, 404));
   app.onError((error, c) => {

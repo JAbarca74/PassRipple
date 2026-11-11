@@ -92,11 +92,33 @@ export function sameKey(a: Uint8Array | null, b: Uint8Array): boolean {
   return a.every((byte, index) => byte === b[index]);
 }
 
+/** Whether a ticket is named, and its attendee if assigned (ticketing.named_view). */
+export interface NamedRow {
+  ticket_id: string;
+  named: boolean;
+  full_name: string | null;
+  doc_type: "cedula" | "dimex" | "pasaporte" | "tim" | null;
+  doc_last4: string | null;
+}
+
+/** The named status and attendee of these tickets, by ticket id. Acts as the system. */
+export async function namedInfo(
+  tx: Tx,
+  rows: readonly TicketRow[],
+): Promise<Map<string, NamedRow>> {
+  if (rows.length === 0) return new Map();
+  const ids = `{${rows.map((row) => row.ticket_id).join(",")}}`;
+  const found = await tx<NamedRow[]>`SELECT * FROM ticketing.named_view(${ids}::uuid[])`;
+  return new Map(found.map((row) => [row.ticket_id, row]));
+}
+
 export async function ticketView(
   row: TicketRow,
   signer: ServerSigner | null,
   transferred = false,
+  info?: NamedRow,
 ): Promise<WalletTicket> {
+  const named = info?.named ?? false;
   let certificate: string | null = null;
   if (row.status === "bound" && row.holder_pubkey !== null && signer !== null) {
     const signed = await signCertificate(
@@ -106,8 +128,7 @@ export async function ticketView(
         typeRef: row.type_ref,
         entryMode: row.entry_mode,
         ageRating: row.age_rating,
-        // Named tickets arrive in Phase 7.
-        named: false,
+        named,
         holderPubkey: new Uint8Array(row.holder_pubkey),
         keyVersion: row.key_version,
       },
@@ -125,6 +146,11 @@ export async function ticketView(
       row.holder_pubkey === null ? null : encodeBase64url(new Uint8Array(row.holder_pubkey)),
     certificate,
     transferred,
+    named,
+    attendee:
+      info?.full_name && info.doc_type && info.doc_last4
+        ? { fullName: info.full_name, docType: info.doc_type, docLast4: info.doc_last4 }
+        : null,
   };
 }
 
@@ -134,6 +160,7 @@ async function view(
   rows: TicketRow[],
   transferred: Set<string>,
   boundElsewhere: number,
+  named: Map<string, NamedRow>,
 ): Promise<WalletView> {
   const signer = rows.some((row) => row.status === "bound") ? await serverSigner(c.env) : null;
   const first = rows[0];
@@ -157,7 +184,9 @@ async function view(
       publicKey: encodeBase64url(key.publicKey),
     })),
     tickets: await Promise.all(
-      rows.map((row) => ticketView(row, signer, transferred.has(row.ticket_id))),
+      rows.map((row) =>
+        ticketView(row, signer, transferred.has(row.ticket_id), named.get(row.ticket_id)),
+      ),
     ),
     boundElsewhere,
   };
@@ -166,13 +195,21 @@ async function view(
 export const walletRoutes = new Hono<AppEnv>()
   .get("/", async (c) => {
     const token = bearer(c, TOKEN_PREFIX);
-    const { access, rows, transferred } = await c.var.db.transaction(SYSTEM_ACTOR, async (tx) => {
-      const access = await walletAccess(tx, token);
-      const rows = await walletTickets(tx, token);
-      return { access, rows, transferred: await transferredIds(tx, rows) };
-    });
+    const { access, rows, transferred, named } = await c.var.db.transaction(
+      SYSTEM_ACTOR,
+      async (tx) => {
+        const access = await walletAccess(tx, token);
+        const rows = await walletTickets(tx, token);
+        return {
+          access,
+          rows,
+          transferred: await transferredIds(tx, rows),
+          named: await namedInfo(tx, rows),
+        };
+      },
+    );
     c.header("Cache-Control", "no-store");
-    return c.json(await view(c, access, rows, transferred, 0));
+    return c.json(await view(c, access, rows, transferred, 0, named));
   })
 
   // Ties the order's tickets to this device's key (ADR 0032).
@@ -208,10 +245,12 @@ export const walletRoutes = new Hono<AppEnv>()
       // A recovery token rebinds once: a second device with the same token cannot.
       if (rebound) await tx`SELECT orders.consume_rebind(${token})`;
       const rows = await walletTickets(tx, token);
-      return { access, rows, given, boundElsewhere };
+      return { access, rows, given, boundElsewhere, named: await namedInfo(tx, rows) };
     });
     c.header("Cache-Control", "no-store");
-    return c.json(await view(c, result.access, result.rows, result.given, result.boundElsewhere));
+    return c.json(
+      await view(c, result.access, result.rows, result.given, result.boundElsewhere, result.named),
+    );
   })
 
   // The news choice (14.4): read it, or record a new one on every order of the same

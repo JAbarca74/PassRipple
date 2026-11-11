@@ -28,6 +28,16 @@ export const walletTicket = z.object({
   certificate: base64url.nullable(),
   /** Whether the ticket was ever transferred: then it belongs to its receiver (6.6). */
   transferred: z.boolean(),
+  /** Whether the event's tickets carry their attendee (design 7.1). */
+  named: z.boolean(),
+  /** The attendee, once assigned; the document only by its last digits. */
+  attendee: z
+    .object({
+      fullName: z.string(),
+      docType: z.enum(["cedula", "dimex", "pasaporte", "tim"]),
+      docLast4: z.string(),
+    })
+    .nullable(),
 });
 export type WalletTicket = z.infer<typeof walletTicket>;
 
@@ -199,6 +209,30 @@ export const transferProof = z.object({
   signature: base64url.length(86),
 });
 export type TransferProof = z.infer<typeof transferProof>;
+
+export const ATTENDEE_DOC_TYPES = ["cedula", "dimex", "pasaporte", "tim"] as const;
+export type AttendeeDocType = (typeof ATTENDEE_DOC_TYPES)[number];
+
+/**
+ * POST /v1/attendees: the holder names who will use a ticket of a named event (design 7.3),
+ * signed like a transfer. The document number never comes back.
+ */
+export const attendeeRequest = transferProof.extend({
+  fullName: z.string().trim().min(2).max(120),
+  docType: z.enum(ATTENDEE_DOC_TYPES),
+  docNumber: z.string().min(1).max(40),
+});
+export type AttendeeRequest = z.infer<typeof attendeeRequest>;
+
+/** A ticket's attendee as the wallet shows it. */
+export const attendeeView = z.object({
+  ticketId: z.uuid(),
+  fullName: z.string(),
+  docType: z.enum(ATTENDEE_DOC_TYPES),
+  /** The last digits of the document, what the gate shows. */
+  docLast4: z.string(),
+});
+export type AttendeeView = z.infer<typeof attendeeView>;
 
 export const transferOffered = z.object({
   offerToken: token(OFFER_TOKEN_PREFIX),
