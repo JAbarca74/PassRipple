@@ -12,8 +12,6 @@ import { Badge, Button, ButtonLink, Card, Checkbox, Field, Notice, Row } from ".
 
 const SITE_URL = import.meta.env.VITE_SITE_URL ?? "http://localhost:5173";
 
-/** A convenience bound of the stepper, not the per-order limit of 9.3 (Phase 6). */
-const MAX_PER_ORDER_UI = 10;
 /** How often the payment screen asks whether the bank's notice arrived. */
 const POLL_MS = 5000;
 
@@ -40,6 +38,10 @@ function checkoutError(error: unknown): string {
       return "Este evento ya no está a la venta.";
     case "not_configured":
       return "La venta no está disponible en este momento. Intente más tarde.";
+    case "too_many_tickets":
+      return "Son demasiadas entradas para una sola compra. Baje la cantidad.";
+    case "too_many_open_orders":
+      return "Ya tiene otras compras de este evento esperando el pago. Páguelas o espere a que venzan (30 minutos) antes de hacer otra.";
     default:
       return error.message;
   }
@@ -75,6 +77,7 @@ export function Purchase() {
     api<PublicEvent>(`/events/${encodeURIComponent(slug)}`)
       .then((event) => {
         setData(event);
+        setQuantity((current) => Math.min(current, event.event.maxTicketsPerOrder));
         setTypeId(
           (current) =>
             current ??
@@ -100,6 +103,7 @@ export function Purchase() {
   }
   if (!data) return <p className="text-slate-600">Cargando…</p>;
 
+  const maxPerOrder = data.event.maxTicketsPerOrder;
   const selected = data.ticketTypes.find((type) => type.id === typeId) ?? null;
   const tickets = (selected?.priceCrc ?? 0) * quantity;
   const serviceCharge = (selected?.serviceChargeCrc ?? 0) * quantity;
@@ -136,7 +140,13 @@ export function Purchase() {
       );
     } catch (failure) {
       setError(checkoutError(failure));
-      if (failure instanceof ApiFailure && failure.code === "terms_changed") load();
+      // Reload what may have changed since the page opened: the terms or the per-order limit.
+      if (
+        failure instanceof ApiFailure &&
+        (failure.code === "terms_changed" || failure.code === "too_many_tickets")
+      ) {
+        load();
+      }
     } finally {
       setSubmitting(false);
     }
@@ -194,7 +204,10 @@ export function Purchase() {
         </fieldset>
 
         <div className="mt-5 flex items-center justify-between">
-          <span className="font-bold">Cantidad</span>
+          <span>
+            <span className="block font-bold">Cantidad</span>
+            <span className="text-sm text-slate-600">Máximo {maxPerOrder} por compra</span>
+          </span>
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -211,7 +224,7 @@ export function Purchase() {
             <button
               type="button"
               aria-label="Una entrada más"
-              disabled={quantity >= MAX_PER_ORDER_UI}
+              disabled={quantity >= maxPerOrder}
               onClick={() => setQuantity(quantity + 1)}
               className="grid size-12 place-items-center rounded-xl bg-ink text-white disabled:opacity-40"
             >

@@ -44,6 +44,8 @@ export const publicEvent = z.object({
     startsAt: isoTime,
     endsAt: isoTime,
     ageRating: z.enum(AGE_RATINGS),
+    /** The most tickets one order may take (9.3, point 5); the reservation enforces it. */
+    maxTicketsPerOrder: z.int().min(1).max(100),
   }),
   ticketTypes: z.array(publicTicketType),
   /** The versions of the documents the buyer accepts by paying (14.3, 14.4). */

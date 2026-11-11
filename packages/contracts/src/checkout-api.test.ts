@@ -173,11 +173,17 @@ describe("checkout-api", () => {
           startsAt: "2026-12-01T18:00:00-06:00",
           endsAt: "2026-12-01T23:00:00-06:00",
           ageRating: "all" as const,
+          maxTicketsPerOrder: 10,
         },
         ticketTypes: [validTicketType],
         legal: { termsVersion: "v1", privacyVersion: "v1" },
       };
       expect(publicEvent.parse(validEvent)).toEqual(validEvent);
+      for (const maxTicketsPerOrder of [0, 101, 2.5]) {
+        expect(() =>
+          publicEvent.parse({ ...validEvent, event: { ...validEvent.event, maxTicketsPerOrder } }),
+        ).toThrow();
+      }
     });
   });
 });

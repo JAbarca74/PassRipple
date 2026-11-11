@@ -28,6 +28,7 @@ interface EventRow {
   starts_at: Date;
   ends_at: Date;
   age_rating: "all" | "12plus" | "18plus";
+  max_tickets_per_order: number;
 }
 
 interface TypeRow {
@@ -91,7 +92,7 @@ export const eventRoutes = new Hono<AppEnv>()
     const schedule = feeSchedule(c.env);
     const body = await c.var.db.transaction(BUYER_ACTOR, async (tx): Promise<PublicEvent> => {
       const [event] = await tx<EventRow[]>`
-      SELECT id, slug, name, venue_name, starts_at, ends_at, age_rating
+      SELECT id, slug, name, venue_name, starts_at, ends_at, age_rating, max_tickets_per_order
         FROM events.events WHERE slug = ${slug} AND status = 'on_sale'`;
       if (!event) throw new ApiError(404, "not_found", "This event is not on sale.");
       const types = await tx<TypeRow[]>`
@@ -112,6 +113,7 @@ export const eventRoutes = new Hono<AppEnv>()
           startsAt: isoRequired(event.starts_at),
           endsAt: isoRequired(event.ends_at),
           ageRating: event.age_rating,
+          maxTicketsPerOrder: event.max_tickets_per_order,
         },
         ticketTypes: types.map((type) => {
           const charge = serviceCharge(type.price_crc, schedule);
