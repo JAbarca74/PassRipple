@@ -138,6 +138,14 @@ export {
   hourlySales,
 } from "./reporting-api.ts";
 export {
+  PUBLIC_EVENT_STATUSES,
+  type PublicEventStatus,
+  type SeoEvent,
+  type SeoEventsResponse,
+  seoEvent,
+  seoEventsResponse,
+} from "./seo-api.ts";
+export {
   LEDGER_KINDS,
   type LedgerEntry,
   type LedgerKind,

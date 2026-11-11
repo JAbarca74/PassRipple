@@ -162,6 +162,12 @@ importers:
 
   apps/site:
     dependencies:
+      '@passripple/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@passripple/seo':
+        specifier: workspace:*
+        version: link:../../modules/seo
       lucide-react:
         specifier: 1.49.0
         version: 1.49.0(@types/react@19.3.0)(react@19.3.0)
@@ -427,6 +433,12 @@ importers:
       '@passripple/events':
         specifier: workspace:*
         version: link:../events
+      '@passripple/identity':
+        specifier: workspace:*
+        version: link:../identity
+      '@passripple/jurisdictions':
+        specifier: workspace:*
+        version: link:../jurisdictions
 
   modules/settlement:
     dependencies:

@@ -4,7 +4,13 @@
 // other organizers. The answer is cached for a few seconds: the exact availability is
 // decided only when holding.
 
-import { type AvailabilityLevel, eventSlug, type PublicEvent } from "@passripple/contracts";
+import {
+  type AvailabilityLevel,
+  eventSlug,
+  type PublicEvent,
+  type SeoEvent,
+  type SeoEventsResponse,
+} from "@passripple/contracts";
 import { serviceCharge } from "@passripple/pricing";
 import { Hono } from "hono";
 import type { AppEnv } from "../app.ts";
@@ -37,47 +43,90 @@ export function availabilityLevel(remaining: number, permitted: number): Availab
   return remaining * 10 <= permitted ? "few" : "available";
 }
 
-export const eventRoutes = new Hono<AppEnv>().get("/:slug", async (c) => {
-  const slug = param(c.req.param("slug"), eventSlug);
-  const schedule = feeSchedule(c.env);
-  const body = await c.var.db.transaction(BUYER_ACTOR, async (tx): Promise<PublicEvent> => {
-    const [event] = await tx<EventRow[]>`
+interface SeoRow {
+  slug: string;
+  name: string;
+  venue_name: string;
+  locality: string;
+  organizer_name: string;
+  starts_at: Date;
+  ends_at: Date;
+  status: SeoEvent["status"];
+  age_rating: SeoEvent["ageRating"];
+  from_price_crc: number | null;
+  published_at: Date;
+}
+
+export const eventRoutes = new Hono<AppEnv>()
+  // The public listing for search engines and link previews (ADR 0040): what the site's
+  // Worker needs for an event page's head and for sitemap.xml. ?slug= narrows it to one.
+  .get("/", async (c) => {
+    const raw = c.req.query("slug");
+    const slug = raw === undefined ? null : param(raw, eventSlug);
+    const rows = await c.var.db.transaction(
+      BUYER_ACTOR,
+      (tx) => tx<SeoRow[]>`SELECT * FROM seo.public_events(${slug})`,
+    );
+    const body: SeoEventsResponse = {
+      events: rows.map((row) => ({
+        slug: row.slug,
+        name: row.name,
+        venueName: row.venue_name,
+        locality: row.locality,
+        organizerName: row.organizer_name,
+        startsAt: isoRequired(row.starts_at),
+        endsAt: isoRequired(row.ends_at),
+        status: row.status,
+        ageRating: row.age_rating,
+        fromPriceCrc: row.from_price_crc,
+        publishedAt: isoRequired(row.published_at),
+      })),
+    };
+    c.header("Cache-Control", "public, max-age=300");
+    return c.json(body);
+  })
+
+  .get("/:slug", async (c) => {
+    const slug = param(c.req.param("slug"), eventSlug);
+    const schedule = feeSchedule(c.env);
+    const body = await c.var.db.transaction(BUYER_ACTOR, async (tx): Promise<PublicEvent> => {
+      const [event] = await tx<EventRow[]>`
       SELECT id, slug, name, venue_name, starts_at, ends_at, age_rating
         FROM events.events WHERE slug = ${slug} AND status = 'on_sale'`;
-    if (!event) throw new ApiError(404, "not_found", "This event is not on sale.");
-    const types = await tx<TypeRow[]>`
+      if (!event) throw new ApiError(404, "not_found", "This event is not on sale.");
+      const types = await tx<TypeRow[]>`
       SELECT id, name, zone, price_crc FROM catalog.ticket_types
        WHERE event_id = ${event.id} AND audience = 'public'
        ORDER BY price_crc, ref`;
-    const [capacity] = await tx<{ remaining: number; permitted_capacity: number }[]>`
+      const [capacity] = await tx<{ remaining: number; permitted_capacity: number }[]>`
       SELECT * FROM inventory.availability(${event.id})`;
-    const level = capacity
-      ? availabilityLevel(capacity.remaining, capacity.permitted_capacity)
-      : "sold_out";
-    return {
-      event: {
-        id: event.id,
-        slug: event.slug,
-        name: event.name,
-        venueName: event.venue_name,
-        startsAt: isoRequired(event.starts_at),
-        endsAt: isoRequired(event.ends_at),
-        ageRating: event.age_rating,
-      },
-      ticketTypes: types.map((type) => {
-        const charge = serviceCharge(type.price_crc, schedule);
-        return {
-          id: type.id,
-          name: type.name,
-          zone: type.zone,
-          priceCrc: type.price_crc,
-          serviceChargeCrc: charge.feeCrc + charge.feeTaxCrc,
-          availability: level,
-        };
-      }),
-      legal: await currentLegalVersions(tx),
-    };
+      const level = capacity
+        ? availabilityLevel(capacity.remaining, capacity.permitted_capacity)
+        : "sold_out";
+      return {
+        event: {
+          id: event.id,
+          slug: event.slug,
+          name: event.name,
+          venueName: event.venue_name,
+          startsAt: isoRequired(event.starts_at),
+          endsAt: isoRequired(event.ends_at),
+          ageRating: event.age_rating,
+        },
+        ticketTypes: types.map((type) => {
+          const charge = serviceCharge(type.price_crc, schedule);
+          return {
+            id: type.id,
+            name: type.name,
+            zone: type.zone,
+            priceCrc: type.price_crc,
+            serviceChargeCrc: charge.feeCrc + charge.feeTaxCrc,
+            availability: level,
+          };
+        }),
+        legal: await currentLegalVersions(tx),
+      };
+    });
+    c.header("Cache-Control", "public, max-age=5");
+    return c.json(body);
   });
-  c.header("Cache-Control", "public, max-age=5");
-  return c.json(body);
-});

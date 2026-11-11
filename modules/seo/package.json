@@ -14,6 +14,8 @@
   "dependencies": {
     "@passripple/contracts": "workspace:*",
     "@passripple/events": "workspace:*",
-    "@passripple/catalog": "workspace:*"
+    "@passripple/catalog": "workspace:*",
+    "@passripple/identity": "workspace:*",
+    "@passripple/jurisdictions": "workspace:*"
   }
 }
