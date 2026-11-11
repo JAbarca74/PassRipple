@@ -9,4 +9,5 @@ export default createApp({
   database: (env) => connect(env.HYPERDRIVE.connectionString),
   mailer: (env, requestUrl) => createMailSender(env, requestUrl),
   integrity: () => unverifiedIntegrity,
+  cache: () => caches.default,
 });

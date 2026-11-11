@@ -4,6 +4,7 @@
 
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { edgeCache, type ResponseCache } from "./cache.ts";
 import { origins } from "./config.ts";
 import type { Database } from "./db.ts";
 import type { Env } from "./env.ts";
@@ -23,12 +24,15 @@ import { adminSettlementRoutes, settlementRoutes } from "./routes/settlement.ts"
 import { staffRoutes } from "./routes/staff.ts";
 import { transferRoutes } from "./routes/transfers.ts";
 import { walletRoutes } from "./routes/wallet.ts";
+import { waitUntil } from "./wait-until.ts";
 
 /** What the app needs from outside, built per request from the Worker's bindings. */
 export interface Services {
   database(env: Env): Database;
   mailer(env: Env, requestUrl: string): MailSender;
   integrity(env: Env): IntegrityVerifier;
+  /** The edge cache for public reads (9.3); without it every read reaches the database. */
+  cache?(): ResponseCache;
 }
 
 export interface AppEnv {
@@ -38,23 +42,12 @@ export interface AppEnv {
     /** Built on first use, so a misconfigured mailer only fails the routes that send mail. */
     mailer: () => MailSender;
     integrity: IntegrityVerifier;
+    cache: ResponseCache | null;
   };
 }
 
 /** Header carrying the server's clock, in milliseconds, on every response. */
 export const SERVER_TIME_HEADER = "X-Server-Time";
-
-function waitUntil(
-  c: { executionCtx: { waitUntil(promise: Promise<unknown>): void } },
-  promise: Promise<unknown>,
-): void {
-  try {
-    c.executionCtx.waitUntil(promise);
-  } catch {
-    // No execution context (outside the Workers runtime): nothing outlives the request.
-    void promise.catch(() => {});
-  }
-}
 
 export function createApp(services: Services): Hono<AppEnv> {
   const app = new Hono<AppEnv>().basePath("/v1");
@@ -64,6 +57,7 @@ export function createApp(services: Services): Hono<AppEnv> {
     c.set("db", db);
     c.set("mailer", () => services.mailer(c.env, c.req.url));
     c.set("integrity", services.integrity(c.env));
+    c.set("cache", services.cache?.() ?? null);
     try {
       await next();
     } finally {
@@ -127,6 +121,11 @@ export function createApp(services: Services): Hono<AppEnv> {
   app.use("/wallet/*", appCors);
   app.use("/transfers", appCors);
   app.use("/transfers/*", appCors);
+
+  // The event page and the public listing are read by every visitor: served from the edge
+  // cache for as long as each route's Cache-Control allows (design 9.3). "/events/*" also
+  // matches "/events" itself.
+  app.use("/events/*", edgeCache());
 
   app.route("/health", healthRoutes);
   app.route("/auth", authRoutes);
