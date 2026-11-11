@@ -93,9 +93,12 @@ export const orderRoutes = new Hono<AppEnv>()
 
       // The buyer accepted the documents shown next to the pay button, and chose whether to
       // receive commercial messages. The subject is the order, never contact data (14.4).
-      await tx`SELECT privacy.record_consent(${placed.order_id}, 'terms', true, ${legal.termsVersion}, 'checkout')`;
-      await tx`SELECT privacy.record_consent(${placed.order_id}, 'privacy', true, ${legal.privacyVersion}, 'checkout')`;
-      await tx`SELECT privacy.record_consent(${placed.order_id}, 'marketing', ${input.marketing}, ${legal.privacyVersion}, 'checkout')`;
+      // One round trip: the event's capacity row stays locked from the hold to the commit
+      // (design 9.3), so every statement here lengthens the line of buyers behind it.
+      await tx`
+        SELECT privacy.record_consent(${placed.order_id}, 'terms', true, ${legal.termsVersion}, 'checkout'),
+               privacy.record_consent(${placed.order_id}, 'privacy', true, ${legal.privacyVersion}, 'checkout'),
+               privacy.record_consent(${placed.order_id}, 'marketing', ${input.marketing}, ${legal.privacyVersion}, 'checkout')`;
 
       // Nothing to pay: the order is paid now and its tickets are issued like any other.
       if (placed.amount_crc === 0) {
