@@ -1,14 +1,16 @@
 // Manual entry of the human code when the camera cannot read the QR (design 6.7). The code
 // is static, so the screen shows what ticket it is and asks the operator to confirm, and
-// failed attempts lock entry for a while. Holder names arrive with named tickets (Phase 7).
+// failed attempts lock entry for a while. In 12+, 18+ and named events the operator also
+// checks the document against the attendee (7.4), or types the attendee if missing.
 
 import { formatHumanCode } from "@passripple/crypto";
 import { router } from "expo-router";
 import { useState } from "react";
 import { useGate, useReadySession } from "../../gate-context.tsx";
-import type { ManualLookup } from "../../lib/gate-session.ts";
+import type { AttendeeCapture, IdCheck, ManualLookup } from "../../lib/gate-session.ts";
 import type { GateDecision } from "../../lib/verify.ts";
 import { REJECTION_TEXT } from "../../lib/verify.ts";
+import { IdCheckPanel } from "../../ui/id-check.tsx";
 import { Body, Button, ErrorText, Field, Row, Screen, Title } from "../../ui/ui.tsx";
 
 function lockText(ms: number): string {
@@ -21,6 +23,8 @@ export default function ManualEntry() {
   const [code, setCode] = useState("");
   const [lookup, setLookup] = useState<ManualLookup | null>(null);
   const [result, setResult] = useState<GateDecision | null>(null);
+  const [check, setCheck] = useState<IdCheck | null>(null);
+  const [denied, setDenied] = useState(false);
   const [busy, setBusy] = useState(false);
 
   if (session === null) return null;
@@ -30,18 +34,26 @@ export default function ManualEntry() {
     setBusy(true);
     setResult(null);
     try {
-      setLookup(await session.findByCode(code));
+      const found = await session.findByCode(code);
+      setLookup(found);
+      setDenied(false);
+      setCheck(
+        found.kind === "found" && found.decision.kind === "admit"
+          ? await session.idCheckForTicket(found.ticket)
+          : null,
+      );
     } finally {
       setBusy(false);
     }
   }
 
-  async function admit() {
+  async function admit(idChecked = false, capture: AttendeeCapture | null = null) {
     if (session === null || lookup?.kind !== "found") return;
     setBusy(true);
     try {
-      setResult(await session.admitManual(lookup.ticket, false));
+      setResult(await session.admitManual(lookup.ticket, idChecked, capture));
       setLookup(null);
+      setCheck(null);
       setCode("");
       void refreshStatus();
     } finally {
@@ -92,7 +104,19 @@ export default function ManualEntry() {
         <>
           <Row label="Código" value={formatHumanCode(lookup.ticket.codeHuman)} />
           <Row label="Tipo" value={lookup.decision.typeName ?? "Entrada"} />
-          {lookup.decision.kind === "admit" ? (
+          {lookup.decision.kind === "admit" && check !== null ? (
+            <IdCheckPanel
+              check={check}
+              typeName={lookup.decision.typeName}
+              busy={busy}
+              onConfirm={(capture) => void admit(true, capture)}
+              onDeny={() => {
+                setLookup(null);
+                setCheck(null);
+                setDenied(true);
+              }}
+            />
+          ) : lookup.decision.kind === "admit" ? (
             <>
               <Body>Confirme que la persona tiene esta entrada antes de dejarla pasar.</Body>
               <Button
@@ -108,6 +132,7 @@ export default function ManualEntry() {
         </>
       )}
 
+      {denied && <ErrorText>No pasa: el documento no coincide o no cumple la edad.</ErrorText>}
       {result !== null && (
         <Body>
           {result.kind === "admit"

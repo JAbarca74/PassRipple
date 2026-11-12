@@ -9,9 +9,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useGate, useReadySession } from "../../gate-context.tsx";
-import type { ScanOutcome } from "../../lib/gate-session.ts";
+import type { AttendeeCapture, IdCheck, ScanOutcome } from "../../lib/gate-session.ts";
+import type { GateDecision } from "../../lib/verify.ts";
 import { REJECTION_TEXT } from "../../lib/verify.ts";
 import { perfLog, perfNow, perfSummary } from "../../perf.ts";
+import { IdCheckPanel } from "../../ui/id-check.tsx";
 import { ago, Body, Button, Centered, colors, Title } from "../../ui/ui.tsx";
 
 const VERDICT_MS = 2_500;
@@ -19,6 +21,18 @@ const VERDICT_MS = 2_500;
 // codes does not flash a verdict for each one (field test, Phase 2).
 const SCAN_COOLDOWN_MS = 1_200;
 const E2E = process.env.EXPO_PUBLIC_E2E === "1";
+
+/** A scan of a 12+, 18+ or named event waiting for the operator's document check (7.4). */
+interface PendingCheck {
+  readonly decision: Extract<GateDecision, { kind: "admit" }>;
+  readonly check: IdCheck;
+}
+
+const DENIED = {
+  color: colors.invalid,
+  title: "NO PASA",
+  detail: "El documento no coincide o no cumple la edad.",
+};
 
 function verdictView(outcome: ScanOutcome) {
   const { decision, burst } = outcome;
@@ -42,6 +56,9 @@ export default function Scan() {
   const { status, refreshStatus } = useGate();
   const [permission, requestPermission] = useCameraPermissions();
   const [outcome, setOutcome] = useState<ScanOutcome | null>(null);
+  const [pendingCheck, setPendingCheck] = useState<PendingCheck | null>(null);
+  const [denied, setDenied] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [e2eText, setE2eText] = useState("");
   const busy = useRef(false);
   const cooldownUntil = useRef(0);
@@ -59,7 +76,13 @@ export default function Scan() {
     async (text: string) => {
       perfLog("camera_event", perfNow());
       if (perfSummary() !== null) setPerfText(perfSummary());
-      if (session === null || busy.current || performance.now() < cooldownUntil.current) return;
+      if (
+        session === null ||
+        busy.current ||
+        pendingCheck !== null ||
+        performance.now() < cooldownUntil.current
+      )
+        return;
       busy.current = true;
       const scanStart = perfNow();
       try {
@@ -67,6 +90,15 @@ export default function Scan() {
         perfLog("scan_total_ms", perfNow() - scanStart);
         if (result === null) return;
         cooldownUntil.current = performance.now() + SCAN_COOLDOWN_MS;
+        if (result.idCheck !== undefined && result.decision.kind === "admit") {
+          // No green yet: the operator checks the document first, with no time limit.
+          if (timer.current !== null) clearTimeout(timer.current);
+          setOutcome(null);
+          setDenied(false);
+          setPendingCheck({ decision: result.decision, check: result.idCheck });
+          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          return;
+        }
         setOutcome(result);
         void Haptics.notificationAsync(
           result.decision.kind === "admit"
@@ -80,8 +112,48 @@ export default function Scan() {
         busy.current = false;
       }
     },
-    [session, refreshStatus],
+    [session, refreshStatus, pendingCheck],
   );
+
+  const showFor = useCallback(() => {
+    if (timer.current !== null) clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      setOutcome(null);
+      setDenied(false);
+    }, VERDICT_MS);
+  }, []);
+
+  const confirmCheck = useCallback(
+    async (capture: AttendeeCapture | null) => {
+      if (session === null || pendingCheck === null) return;
+      setConfirming(true);
+      try {
+        const result = await session.confirmIdCheck(pendingCheck.decision, capture);
+        setPendingCheck(null);
+        setOutcome(result);
+        void Haptics.notificationAsync(
+          result.decision.kind === "admit"
+            ? Haptics.NotificationFeedbackType.Success
+            : Haptics.NotificationFeedbackType.Error,
+        );
+        cooldownUntil.current = performance.now() + SCAN_COOLDOWN_MS;
+        showFor();
+        void refreshStatus();
+      } finally {
+        setConfirming(false);
+      }
+    },
+    [session, pendingCheck, refreshStatus, showFor],
+  );
+
+  const denyCheck = useCallback(() => {
+    setPendingCheck(null);
+    setOutcome(null);
+    setDenied(true);
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    cooldownUntil.current = performance.now() + SCAN_COOLDOWN_MS;
+    showFor();
+  }, [showFor]);
 
   if (session === null) return null;
   if (permission === null) return <Centered />;
@@ -103,7 +175,7 @@ export default function Scan() {
   }
 
   const pending = status === null ? 0 : status.outbox.pending + status.outbox.sending;
-  const verdict = outcome === null ? null : verdictView(outcome);
+  const verdict = denied ? DENIED : outcome === null ? null : verdictView(outcome);
 
   return (
     <View style={styles.root}>
@@ -140,7 +212,17 @@ export default function Scan() {
           )}
         </View>
 
-        {verdict !== null && (
+        {pendingCheck !== null && (
+          <IdCheckPanel
+            check={pendingCheck.check}
+            typeName={pendingCheck.decision.typeName}
+            busy={confirming}
+            onConfirm={(capture) => void confirmCheck(capture)}
+            onDeny={denyCheck}
+          />
+        )}
+
+        {pendingCheck === null && verdict !== null && (
           <View
             testID="verdict"
             style={[styles.verdict, { backgroundColor: verdict.color }]}

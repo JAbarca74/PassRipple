@@ -21,6 +21,7 @@ describe("checkManifest", () => {
     keyVersion: 2,
     holderPubkey: new Uint8Array([1]),
     codeHuman: "ABC",
+    attendee: null,
   };
 
   test("rejects void tickets", () => {
@@ -194,6 +195,7 @@ describe("decideQr", () => {
       keyVersion: 1,
       holderPubkey: new Uint8Array(),
       codeHuman: "123",
+      attendee: null,
     };
     vi.mocked(lookups.ticket).mockResolvedValue(ticket);
     const dec = await decideQr("qr", lookups, 0);

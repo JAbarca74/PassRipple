@@ -5,6 +5,7 @@
 
 import type { DB, Transaction } from "@op-engineering/op-sqlite";
 import type {
+  AttendeeCapturePayload,
   DeviceStatus,
   GateDevice,
   GateOperation,
@@ -25,10 +26,25 @@ import { checkManifest, decideQr, type GateDecision } from "./verify.ts";
 /** Timeout of every call made while syncing (design 8.8). */
 export const SYNC_TIMEOUT_MS = 4_000;
 
+/**
+ * A 12+ or 18+ event, or a named one (7.4): the scan is not admitted yet. The operator sees
+ * the attendee, checks the document and confirms, or captures the attendee if missing.
+ */
+export interface IdCheck {
+  readonly ageRating: "all" | "12plus" | "18plus";
+  readonly named: boolean;
+  readonly attendee: StoredTicket["attendee"];
+}
+
 export interface ScanOutcome {
   readonly decision: GateDecision;
   readonly burst: Burst | null;
+  /** Set when the admission waits for the operator to check a document. */
+  readonly idCheck?: IdCheck;
 }
+
+/** What the operator types when a named ticket arrives without its attendee. */
+export type AttendeeCapture = Omit<AttendeeCapturePayload, "ticketId">;
 
 export type ManualLookup =
   | { readonly kind: "found"; readonly ticket: StoredTicket; readonly decision: GateDecision }
@@ -175,6 +191,7 @@ export class GateSession {
     decision: Extract<GateDecision, { kind: "admit" }>,
     method: "qr" | "manual",
     idChecked: boolean,
+    capture: AttendeeCapture | null = null,
   ): Promise<void> {
     const createdAt = Date.now();
     await this.db.transaction(async (tx) => {
@@ -197,7 +214,77 @@ export class GateSession {
         },
         tx,
       );
+      if (capture !== null) {
+        await this.outbox.enqueue(
+          {
+            id: newOperationId(createdAt),
+            opType: "attendee_capture",
+            payload: { ticketId: decision.ticketId, ...capture },
+            createdAt,
+            clockOffsetMs: this.clock.offsetMs(),
+          },
+          tx,
+        );
+      }
     });
+  }
+
+  /** Whether an admitted scan must wait for a document check, and what to show for it. */
+  private async idCheckFor(
+    decision: Extract<GateDecision, { kind: "admit" }>,
+  ): Promise<IdCheck | null> {
+    const event = (await this.manifest.info())?.event;
+    if (event === undefined || decision.entryMode === "multi_scan") return null;
+    // Manifests saved before named tickets have no namedTickets.
+    const named = event.namedTickets ?? false;
+    if (event.ageRating === "all" && !named) return null;
+    const ticket = await this.manifest.ticket(decision.ticketId);
+    return { ageRating: event.ageRating, named, attendee: ticket?.attendee ?? null };
+  }
+
+  private async burstFor(decision: Extract<GateDecision, { kind: "admit" }>, now: number) {
+    const total =
+      decision.holderPubkey === null
+        ? 1
+        : await this.manifest.holderTicketCount(decision.holderPubkey);
+    return this.scans.admitted(decision.ticketId, decision.holderPubkey, total, now);
+  }
+
+  /**
+   * The operator checked the document of a scan that waited for it: admits it now, with
+   * the attendee typed at the door if the ticket had none. Checks again that nobody else
+   * admitted the ticket meanwhile.
+   */
+  async confirmIdCheck(
+    decision: Extract<GateDecision, { kind: "admit" }>,
+    capture: AttendeeCapture | null,
+  ): Promise<ScanOutcome> {
+    if (!(await this.canValidate())) {
+      return {
+        decision: {
+          kind: "reject",
+          reason: "gate_closed",
+          ticketId: decision.ticketId,
+          typeName: decision.typeName,
+        },
+        burst: null,
+      };
+    }
+    if (decision.inManifest) {
+      const fresh = await this.manifest.ticket(decision.ticketId);
+      if (fresh !== null) {
+        const again = checkManifest(
+          fresh,
+          decision.typeName,
+          decision.holderPubkey === null
+            ? null
+            : { keyVersion: decision.keyVersion, holderPubkey: decision.holderPubkey },
+        );
+        if (again.kind !== "admit") return { decision: again, burst: null };
+      }
+    }
+    await this.record(decision, "qr", true, capture);
+    return { decision, burst: await this.burstFor(decision, Date.now()) };
   }
 
   private async lookups() {
@@ -224,15 +311,10 @@ export class GateSession {
     }
     const decision = await decideQr(text, await this.lookups(), this.clock.now());
     if (decision.kind !== "admit") return { decision, burst: null };
+    const idCheck = await this.idCheckFor(decision);
+    if (idCheck !== null) return { decision, burst: null, idCheck };
     await this.record(decision, "qr", false);
-    const total =
-      decision.holderPubkey === null
-        ? 1
-        : await this.manifest.holderTicketCount(decision.holderPubkey);
-    return {
-      decision,
-      burst: this.scans.admitted(decision.ticketId, decision.holderPubkey, total, now),
-    };
+    return { decision, burst: await this.burstFor(decision, now) };
   }
 
   /** Looks a typed code up, counting failures toward the lock (6.7). */
@@ -261,7 +343,11 @@ export class GateSession {
   }
 
   /** Admits a ticket found by its code, once the operator confirmed it. */
-  async admitManual(ticket: StoredTicket, idChecked: boolean): Promise<GateDecision> {
+  async admitManual(
+    ticket: StoredTicket,
+    idChecked: boolean,
+    capture: AttendeeCapture | null = null,
+  ): Promise<GateDecision> {
     if (!(await this.canValidate())) {
       return { kind: "reject", reason: "gate_closed", ticketId: ticket.ticketId, typeName: null };
     }
@@ -269,8 +355,17 @@ export class GateSession {
     // Read again: the same code may have been admitted while the operator was confirming.
     const fresh = (await this.manifest.ticket(ticket.ticketId)) ?? ticket;
     const decision = checkManifest(fresh, type?.name ?? "Entrada", null);
-    if (decision.kind === "admit") await this.record(decision, "manual", idChecked);
+    if (decision.kind === "admit") await this.record(decision, "manual", idChecked, capture);
     return decision;
+  }
+
+  /** What a ticket found by its code needs before admitting it (7.4), or null. */
+  async idCheckForTicket(ticket: StoredTicket): Promise<IdCheck | null> {
+    const event = (await this.manifest.info())?.event;
+    if (event === undefined || ticket.entryMode === "multi_scan") return null;
+    const named = event.namedTickets ?? false;
+    if (event.ageRating === "all" && !named) return null;
+    return { ageRating: event.ageRating, named, attendee: ticket.attendee };
   }
 
   async reportIncident(payload: IncidentPayload): Promise<void> {

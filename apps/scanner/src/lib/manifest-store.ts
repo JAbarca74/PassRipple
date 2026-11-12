@@ -23,6 +23,8 @@ export interface StoredTicket {
   readonly holderPubkey: Uint8Array | null;
   readonly keyVersion: number;
   readonly codeHuman: string;
+  /** In named events: who the ticket belongs to, and the document's last digits. */
+  readonly attendee: { readonly name: string; readonly docLast4: string } | null;
 }
 
 export interface ManifestInfo {
@@ -37,12 +39,13 @@ export interface ManifestInfo {
 
 const UPSERT_TICKET = `
   INSERT INTO tickets (ticket_id, type_ref, entry_mode, status, redeemed_server, holder_pubkey,
-                       key_version, code_human)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                       key_version, code_human, attendee_name, attendee_last4)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   ON CONFLICT (ticket_id) DO UPDATE SET
     type_ref = excluded.type_ref, entry_mode = excluded.entry_mode, status = excluded.status,
     redeemed_server = excluded.redeemed_server, holder_pubkey = excluded.holder_pubkey,
-    key_version = excluded.key_version, code_human = excluded.code_human`;
+    key_version = excluded.key_version, code_human = excluded.code_human,
+    attendee_name = excluded.attendee_name, attendee_last4 = excluded.attendee_last4`;
 
 function ticketParams(ticket: ManifestTicket) {
   return [
@@ -54,6 +57,8 @@ function ticketParams(ticket: ManifestTicket) {
     ticket.holderPubkey,
     ticket.keyVersion,
     ticket.codeHuman,
+    ticket.attendee?.name ?? null,
+    ticket.attendee?.docLast4 ?? null,
   ];
 }
 
@@ -67,6 +72,10 @@ function rowToTicket(row: Record<string, unknown>): StoredTicket {
     holderPubkey: blob(row.holder_pubkey),
     keyVersion: Number(row.key_version),
     codeHuman: String(row.code_human),
+    attendee:
+      typeof row.attendee_name === "string" && typeof row.attendee_last4 === "string"
+        ? { name: row.attendee_name, docLast4: row.attendee_last4 }
+        : null,
   };
 }
 

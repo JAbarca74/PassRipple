@@ -25,7 +25,10 @@ const SCHEMA = [
      redeemed_local INTEGER NOT NULL DEFAULT 0,
      holder_pubkey BLOB,
      key_version INTEGER NOT NULL,
-     code_human TEXT NOT NULL)`,
+     code_human TEXT NOT NULL,
+     -- Named tickets (7.4): the attendee's name and the document's last digits.
+     attendee_name TEXT,
+     attendee_last4 TEXT)`,
   `CREATE INDEX IF NOT EXISTS tickets_code ON tickets (code_human)`,
   `CREATE INDEX IF NOT EXISTS tickets_holder ON tickets (holder_pubkey)`,
   `CREATE TABLE IF NOT EXISTS outbox (
@@ -59,6 +62,12 @@ export async function openEventDb(deviceId: string, key: string): Promise<DB> {
   await db.execute("PRAGMA journal_mode = WAL");
   await db.execute("PRAGMA synchronous = FULL");
   for (const statement of SCHEMA) await db.execute(statement);
+  // Databases created before named tickets lack the attendee columns.
+  const columns = await db.execute("PRAGMA table_info(tickets)");
+  const names = new Set(columns.rows.map((row) => String(row.name)));
+  for (const column of ["attendee_name", "attendee_last4"]) {
+    if (!names.has(column)) await db.execute(`ALTER TABLE tickets ADD COLUMN ${column} TEXT`);
+  }
   return db;
 }
 
