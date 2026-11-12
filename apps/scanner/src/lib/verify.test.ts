@@ -34,6 +34,16 @@ describe("checkManifest", () => {
     });
   });
 
+  test("rejects a door-sale ticket not sold yet", () => {
+    const t = { ...baseTicket, status: "unsold" as const };
+    expect(checkManifest(t, "Type 1", null)).toEqual({
+      kind: "reject",
+      reason: "unsold",
+      ticketId: "t1",
+      typeName: "Type 1",
+    });
+  });
+
   test("rejects stale key version", () => {
     const cred = { keyVersion: 1, holderPubkey: new Uint8Array([2]) };
     expect(checkManifest(baseTicket, "Type 1", cred)).toEqual({

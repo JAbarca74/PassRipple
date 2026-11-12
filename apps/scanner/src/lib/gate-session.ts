@@ -7,6 +7,7 @@ import type { DB, Transaction } from "@op-engineering/op-sqlite";
 import type {
   AttendeeCapturePayload,
   DeviceStatus,
+  DoorSalePayload,
   GateDevice,
   GateOperation,
   IncidentPayload,
@@ -22,6 +23,9 @@ import { newOperationId, secureRandom } from "./random.ts";
 import { type Burst, ManualEntryLimiter, ScanSession } from "./scan-session.ts";
 import { eventDbKey, forgetEnrollment, saveEnrollment } from "./secure.ts";
 import { checkManifest, decideQr, type GateDecision } from "./verify.ts";
+
+/** An operation as the outbox takes it: the outbox numbers it (deviceSeq). */
+type QueuedOperation = Parameters<Outbox<GatePayload, Transaction>["enqueue"]>[0];
 
 /** Timeout of every call made while syncing (design 8.8). */
 export const SYNC_TIMEOUT_MS = 4_000;
@@ -366,6 +370,63 @@ export class GateSession {
     const named = event.namedTickets ?? false;
     if (event.ageRating === "all" && !named) return null;
     return { ageRating: event.ageRating, named, attendee: ticket.attendee };
+  }
+
+  /** Whether this device sells at the door (its role), so the sale screen is offered. */
+  sellsAtDoor(): boolean {
+    return this.deviceState.role === "door_sales";
+  }
+
+  /**
+   * Sells one ticket of a type from this device's block (design 10.6): marks it sold and
+   * admitted here and queues the sale and the admission in one transaction. Nothing to
+   * refuse later: the block's seats already passed the capacity counter (I6). In 12+, 18+
+   * and named events the operator has the document in hand, so the admission counts as
+   * checked and a named ticket's attendee is queued too. Returns the ticket's code for the
+   * person, or null when the block of that type is empty.
+   */
+  async sellAtDoor(
+    typeRef: number,
+    payment: Omit<DoorSalePayload, "ticketId">,
+    capture: AttendeeCapture | null = null,
+  ): Promise<{ readonly ticketId: string; readonly codeHuman: string } | null> {
+    if (!this.sellsAtDoor() || !(await this.canValidate())) return null;
+    const event = (await this.manifest.info())?.event;
+    const ageChecked = event !== undefined && event.ageRating !== "all";
+    const createdAt = Date.now();
+    let sold: { readonly ticketId: string; readonly codeHuman: string } | null = null;
+    await this.db.transaction(async (tx) => {
+      sold = await this.manifest.takeFromStock(tx, typeRef);
+      if (sold === null) return;
+      const ticketId = sold.ticketId;
+      const operations: QueuedOperation[] = [
+        {
+          id: newOperationId(createdAt),
+          opType: "door_sale",
+          payload: { ticketId, ...payment },
+          createdAt,
+          clockOffsetMs: this.clock.offsetMs(),
+        },
+        {
+          id: newOperationId(createdAt),
+          opType: "redemption",
+          payload: { ticketId, method: "manual", idChecked: ageChecked, inManifest: true },
+          createdAt,
+          clockOffsetMs: this.clock.offsetMs(),
+        },
+      ];
+      if (capture !== null) {
+        operations.push({
+          id: newOperationId(createdAt),
+          opType: "attendee_capture",
+          payload: { ticketId, ...capture },
+          createdAt,
+          clockOffsetMs: this.clock.offsetMs(),
+        });
+      }
+      for (const operation of operations) await this.outbox.enqueue(operation, tx);
+    });
+    return sold;
   }
 
   async reportIncident(payload: IncidentPayload): Promise<void> {

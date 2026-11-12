@@ -28,7 +28,9 @@ const SCHEMA = [
      code_human TEXT NOT NULL,
      -- Named tickets (7.4): the attendee's name and the document's last digits.
      attendee_name TEXT,
-     attendee_last4 TEXT)`,
+     attendee_last4 TEXT,
+     -- Sold at the door on this device, before the server knows (8.5).
+     sold_local INTEGER NOT NULL DEFAULT 0)`,
   `CREATE INDEX IF NOT EXISTS tickets_code ON tickets (code_human)`,
   `CREATE INDEX IF NOT EXISTS tickets_holder ON tickets (holder_pubkey)`,
   `CREATE TABLE IF NOT EXISTS outbox (
@@ -67,6 +69,9 @@ export async function openEventDb(deviceId: string, key: string): Promise<DB> {
   const names = new Set(columns.rows.map((row) => String(row.name)));
   for (const column of ["attendee_name", "attendee_last4"]) {
     if (!names.has(column)) await db.execute(`ALTER TABLE tickets ADD COLUMN ${column} TEXT`);
+  }
+  if (!names.has("sold_local")) {
+    await db.execute("ALTER TABLE tickets ADD COLUMN sold_local INTEGER NOT NULL DEFAULT 0");
   }
   return db;
 }

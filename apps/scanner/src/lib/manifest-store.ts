@@ -67,7 +67,15 @@ function rowToTicket(row: Record<string, unknown>): StoredTicket {
     ticketId: String(row.ticket_id),
     typeRef: Number(row.type_ref),
     entryMode: row.entry_mode === "multi_scan" ? "multi_scan" : "single_use",
-    status: row.status === "void" ? "void" : row.status === "bound" ? "bound" : "issued",
+    // Sold here and not yet synced: issued for this device.
+    status:
+      row.status === "void"
+        ? "void"
+        : row.status === "bound"
+          ? "bound"
+          : row.status === "unsold" && Number(row.sold_local) !== 1
+            ? "unsold"
+            : "issued",
     redeemed: Number(row.redeemed_server) === 1 || Number(row.redeemed_local) === 1,
     holderPubkey: blob(row.holder_pubkey),
     keyVersion: Number(row.key_version),
@@ -245,11 +253,43 @@ export class ManifestStore {
     );
   }
 
+  /** Unsold tickets of this device's block, by ticket type ref (8.5). */
+  async stock(): Promise<ReadonlyMap<number, number>> {
+    const result = await this.db.execute(
+      `SELECT type_ref, count(*) AS n FROM tickets
+        WHERE status = 'unsold' AND sold_local = 0 GROUP BY type_ref`,
+    );
+    return new Map(result.rows.map((row) => [Number(row.type_ref), Number(row.n)]));
+  }
+
+  /**
+   * Takes one unsold ticket of a type for a door sale, inside the transaction that queues
+   * the sale, and marks it sold and admitted here. Null when the block has none left.
+   */
+  async takeFromStock(
+    tx: Transaction,
+    typeRef: number,
+  ): Promise<{ readonly ticketId: string; readonly codeHuman: string } | null> {
+    const result = await tx.execute(
+      `SELECT ticket_id, code_human FROM tickets
+        WHERE status = 'unsold' AND sold_local = 0 AND type_ref = ?
+        ORDER BY code_human LIMIT 1`,
+      [typeRef],
+    );
+    const row = result.rows[0];
+    if (row === undefined) return null;
+    const ticketId = String(row.ticket_id);
+    await tx.execute("UPDATE tickets SET sold_local = 1, redeemed_local = 1 WHERE ticket_id = ?", [
+      ticketId,
+    ]);
+    return { ticketId, codeHuman: String(row.code_human) };
+  }
+
   async counts(): Promise<{ readonly tickets: number; readonly admitted: number }> {
     const result = await this.db.execute(
       `SELECT count(*) AS tickets,
               sum(CASE WHEN redeemed_server = 1 OR redeemed_local = 1 THEN 1 ELSE 0 END) AS admitted
-         FROM tickets WHERE status <> 'void'`,
+         FROM tickets WHERE status <> 'void' AND (status <> 'unsold' OR sold_local = 1)`,
     );
     const row = result.rows[0];
     return { tickets: Number(row?.tickets ?? 0), admitted: Number(row?.admitted ?? 0) };

@@ -283,6 +283,16 @@ export default function Scan() {
                 onPress={() => router.push("/gate/manual")}
               />
             </View>
+            {session.sellsAtDoor() && (
+              <View style={styles.action}>
+                <Button
+                  testID="open-sell"
+                  label="Vender"
+                  kind="secondary"
+                  onPress={() => router.push("/gate/sell")}
+                />
+              </View>
+            )}
             <View style={styles.action}>
               <Button
                 testID="open-account"

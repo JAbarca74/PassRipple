@@ -22,7 +22,8 @@ export type GateRejection =
   | "void"
   | "stale_key"
   | "wrong_zone"
-  | "gate_closed";
+  | "gate_closed"
+  | "unsold";
 
 export type GateDecision =
   | {
@@ -58,6 +59,7 @@ export function checkManifest(
 ): GateDecision {
   const base = { ticketId: ticket.ticketId, typeName };
   if (ticket.status === "void") return { kind: "reject", reason: "void", ...base };
+  if (ticket.status === "unsold") return { kind: "reject", reason: "unsold", ...base };
   if (credential !== null && credential.keyVersion < ticket.keyVersion) {
     // The ticket was transferred or recovered: this certificate belongs to the old phone.
     return { kind: "reject", reason: "stale_key", ...base };
@@ -130,4 +132,5 @@ export const REJECTION_TEXT: Readonly<Record<GateRejection, string>> = {
   void: "Esta entrada fue anulada.",
   stale_key: "La entrada fue transferida a otro teléfono. Esta copia ya no vale.",
   gate_closed: "Este teléfono ya no valida: el evento terminó o el acceso fue revocado.",
+  unsold: "Esta entrada todavía no se vendió en la puerta.",
 };

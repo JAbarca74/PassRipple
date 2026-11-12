@@ -40,7 +40,8 @@ export interface ManifestTicket {
   /** The ticket type's number within the event. */
   readonly typeRef: number;
   readonly entryMode: EntryMode;
-  readonly status: "issued" | "bound" | "void";
+  /** `unsold`: in the door-sales block of the device that gets it (8.5). */
+  readonly status: "unsold" | "issued" | "bound" | "void";
   /** Whether a single-use ticket was already admitted, as last synced. */
   readonly redeemed: boolean;
   /** 32-byte Ed25519 public key of the buyer's device, once bound. */
@@ -142,7 +143,7 @@ const ticketWire = z.object({
   ticketId: lowercaseUuid,
   typeRef: z.int().min(1).max(65_535),
   entryMode,
-  status: z.enum(["issued", "bound", "void"]),
+  status: z.enum(["unsold", "issued", "bound", "void"]),
   redeemed: z.boolean(),
   holderPubkey: publicKey.nullable(),
   keyVersion: z.int().min(0).max(255),
