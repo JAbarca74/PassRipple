@@ -56,6 +56,7 @@ const manifestInput = {
     ends_at: endsAt,
     age_rating: "all" as const,
     device_zone: null,
+    named_tickets: false,
   },
   serverKeys,
   ticketTypes: [
@@ -71,6 +72,8 @@ const manifestInput = {
       holder_pubkey: holder.publicKey,
       key_version: 1,
       code_human: "E2E0000001",
+      attendee_name: null,
+      attendee_doc_last4: null,
     },
   ],
   cursor: "1",
