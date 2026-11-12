@@ -47,6 +47,9 @@ importers:
       '@passripple/crypto':
         specifier: workspace:*
         version: link:../../packages/crypto
+      '@passripple/tax':
+        specifier: workspace:*
+        version: link:../../packages/tax
       lucide-react:
         specifier: 1.49.0
         version: 1.49.0(@types/react@19.3.0)(react@19.3.0)
@@ -325,18 +328,36 @@ importers:
 
   modules/municipal:
     dependencies:
+      '@passripple/catalog':
+        specifier: workspace:*
+        version: link:../catalog
       '@passripple/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@passripple/courtesy':
+        specifier: workspace:*
+        version: link:../courtesy
       '@passripple/events':
         specifier: workspace:*
         version: link:../events
+      '@passripple/identity':
+        specifier: workspace:*
+        version: link:../identity
+      '@passripple/inventory':
+        specifier: workspace:*
+        version: link:../inventory
       '@passripple/jurisdictions':
         specifier: workspace:*
         version: link:../jurisdictions
+      '@passripple/redemption':
+        specifier: workspace:*
+        version: link:../redemption
       '@passripple/tax':
         specifier: workspace:*
         version: link:../../packages/tax
+      '@passripple/ticketing':
+        specifier: workspace:*
+        version: link:../ticketing
 
   modules/notifications:
     dependencies:
@@ -550,6 +571,9 @@ importers:
       '@passripple/pricing':
         specifier: workspace:*
         version: link:../../packages/pricing
+      '@passripple/tax':
+        specifier: workspace:*
+        version: link:../../packages/tax
       aws4fetch:
         specifier: 1.0.20
         version: 1.0.20

@@ -43,6 +43,8 @@ export const sessionProfile = z.object({
   isAdmin: z.boolean(),
   /** The organizations this person acts for, by name. Each one goes in X-Org-Id. */
   organizations: z.array(z.object({ id: z.uuid(), name: z.string() })),
+  /** Municipal access (Phase 8): the cantons this person oversees, as official or inspector. */
+  municipal: z.array(z.object({ canton: z.string(), kind: z.enum(["official", "inspector"]) })),
 });
 export type SessionProfile = z.infer<typeof sessionProfile>;
 

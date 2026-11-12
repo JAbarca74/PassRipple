@@ -145,6 +145,7 @@ describe("sessionProfile", () => {
       userId: "12345678-1234-4234-8234-123456789001",
       isAdmin: false,
       organizations: [{ id: "12345678-1234-4234-8234-123456789002", name: "Org A" }],
+      municipal: [{ canton: "PZ", kind: "official" as const }],
     };
     expect(sessionProfile.parse(profile)).toEqual(profile);
     expect(
