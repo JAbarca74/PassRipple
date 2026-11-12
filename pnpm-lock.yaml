@@ -238,6 +238,9 @@ importers:
       '@passripple/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@passripple/events':
+        specifier: workspace:*
+        version: link:../events
       '@passripple/inventory':
         specifier: workspace:*
         version: link:../inventory

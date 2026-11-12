@@ -13,6 +13,7 @@ The `door_sales` database schema. No other module writes to it (rule R1).
 ## Depends on
 
 - `@passripple/contracts`
+- `@passripple/events`
 - `@passripple/inventory`
 - `@passripple/ticketing`
 - `@passripple/staff`
