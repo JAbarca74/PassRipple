@@ -16,6 +16,7 @@ import { adminRoutes } from "./routes/admin.ts";
 import { attendeeRoutes } from "./routes/attendees.ts";
 import { authRoutes } from "./routes/auth.ts";
 import { buyerRoutes } from "./routes/buyer.ts";
+import { courtesyRoutes } from "./routes/courtesies.ts";
 import { eventRoutes } from "./routes/events.ts";
 import { gateRoutes } from "./routes/gate.ts";
 import { healthRoutes } from "./routes/health.ts";
@@ -105,6 +106,9 @@ export function createApp(services: Services): Hono<AppEnv> {
   app.use("/settlement/*", panelCors);
   app.use("/reporting/*", panelCors);
   app.use("/admin/settlement/*", panelCors);
+  app.use("/courtesies/*", panelCors);
+  app.use("/staff/devices/*", panelCors);
+  app.use("/staff/blocks/*", panelCors);
 
   // The app (app.<domain>) calls the buyer's routes: events, orders, the wallet and transfers. Only the
   // origins in APP_ORIGINS may. The idempotency key and the order's token travel in headers.
@@ -144,6 +148,7 @@ export function createApp(services: Services): Hono<AppEnv> {
   app.route("/wallet", walletRoutes);
   app.route("/transfers", transferRoutes);
   app.route("/attendees", attendeeRoutes);
+  app.route("/courtesies", courtesyRoutes);
 
   app.notFound((c) => c.json({ error: { code: "not_found", message: "Not found." } }, 404));
   app.onError((error, c) => {

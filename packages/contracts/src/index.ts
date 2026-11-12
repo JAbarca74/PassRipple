@@ -27,6 +27,14 @@ export {
   publicTicketType,
 } from "./checkout-api.ts";
 export {
+  type CourtesyQuotaRequest,
+  courtesyQuotaRequest,
+  type GrantCourtesyRequest,
+  type GrantedCourtesy,
+  grantCourtesyRequest,
+  grantedCourtesy,
+} from "./courtesy-api.ts";
+export {
   type AgeRating,
   CERTIFICATE_BODY_LENGTH,
   CERTIFICATE_LENGTH,
