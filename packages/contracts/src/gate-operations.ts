@@ -5,7 +5,12 @@
 
 import { z } from "zod";
 
-export const GATE_OPERATION_TYPES = ["redemption", "staff_scan", "incident"] as const;
+export const GATE_OPERATION_TYPES = [
+  "redemption",
+  "staff_scan",
+  "incident",
+  "attendee_capture",
+] as const;
 export type GateOperationType = (typeof GATE_OPERATION_TYPES)[number];
 
 /** A scanned ticket: a single-use admission or a multi-scan entry of staff or performers. */
@@ -30,6 +35,18 @@ export interface IncidentPayload {
   readonly note: string | null;
 }
 
+/**
+ * A named ticket's attendee taken at the door from the document in hand (7.3): the name, the
+ * document type and its last digits, never the whole number.
+ */
+export interface AttendeeCapturePayload {
+  readonly ticketId: string;
+  readonly fullName: string;
+  readonly docType: "cedula" | "dimex" | "pasaporte" | "tim";
+  /** 2 to 4 letters or digits. */
+  readonly docLast4: string;
+}
+
 interface OperationBase {
   /** Device-generated UUIDv7. */
   readonly id: string;
@@ -46,7 +63,11 @@ export type GateOperation =
       readonly opType: "redemption" | "staff_scan";
       readonly payload: ScanPayload;
     })
-  | (OperationBase & { readonly opType: "incident"; readonly payload: IncidentPayload });
+  | (OperationBase & { readonly opType: "incident"; readonly payload: IncidentPayload })
+  | (OperationBase & {
+      readonly opType: "attendee_capture";
+      readonly payload: AttendeeCapturePayload;
+    });
 
 /**
  * A batch as the API accepts it. Only the envelope is checked here: each operation is

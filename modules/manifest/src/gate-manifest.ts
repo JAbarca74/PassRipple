@@ -23,6 +23,7 @@ export interface GateEventRow {
   readonly ends_at: Date;
   readonly age_rating: AgeRating;
   readonly device_zone: string | null;
+  readonly named_tickets: boolean;
 }
 
 /** A row of manifest.gate_ticket_types. */
@@ -44,6 +45,8 @@ export interface GateTicketRow {
   readonly holder_pubkey: Uint8Array | null;
   readonly key_version: number;
   readonly code_human: string;
+  readonly attendee_name: string | null;
+  readonly attendee_doc_last4: string | null;
 }
 
 export interface GateManifestInput {
@@ -93,6 +96,10 @@ function ticket(row: GateTicketRow): ManifestTicket {
     holderPubkey: row.holder_pubkey === null ? null : Uint8Array.from(row.holder_pubkey),
     keyVersion: row.key_version,
     codeHuman: row.code_human,
+    attendee:
+      row.attendee_name !== null && row.attendee_doc_last4 !== null
+        ? { name: row.attendee_name, docLast4: row.attendee_doc_last4 }
+        : null,
   };
 }
 
@@ -108,6 +115,7 @@ export function buildGateManifest(input: GateManifestInput): GateManifest {
       startsAt: event.starts_at.toISOString(),
       endsAt: event.ends_at.toISOString(),
       ageRating: event.age_rating,
+      namedTickets: event.named_tickets,
     },
     deviceZone: event.device_zone,
     expiresAt: event.ends_at.toISOString(),

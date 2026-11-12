@@ -49,6 +49,16 @@ export interface ManifestTicket {
   readonly keyVersion: number;
   /** The fallback code, canonical form, for manual entry. */
   readonly codeHuman: string;
+  /**
+   * In named events, who the ticket was assigned to: the name and the document's last
+   * digits, which the operator checks against the document (7.4). Never the number.
+   */
+  readonly attendee: ManifestAttendee | null;
+}
+
+export interface ManifestAttendee {
+  readonly name: string;
+  readonly docLast4: string;
 }
 
 export interface ManifestEvent {
@@ -59,6 +69,8 @@ export interface ManifestEvent {
   /** ISO 8601. The end of the event's window. */
   readonly endsAt: string;
   readonly ageRating: AgeRating;
+  /** Whether tickets carry their attendee: the gate checks the document (7.1). */
+  readonly namedTickets: boolean;
 }
 
 export interface GateManifest {
@@ -135,6 +147,11 @@ const ticketWire = z.object({
   holderPubkey: publicKey.nullable(),
   keyVersion: z.int().min(0).max(255),
   codeHuman: z.string().regex(/^[0-9A-HJKMNP-TV-Z]{10}$/),
+  // Absent in manifests from before named tickets.
+  attendee: z
+    .object({ name: z.string().min(1).max(120), docLast4: z.string().regex(/^[0-9A-Z]{2,4}$/) })
+    .nullable()
+    .default(null),
 });
 
 const common = {
@@ -156,6 +173,7 @@ const gateManifestWire = z.object({
     startsAt: isoTime,
     endsAt: isoTime,
     ageRating: z.enum(["all", "12plus", "18plus"]),
+    namedTickets: z.boolean().default(false),
   }),
   deviceZone: z.string().min(1).nullable(),
 });

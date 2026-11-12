@@ -95,6 +95,7 @@ export {
   type TicketAudience,
 } from "./gate-manifest.ts";
 export {
+  type AttendeeCapturePayload,
   BATCH_ITEM_STATUSES,
   DEVICE_INCIDENT_KINDS,
   type DeviceIncidentKind,

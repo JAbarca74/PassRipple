@@ -22,6 +22,7 @@ describe("gate-manifest builder", () => {
     ends_at: new Date("2024-01-01T23:00:00Z"),
     age_rating: "all",
     device_zone: "Zone 1",
+    named_tickets: false,
   };
 
   const ticketTypes: GateTicketTypeRow[] = [
@@ -44,6 +45,20 @@ describe("gate-manifest builder", () => {
       holder_pubkey: new Uint8Array(32).fill(1),
       key_version: 1,
       code_human: "ABCDEFGHJK",
+      attendee_name: null,
+      attendee_doc_last4: null,
+    },
+    {
+      ticket_id: "87654321-4321-4321-4321-210987654322",
+      type_ref: 1,
+      entry_mode: "single_use",
+      status: "bound",
+      redeemed: false,
+      holder_pubkey: new Uint8Array(32).fill(3),
+      key_version: 1,
+      code_human: "ABCDEFGHJM",
+      attendee_name: "Ana Mora",
+      attendee_doc_last4: "6789",
     },
   ];
 
@@ -84,6 +99,22 @@ describe("gate-manifest builder", () => {
       expect(mtk0.entryMode).toBe(tk0.entry_mode);
       expect(mtk0.ticketId).toBe(tk0.ticket_id);
       expect(mtk0.holderPubkey).toEqual(tk0.holder_pubkey);
+    });
+
+    test("carries the attendee's name and last digits, or null", () => {
+      const manifest = buildGateManifest({
+        event: { ...event, age_rating: "18plus", named_tickets: true },
+        serverKeys,
+        ticketTypes,
+        tickets,
+        cursor: "1",
+        serverTime: 1,
+      });
+      expect(manifest.event.namedTickets).toBe(true);
+      expect(manifest.tickets.map((t) => t.attendee)).toEqual([
+        null,
+        { name: "Ana Mora", docLast4: "6789" },
+      ]);
     });
 
     test("copies the holder public key buffer so later mutation does not affect manifest", () => {

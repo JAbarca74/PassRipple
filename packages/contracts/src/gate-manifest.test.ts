@@ -27,6 +27,7 @@ describe("gate-manifest", () => {
       startsAt: "2024-01-01T12:00:00Z",
       endsAt: "2024-01-01T23:00:00Z",
       ageRating: "all" as const,
+      namedTickets: false,
     },
     deviceZone: "Zone 1",
     expiresAt: "2024-01-02T12:00:00Z",
@@ -38,6 +39,52 @@ describe("gate-manifest", () => {
   };
 
   const validManifest = { ...validManifestBase };
+
+  describe("named tickets", () => {
+    const ticket = {
+      ticketId: "12345678-1234-1234-1234-123456789012",
+      typeRef: 1,
+      entryMode: "single_use" as const,
+      status: "issued" as const,
+      redeemed: false,
+      holderPubkey: null,
+      keyVersion: 0,
+      codeHuman: "0123456789",
+    };
+
+    test("a manifest from before named tickets reads as not named, without attendees", () => {
+      const old = encodeGateManifest({
+        ...validManifest,
+        tickets: [{ ...ticket, attendee: null }],
+      });
+      const { namedTickets: _dropped, ...oldEvent } = (old as { event: Record<string, unknown> })
+        .event;
+      const decoded = decodeGateManifest({
+        ...(old as object),
+        event: oldEvent,
+        tickets: [ticket],
+      });
+      expect(decoded?.event.namedTickets).toBe(false);
+      expect(decoded?.tickets[0]?.attendee).toBeNull();
+    });
+
+    test("rejects an attendee with a full document number", () => {
+      const encoded = encodeGateManifest({
+        ...validManifest,
+        tickets: [{ ...ticket, attendee: { name: "Ana", docLast4: "6789" } }],
+      }) as { tickets: object[] };
+      expect(decodeGateManifest(encoded)?.tickets[0]?.attendee).toEqual({
+        name: "Ana",
+        docLast4: "6789",
+      });
+      expect(
+        decodeGateManifest({
+          ...encoded,
+          tickets: [{ ...ticket, attendee: { name: "Ana", docLast4: "123456789" } }],
+        }),
+      ).toBeNull();
+    });
+  });
 
   describe("encodeGateManifest and decodeGateManifest", () => {
     test("are inverses for valid generated manifests", () => {
@@ -54,6 +101,7 @@ describe("gate-manifest", () => {
             .integer({ min: 946684800000, max: 4102444800000 })
             .map((ms) => new Date(ms).toISOString()),
           ageRating: fc.constantFrom("all" as const, "12plus" as const, "18plus" as const),
+          namedTickets: fc.boolean(),
         }),
         deviceZone: fc.string({ minLength: 1 }).filter((s) => s.trim().length > 0),
         expiresAt: fc
@@ -92,6 +140,15 @@ describe("gate-manifest", () => {
                   maxLength: 10,
                 })
                 .map((a) => a.join("")),
+              attendee: fc.option(
+                fc.record({
+                  name: fc.string({ minLength: 1, maxLength: 120 }),
+                  docLast4: fc
+                    .array(fc.constantFrom(..."0123456789AZ"), { minLength: 2, maxLength: 4 })
+                    .map((a) => a.join("")),
+                }),
+                { nil: null },
+              ),
             })
             .map((t) => {
               if (t.status !== "bound") {
@@ -147,6 +204,7 @@ describe("gate-manifest", () => {
               holderPubkey: null,
               keyVersion: 1,
               codeHuman: "0123456789",
+              attendee: null,
             },
           ],
         }),
