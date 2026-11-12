@@ -24,6 +24,7 @@
     "modules/*/src",
     "apps/app/src",
     "apps/site/src",
+    "apps/coordinator/src",
     "apps/*/vite.config.ts",
     "scripts",
     "vitest.config.ts"

@@ -46,6 +46,9 @@ Everything other packages may use is exported from `src/index.ts`. Deep imports 
 | `normalizeHumanCode(input)` | The canonical code as typed, or `null`: ignores hyphens and spaces, accepts lowercase, reads O as 0 and I or L as 1 |
 | `validateHumanCode(input)` | Whether the input is a valid code |
 | `formatHumanCode(code)` | The code as shown to people, `4K7NP-9XR2M` |
+| `payCode(entropy)` | A new payment code (5 Crockford characters and the same Damm check) from exactly 4 random bytes (ADR 0033) |
+| `normalizePayCode(word)`, `findPayCodes(description)` | The well-formed payment codes written in an untrusted payment description, at most ten |
+| `isAcceptableHolderKey(key)` | Whether a device key may be bound: a valid Ed25519 point not of small order |
 
 `verifyCredential` checks, in order: the format, the server key id, the server's signature, the device key, the device's signature, the window (±2 around the device's corrected clock) and the event. Nothing unauthenticated gets a reason about time or event. It does not look at the manifest: whether the ticket was redeemed or voided, or has a newer key version, is the gate device's next check.
 

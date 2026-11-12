@@ -38,3 +38,9 @@ paths = ['''packages/bank-parsers/fixtures/anonymized/''']
 [[allowlists]]
 description = "RFC 8032 Ed25519 test vectors"
 paths = ['''(^|/)packages/crypto/src/rfc8032\.test\.ts$''']
+
+# Made-up tokens in contract tests: a prefix followed by the digits 1 to 0 repeated.
+[[allowlists]]
+description = "Placeholder tokens in tests"
+regexTarget = "match"
+regexes = ['''(?:pr[a-z]|tok)_(?:1234567890){3}12''']

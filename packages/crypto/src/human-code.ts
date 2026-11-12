@@ -4,32 +4,14 @@
 //
 // The check character uses a totally anti-symmetric quasigroup of order 32,
 // x ∗ y = 2·x ⊕ y over GF(2⁵) with the polynomial x⁵ + x² + 1, so it catches every
-// single wrong character and every swap of two adjacent characters.
+// single wrong character and every swap of two adjacent characters (src/crockford.ts).
 
-const ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
-const VALUES: ReadonlyMap<string, number> = new Map(
-  Array.from(ALPHABET, (char, value) => [char, value]),
-);
-// Crockford's reading rules for characters that look alike.
-const LOOKALIKES: Readonly<Record<string, string>> = { O: "0", I: "1", L: "1" };
+import { ALPHABET, damm, double, LOOKALIKES, VALUES } from "./crockford.ts";
 
 const DATA_LENGTH = 9;
 export const HUMAN_CODE_LENGTH = DATA_LENGTH + 1;
 /** Random bytes a code needs: 48 bits, of which 45 are used. */
 export const HUMAN_CODE_ENTROPY_BYTES = 6;
-
-/** 2·x in GF(2⁵) modulo x⁵ + x² + 1. */
-function double(x: number): number {
-  const shifted = x << 1;
-  return shifted & 0b100000 ? shifted ^ 0b100101 : shifted;
-}
-
-/** Damm's interim value over a sequence of digits: 0 when the check digit is right. */
-function damm(digits: readonly number[]): number {
-  let interim = 0;
-  for (const digit of digits) interim = double(interim) ^ digit;
-  return interim;
-}
 
 /**
  * A new human code, in canonical form (10 characters, no hyphen), from exactly 6 random

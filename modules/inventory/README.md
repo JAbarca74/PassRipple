@@ -19,6 +19,7 @@ The API never writes these tables. It calls:
 | Function | Who | What |
 |---|---|---|
 | `inventory.hold(event, ticket_type, quantity, ttl)` | buyer, system | One conditional `UPDATE` of the event's counter; returns the hold, or NULL when there is no capacity or the event is not on sale. Holds last 30 minutes by default |
+| `inventory.availability(event)` | anyone | The capacity left of an event on sale, for the coarse availability the checkout shows (9.3) |
 | `inventory.release_hold(hold)` | buyer, system | Gives the capacity back; a second call changes nothing |
 | `inventory.expire_holds(now)` | system | Ends every expired hold and gives its capacity back |
 | `inventory.apply_event_published(event)` | system | Creates the counter from `event.published` (ADR 0010) |

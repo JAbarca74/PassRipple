@@ -1,5 +1,7 @@
 // Public API of @passripple/crypto.
 // Only what is exported here may be used by other packages.
+
+export { isAcceptableHolderKey } from "./bytes.ts";
 export {
   type CertificateInput,
   eventRef,
@@ -25,4 +27,17 @@ export {
   normalizeHumanCode,
   validateHumanCode,
 } from "./human-code.ts";
+export {
+  findPayCodes,
+  normalizePayCode,
+  PAY_CODE_ENTROPY_BYTES,
+  PAY_CODE_LENGTH,
+  payCode,
+} from "./pay-code.ts";
 export type { ServerKeyRing, ServerSigner, Signer } from "./signer.ts";
+export {
+  signTransferProof,
+  TRANSFER_PROOF_MAX_SKEW_SECONDS,
+  type TransferProofInput,
+  verifyTransferProof,
+} from "./transfer.ts";

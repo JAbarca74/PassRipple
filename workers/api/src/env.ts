@@ -1,0 +1,96 @@
+// What the API Worker receives from Cloudflare: the bindings and variables declared in
+// wrangler.jsonc, and the secrets set with `wrangler secret put` (`.dev.vars` locally, from
+// `.dev.vars.example`). Nothing here is read from process.env.
+
+export interface Env {
+  /** Pooled connection to PostgreSQL as passripple_api, through Cloudflare Hyperdrive. */
+  readonly HYPERDRIVE: Hyperdrive;
+
+  /**
+   * Key of the HMAC that hashes sign-in codes and staff codes before they reach the
+   * database: 32 or more random bytes, base64. Secret.
+   */
+  readonly SIGN_IN_PEPPER?: string;
+
+  /**
+   * The server's public key ring, as JSON: `[{"id":1,"publicKey":"<base64url>"}]`. Public,
+   * not secret: gate devices receive it in every manifest. Only keys still valid belong
+   * here; retiring a key means removing it (ADR 0014).
+   */
+  readonly SERVER_PUBLIC_KEYS?: string;
+
+  /**
+   * The private key that signs ticket certificates (ADR 0035): a 32-byte Ed25519 seed in
+   * base64url. Secret. Its public key must be in SERVER_PUBLIC_KEYS under
+   * SERVER_SIGNING_KEY_ID. Locally, the development key printed by `pnpm dev:fixtures seed`.
+   */
+  readonly SERVER_SIGNING_KEY?: string;
+  readonly SERVER_SIGNING_KEY_ID?: string;
+
+  /**
+   * Browser origins allowed to call sign-in and account erasure, comma-separated: the
+   * public site (for /eliminar-datos). Empty allows none.
+   */
+  readonly ALLOWED_ORIGINS?: string;
+
+  /**
+   * Origins of the app (app.<domain>) allowed to call the buyer's routes from the browser:
+   * events, orders and the wallet. Comma-separated; empty allows none.
+   */
+  readonly APP_ORIGINS?: string;
+
+  /**
+   * The fee schedule that prices the service charge (10.5, ADR 0033), as JSON:
+   * `{"id":"…","rateBps":…,"fixedCrc":…,"taxRateBps":…,"taxMode":"added"|"included"}`.
+   * Business data: set outside Git, never in wrangler.jsonc.
+   */
+  readonly FEE_SCHEDULE?: string;
+
+  /**
+   * AES-256 key, 32 bytes in base64url, that encrypts attendees' document numbers before
+   * they reach the database (design 7.5). Secret; losing it only loses the numbers, which
+   * are erased after the retention period anyway.
+   */
+  readonly ATTENDEE_DOC_KEY?: string;
+
+  /** The platform's SINPE Móvil number the buyer pays to (10.2). Set outside Git. */
+  readonly SINPE_NUMBER?: string;
+
+  /**
+   * How many colones above its price an order may be charged so that no two pending orders
+   * share an amount (ADR 0031). 0 or unset: never more than the price.
+   */
+  readonly UNIQUE_AMOUNT_MAX_OFFSET_CRC?: string;
+
+  /**
+   * `gmail` in production (ADR 0028), `ses` as the alternative. `log` prints messages to the
+   * console, and only works on localhost.
+   */
+  readonly MAIL_PROVIDER?: string;
+  readonly MAIL_FROM_ADDRESS?: string;
+  readonly MAIL_FROM_NAME?: string;
+  /**
+   * Gmail through Google Workspace: the service account's email and private key (the key is
+   * secret), and the mailbox it sends as when that is not MAIL_FROM_ADDRESS itself.
+   */
+  readonly GMAIL_CLIENT_EMAIL?: string;
+  readonly GMAIL_PRIVATE_KEY?: string;
+  readonly GMAIL_SENDER_USER?: string;
+  /**
+   * Google Play's reviewers (reviewer.ts): this address signs in with this fixed six-digit
+   * code instead of a mailed one. Both secret; leave either unset to turn it off.
+   */
+  readonly REVIEW_SIGN_IN_EMAIL?: string;
+  readonly REVIEW_SIGN_IN_CODE?: string;
+  /** Amazon SES. The access key is secret. */
+  readonly SES_REGION?: string;
+  readonly SES_ACCESS_KEY_ID?: string;
+  readonly SES_SECRET_ACCESS_KEY?: string;
+}
+
+/** A required setting, or a configuration error that fails the request. */
+export function required(env: Env, name: keyof Omit<Env, "HYPERDRIVE">): string {
+  const value = env[name];
+  if (!value) throw new Error(`missing Worker setting ${name}`);
+  return value;
+}

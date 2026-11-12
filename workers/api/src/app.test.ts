@@ -1,0 +1,133 @@
+import { describe, expect, test, vi } from "vitest";
+import { createApp, SERVER_TIME_HEADER, type Services } from "./app.ts";
+import type { Database } from "./db.ts";
+
+function fakeServices(): Services {
+  return {
+    database: () => ({ close: vi.fn().mockResolvedValue(undefined) }) as unknown as Database,
+    mailer: () => ({}) as unknown as ReturnType<Services["mailer"]>,
+    integrity: () => ({}) as unknown as ReturnType<Services["integrity"]>,
+  };
+}
+
+describe("App", () => {
+  test("creates a hono app with routes under /v1", () => {
+    const app = createApp(fakeServices());
+    expect(app).toBeDefined();
+  });
+
+  test("middleware injects services and server time header", async () => {
+    const dbClose = vi.fn().mockResolvedValue(undefined);
+    const services: Services = {
+      database: () => ({ close: dbClose }) as unknown as Database,
+      mailer: () => ({}) as unknown as ReturnType<Services["mailer"]>,
+      integrity: () => ({}) as unknown as ReturnType<Services["integrity"]>,
+    };
+
+    const app = createApp(services);
+
+    // add a dummy route to test middleware
+    app.get("/test", (c) => {
+      expect(c.get("db")).toBeDefined();
+      expect(c.get("mailer")).toBeDefined();
+      expect(c.get("integrity")).toBeDefined();
+      return c.text("ok");
+    });
+
+    const res = await app.request(
+      "http://localhost/v1/test",
+      { method: "GET" },
+      { ALLOWED_ORIGINS: "" },
+    );
+    expect(res.status).toBe(200);
+    expect(res.headers.get(SERVER_TIME_HEADER)).not.toBeNull();
+    // Because there's no executionCtx in standard request(), it uses the catch block in waitUntil which is fine
+    expect(dbClose).toHaveBeenCalled();
+  });
+
+  test("cors allows origins in ALLOWED_ORIGINS", async () => {
+    const app = createApp(fakeServices());
+
+    // test origin matching
+    const res1 = await app.request(
+      "http://localhost/v1/auth/sign-in",
+      {
+        method: "OPTIONS",
+        headers: { Origin: "https://allowed.com", "Access-Control-Request-Method": "POST" },
+      },
+      { ALLOWED_ORIGINS: "https://allowed.com, https://other.com" },
+    );
+
+    expect(res1.headers.get("Access-Control-Allow-Origin")).toBe("https://allowed.com");
+
+    const res2 = await app.request(
+      "http://localhost/v1/auth/sign-in",
+      {
+        method: "OPTIONS",
+        headers: { Origin: "https://not-allowed.com", "Access-Control-Request-Method": "POST" },
+      },
+      { ALLOWED_ORIGINS: "https://allowed.com" },
+    );
+
+    expect(res2.headers.get("Access-Control-Allow-Origin")).toBeNull();
+  });
+
+  test("sign-in and the panels accept the app's origins; the panels also accept X-Org-Id", async () => {
+    const app = createApp(fakeServices());
+    const env = { ALLOWED_ORIGINS: "https://site.test", APP_ORIGINS: "https://app.test" };
+    const preflight = (path: string, origin: string, method = "GET") =>
+      app.request(
+        `http://localhost/v1${path}`,
+        {
+          method: "OPTIONS",
+          headers: {
+            Origin: origin,
+            "Access-Control-Request-Method": method,
+            "Access-Control-Request-Headers": "authorization,x-org-id",
+          },
+        },
+        env,
+      );
+
+    const signIn = await preflight("/auth/sign-in", "https://app.test", "POST");
+    expect(signIn.headers.get("Access-Control-Allow-Origin")).toBe("https://app.test");
+    const siteSignIn = await preflight("/auth/sign-in", "https://site.test", "POST");
+    expect(siteSignIn.headers.get("Access-Control-Allow-Origin")).toBe("https://site.test");
+
+    for (const path of [
+      "/account/me",
+      "/settlement/events",
+      "/admin/settlement/summary",
+      "/reporting/events/x/dashboard",
+    ]) {
+      const res = await preflight(path, "https://app.test");
+      expect(res.headers.get("Access-Control-Allow-Origin")).toBe("https://app.test");
+      expect(res.headers.get("Access-Control-Allow-Headers")).toContain("x-org-id");
+      const site = await preflight(path, "https://site.test");
+      expect(site.headers.get("Access-Control-Allow-Origin")).toBeNull();
+    }
+  });
+
+  test("returns 404 with json error on not found", async () => {
+    const app = createApp(fakeServices());
+    const res = await app.request("http://localhost/v1/nowhere", {}, { ALLOWED_ORIGINS: "" });
+
+    expect(res.status).toBe(404);
+    const json = await res.json();
+    expect(json).toEqual({ error: { code: "not_found", message: "Not found." } });
+  });
+
+  test("onError maps errors to json and includes server time header", async () => {
+    const app = createApp(fakeServices());
+
+    app.get("/boom", () => {
+      throw new Error("Boom");
+    });
+
+    const res = await app.request("http://localhost/v1/boom", {}, { ALLOWED_ORIGINS: "" });
+    expect(res.status).toBe(500);
+    expect(res.headers.get(SERVER_TIME_HEADER)).not.toBeNull();
+    const json = await res.json();
+    expect(json).toEqual({ error: { code: "internal", message: "Something went wrong." } });
+  });
+});

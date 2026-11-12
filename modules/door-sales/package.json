@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@passripple/contracts": "workspace:*",
+    "@passripple/events": "workspace:*",
     "@passripple/inventory": "workspace:*",
     "@passripple/ticketing": "workspace:*",
     "@passripple/staff": "workspace:*"

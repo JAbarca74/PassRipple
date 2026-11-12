@@ -15,11 +15,15 @@ Shared vocabulary for the whole system: Zod schemas, TypeScript types, the domai
 | `event.published` | `events` | An event went on sale |
 | `event.updated` | `events` | An event's data changed |
 | `event.cancelled` | `events` | An event was cancelled |
+| `order.paid` | `orders` | An order was paid in time; ticketing issues its tickets |
+| `order.expired` | `orders` | A pending order ran out of time; its hold and unique amount were released |
 | `payment.succeeded` | `payments` | A bank notice became the payment of an order, and the order is paid |
 | `ticket.issued` | `ticketing` | A ticket was issued |
 | `ticket.bound` | `ticketing` | A ticket was bound to a device key, first or on recovery |
 | `ticket.transferred` | `ticketing` | A ticket was transferred to another person's device |
 | `ticket.voided` | `ticketing` | A ticket was voided |
+
+On the server, events travel in a `DomainEventEnvelope` (`src/domain-event-envelope.ts`, ADR 0029): the id of the outbox row that carried it, the emitting schema (`EVENT_SOURCES`) and the event. `decodeDomainEventEnvelope` validates a queue message field by field; consumers use the envelope's id to ignore a second delivery.
 
 ## Credential QR format
 
@@ -27,11 +31,19 @@ Shared vocabulary for the whole system: Zod schemas, TypeScript types, the domai
 
 ## Gate manifest
 
-`src/gate-manifest.ts` describes the package a gate device downloads before an event: the server keys it trusts, and for each ticket its type, entry mode, status, whether it was redeemed, its device key, key version and fallback code. It holds no secret (invariant I7). It is a draft: Phase 2 builds it from the database and decides how it travels.
+`src/gate-manifest.ts` describes the package a gate device downloads before an event: the event and its window, the server keys it trusts, the ticket types, and for each ticket its type, entry mode, status, whether it was redeemed, its device key, key version and fallback code. It holds no secret (invariant I7). It travels as JSON with bytes in base64url (`src/base64url.ts`, canonical), whole the first time (`GateManifest`) and as deltas after that (`GateManifestDelta`), with a cursor and the server clock. `decodeGateManifest`, `decodeGateManifestDelta` and `decodeServerKeys` validate untrusted JSON.
+
+## Gate operations
+
+`src/gate-operations.ts` holds the operations a gate device records offline (`redemption`, `staff_scan`, `incident`) and the batch format of `POST /v1/gate/batches`: the API checks only the envelope, so a malformed operation is rejected on its own by the database instead of failing the batch.
+
+## API wire format
+
+`src/staff-api.ts` holds the Zod schemas of sign-in, staff codes and gate device enrollment, shared by the API, which validates untrusted input with them, and the gate app. The database checks everything again.
 
 ## Depends on
 
-Nothing.
+- `zod`, pinned. Schemas are declarations: no I/O.
 
 ## Does not
 

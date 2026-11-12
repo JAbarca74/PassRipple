@@ -1,0 +1,35 @@
+{
+  "$schema": "../../workers/api/node_modules/wrangler/config-schema.json",
+  // Public site: static assets plus a small Worker that renders the head of event pages and
+  // sitemap.xml from the API's public listing (ADR 0026, ADR 0040). Deploy with an explicit
+  // --config pointing at this file, after a --dry-run (README.md, "Deploy").
+  "name": "passripple-site",
+  "main": "src/worker/index.ts",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    // Every path that is not a file gets 404.html with status 404, so search engines index
+    // only real pages. Event pages, the sitemap and the site's own client-side pages go
+    // through the Worker first; in coming-soon mode it hands them back to the assets.
+    "not_found_handling": "404-page",
+    "run_worker_first": [
+      "/eventos/*",
+      "/sitemap.xml",
+      "/privacidad",
+      "/terminos",
+      "/eliminar-datos"
+    ]
+  },
+  "vars": {
+    "API_ORIGIN": "https://api.passripple.com",
+    "SITE_ORIGIN": "https://passripple.com",
+    "APP_ORIGIN": "https://app.passripple.com"
+  },
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [
+    { "pattern": "passripple.com", "custom_domain": true },
+    { "pattern": "www.passripple.com", "custom_domain": true }
+  ]
+}

@@ -5,5 +5,24 @@
   "type": "module",
   "passripple": {
     "kind": "worker"
+  },
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@passripple/contracts": "workspace:*",
+    "@passripple/crypto": "workspace:*",
+    "@passripple/manifest": "workspace:*",
+    "@passripple/pricing": "workspace:*",
+    "@passripple/tax": "workspace:*",
+    "aws4fetch": "1.0.20",
+    "hono": "4.13.16",
+    "postgres": "3.4.9",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20260924.1",
+    "wrangler": "4.138.0"
   }
 }

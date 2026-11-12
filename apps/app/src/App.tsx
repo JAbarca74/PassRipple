@@ -24,18 +24,17 @@ import { Payment, Purchase, WaitingRoom } from "./screens/buyer/checkout.tsx";
 import {
   AssignAttendee,
   MyData,
+  Receive,
   Recover,
   TicketView,
   Transfer,
   Wallet,
 } from "./screens/buyer/wallet.tsx";
 import { MunicipalPortal } from "./screens/municipal/municipal.tsx";
-import {
-  CreateEvent,
-  OrganizerDashboard,
-  Settlement,
-  Staff,
-} from "./screens/organizer/organizer.tsx";
+import { OrganizerDashboard } from "./screens/organizer/dashboard.tsx";
+import { Staff } from "./screens/organizer/door.tsx";
+import { CreateEvent } from "./screens/organizer/organizer.tsx";
+import { Settlement } from "./screens/organizer/settlement.tsx";
 import { Logo } from "./ui/Logo.tsx";
 import { BuyerLayout } from "./ui/layouts.tsx";
 import { ButtonLink } from "./ui/ui.tsx";
@@ -94,6 +93,13 @@ const routes: readonly Route[] = [
     render: buyer(<Transfer />),
   },
   {
+    path: "/recibir",
+    title: "Recibir entrada",
+    area: "Billetera",
+    icon: Link2,
+    render: buyer(<Receive />),
+  },
+  {
     path: "/recuperar",
     title: "Recuperar entradas",
     area: "Billetera",
@@ -130,7 +136,7 @@ const routes: readonly Route[] = [
   },
   {
     path: "/organizador/staff",
-    title: "Staff y dispositivos",
+    title: "Staff, puerta y cortesías",
     area: "Organizador",
     icon: Smartphone,
     render: () => <Staff />,

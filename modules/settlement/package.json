@@ -15,6 +15,7 @@
     "@passripple/contracts": "workspace:*",
     "@passripple/pricing": "workspace:*",
     "@passripple/identity": "workspace:*",
+    "@passripple/jurisdictions": "workspace:*",
     "@passripple/events": "workspace:*",
     "@passripple/orders": "workspace:*",
     "@passripple/payments": "workspace:*"

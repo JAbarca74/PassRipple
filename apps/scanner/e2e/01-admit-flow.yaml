@@ -1,0 +1,53 @@
+# A staff member enrolls a phone, downloads the manifest and admits a valid ticket, against
+# the mock API (mock-api.ts). The QR comes from the mock right before the scan: a credential
+# is only valid around its 30-second window.
+appId: com.passripple.scanner
+---
+- launchApp:
+    clearState: true
+    permissions:
+      camera: allow
+
+# Sign-in by email code
+- tapOn:
+    id: "email-input"
+- inputText: "staff@example.com"
+- hideKeyboard
+- tapOn:
+    id: "email-submit"
+- tapOn:
+    id: "otp-input"
+- inputText: "123456"
+# The numeric keypad has no dismiss key; the button stays above it.
+- tapOn:
+    id: "otp-submit"
+
+# Enrollment with a staff code
+- tapOn:
+    id: "staff-code-input"
+- inputText: "4K7NP9XR2M"
+- hideKeyboard
+- tapOn:
+    id: "staff-code-submit"
+
+# Manifest download, then the gate
+- tapOn:
+    id: "download-manifest"
+- extendedWaitUntil:
+    visible:
+      id: "e2e-qr-input"
+    timeout: 30000
+
+# Scan a valid ticket
+- runScript: get-qr.js
+- tapOn:
+    id: "e2e-qr-input"
+- inputText: ${output.qr}
+# The scan button stays above the keyboard.
+- tapOn:
+    id: "e2e-qr-submit"
+- extendedWaitUntil:
+    visible:
+      id: "verdict-title"
+    timeout: 10000
+- assertVisible: "VÁLIDA"

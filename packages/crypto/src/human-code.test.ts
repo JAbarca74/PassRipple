@@ -82,11 +82,11 @@ describe("normalizeHumanCode and validateHumanCode", () => {
     expect(normalizeHumanCode(valid.replace("Z", "!"))).toBe(null);
 
     // Wrong length
-    expect(normalizeHumanCode(valid + "0")).toBe(null);
+    expect(normalizeHumanCode(`${valid}0`)).toBe(null);
     expect(normalizeHumanCode(valid.substring(0, 9))).toBe(null);
 
     // Bad check digit
-    expect(normalizeHumanCode(valid.substring(0, 9) + "Y")).toBe(null);
+    expect(normalizeHumanCode(`${valid.substring(0, 9)}Y`)).toBe(null);
   });
 });
 

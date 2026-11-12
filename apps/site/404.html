@@ -54,12 +54,30 @@
 
   <!-- Not found: the same hero as the holding page, with the code as the animated word -->
   <main class="hero hero-not-found">
-    <svg class="hero-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="PassRipple">
-      <rect width="100" height="100" rx="22" fill="#5B1FE0"/>
-      <g fill="none" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" transform="translate(-6 -2)">
-        <path d="M30 18V82M30 40a22 22 0 1 0 44 0a22 22 0 1 0-44 0" stroke="#FFFFFF"/>
-        <path d="M46 84q6-8 12 0t12 0t12 0" stroke="#00E5D8"/>
-      </g>
+    <!-- A ticket whose code will not read: the scan line crosses it and some cells drop out. -->
+    <svg class="hero-ticket" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 96" role="img" aria-label="Entrada que no se puede leer">
+      <path class="ticket-outline" d="M12 4H148a8 8 0 0 1 8 8V34a10 10 0 0 0 0 20V84a8 8 0 0 1-8 8H12a8 8 0 0 1-8-8V54a10 10 0 0 0 0-20V12a8 8 0 0 1 8-8Z" />
+      <path class="ticket-tear" d="M108 12V84" />
+      <rect class="ticket-cell" x="29" y="21" width="9" height="9" rx="1.5" />
+      <rect class="ticket-cell" x="40" y="21" width="9" height="9" rx="1.5" />
+      <rect class="ticket-cell" x="62" y="21" width="9" height="9" rx="1.5" />
+      <rect class="ticket-cell" x="73" y="21" width="9" height="9" rx="1.5" />
+      <rect class="ticket-cell" x="29" y="32" width="9" height="9" rx="1.5" />
+      <rect class="ticket-cell cell-lost cell-lost-a" x="40" y="32" width="9" height="9" rx="1.5" />
+      <rect class="ticket-cell" x="51" y="32" width="9" height="9" rx="1.5" />
+      <rect class="ticket-cell" x="73" y="32" width="9" height="9" rx="1.5" />
+      <rect class="ticket-cell" x="40" y="43" width="9" height="9" rx="1.5" />
+      <rect class="ticket-cell" x="51" y="43" width="9" height="9" rx="1.5" />
+      <rect class="ticket-cell cell-lost cell-lost-b" x="62" y="43" width="9" height="9" rx="1.5" />
+      <rect class="ticket-cell" x="29" y="54" width="9" height="9" rx="1.5" />
+      <rect class="ticket-cell" x="51" y="54" width="9" height="9" rx="1.5" />
+      <rect class="ticket-cell" x="62" y="54" width="9" height="9" rx="1.5" />
+      <rect class="ticket-cell cell-lost cell-lost-c" x="73" y="54" width="9" height="9" rx="1.5" />
+      <rect class="ticket-cell" x="29" y="65" width="9" height="9" rx="1.5" />
+      <rect class="ticket-cell cell-lost cell-lost-b" x="40" y="65" width="9" height="9" rx="1.5" />
+      <rect class="ticket-cell" x="73" y="65" width="9" height="9" rx="1.5" />
+      <path class="ticket-stub" pathLength="100" d="M114 48q6-8 12 0t12 0" />
+      <path class="ticket-scan" d="M16 14H100" />
     </svg>
 
     <!-- Split into letters by src/coming-soon/reveal-word.ts; without it the code shows whole. -->

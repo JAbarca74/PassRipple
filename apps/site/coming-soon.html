@@ -6,9 +6,13 @@
   <meta name="color-scheme" content="light dark" />
   <meta name="theme-color" content="#FAF9F6" media="(prefers-color-scheme: light)" />
   <meta name="theme-color" content="#0F172A" media="(prefers-color-scheme: dark)" />
-  <meta name="description" content="PassRipple: entradas digitales que no se pueden copiar, para eventos en Costa Rica. Próximamente." />
-  <link rel="canonical" href="https://passripple.com/" /> <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity -->
+  <meta name="description" content="PassRipple: entradas digitales que no se pueden copiar, a prueba de fraude, para eventos en Costa Rica. Próximamente." />
+  <link rel="canonical" href="https://passripple.com/" /><!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity (a canonical link loads nothing, so SRI does not apply) -->
+  <!-- Google reads the favicon from the home page: a stable /favicon.ico (48 px, a multiple
+       of 48) plus the SVG and a 192 px PNG. -->
+  <link rel="icon" href="/favicon.ico" sizes="48x48" />
   <link rel="icon" type="image/svg+xml" href="../../brand/passripple-icon.svg" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png" />
   <link rel="apple-touch-icon" href="../../brand/png/apple-touch-icon-180.png" />
 
   <!-- Link previews (WhatsApp, Facebook, X) -->
@@ -16,9 +20,14 @@
   <meta property="og:site_name" content="PassRipple" />
   <meta property="og:locale" content="es_CR" />
   <meta property="og:url" content="https://passripple.com/" />
-  <meta property="og:title" content="PassRipple · Próximamente" />
-  <meta property="og:description" content="Entradas digitales a prueba de fraude, para eventos en Costa Rica." />
-  <meta name="twitter:card" content="summary" />
+  <meta property="og:title" content="PassRipple · Entradas digitales a prueba de fraude" />
+  <meta property="og:description" content="Entradas digitales a prueba de fraude, para eventos en Costa Rica. Próximamente." />
+  <meta property="og:image" content="https://passripple.com/og-image.png" />
+  <meta property="og:image:width" content="1024" />
+  <meta property="og:image:height" content="500" />
+  <meta property="og:image:alt" content="PassRipple, entradas digitales para eventos en Costa Rica" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://passripple.com/og-image.png" />
 
   <!-- Structured data for search engines: a JSON data block, never run, so the CSP
        (script-src 'self') does not apply to it. -->
@@ -30,15 +39,22 @@
         "@type": "Organization",
         "@id": "https://passripple.com/#organization",
         "name": "PassRipple",
+        "alternateName": "Pass Ripple",
         "url": "https://passripple.com/",
         "logo": "https://passripple.com/passripple-logo-512.png",
         "description": "Entradas digitales a prueba de fraude, para eventos en Costa Rica.",
-        "areaServed": { "@type": "Country", "name": "Costa Rica" }
+        "areaServed": { "@type": "Country", "name": "Costa Rica" },
+        "sameAs": [
+          "https://www.linkedin.com/company/passripple",
+          "https://www.facebook.com/profile.php?id=61595471553497",
+          "https://www.instagram.com/passripple/"
+        ]
       },
       {
         "@type": "WebSite",
         "@id": "https://passripple.com/#website",
         "name": "PassRipple",
+        "alternateName": ["Pass Ripple", "passripple.com"],
         "url": "https://passripple.com/",
         "inLanguage": "es-CR",
         "publisher": { "@id": "https://passripple.com/#organization" }
@@ -47,7 +63,7 @@
   }
   </script>
 
-  <title>PassRipple · Próximamente</title>
+  <title>PassRipple · Entradas digitales a prueba de fraude en Costa Rica</title>
 
   <!-- Applies the saved theme before the first paint: a classic script, so it blocks. -->
   <script src="/coming-soon-theme.js"></script>
@@ -89,13 +105,21 @@
 
   <!-- Hero -->
   <section class="hero">
-    <svg class="hero-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="PassRipple">
-      <rect width="100" height="100" rx="22" fill="#5B1FE0"/>
-      <g fill="none" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" transform="translate(-6 -2)">
-        <path d="M30 18V82M30 40a22 22 0 1 0 44 0a22 22 0 1 0-44 0" stroke="#FFFFFF"/>
-        <path d="M46 84q6-8 12 0t12 0t12 0" stroke="#00E5D8"/>
-      </g>
-    </svg>
+    <!-- The brand mark with ripples spreading from it, as when a pass is validated. -->
+    <div class="hero-mark">
+      <svg class="ripples" viewBox="-100 -100 200 200" aria-hidden="true">
+        <circle class="ripple-ring" r="36" />
+        <circle class="ripple-ring" r="36" />
+        <circle class="ripple-ring" r="36" />
+      </svg>
+      <svg class="hero-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="PassRipple">
+        <rect width="100" height="100" rx="22" fill="#5B1FE0"/>
+        <g fill="none" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" transform="translate(-6 -2)">
+          <path d="M30 18V82M30 40a22 22 0 1 0 44 0a22 22 0 1 0-44 0" stroke="#FFFFFF"/>
+          <path d="M46 84q6-8 12 0t12 0t12 0" stroke="#00E5D8"/>
+        </g>
+      </svg>
+    </div>
 
     <!-- Split into letters by src/coming-soon/reveal-word.ts; without it the word shows whole. -->
     <p class="hero-word" data-reveal-word>Próximamente</p>

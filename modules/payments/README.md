@@ -20,11 +20,15 @@ The API never writes these tables. It calls, as the system actor:
 | `payments.record_notice(source, reference, amount, description, payer_name, payer_phone, raw_sha256)` | Records a notice. The same notice again returns the same id; the same reference with different content is an error |
 | `payments.confirm(notice, order)` | Turns the notice into the order's payment and marks the order paid. Returns `paid`, `refund_due`, `already_confirmed`, `surplus`, `amount_mismatch` or `unmatched`; confirming twice never creates a second payment |
 
-Matching a notice to its order (by payment code and amount) is part of reconciliation, in Phase 3.
+| `payments.record_manual_notice(reference, amount, description, payer_name, payer_phone, paid_at, raw_sha256)` | A notice typed by a platform administrator (source `manual`), recorded once; who typed it goes to `payments.manual_entries` (ADR 0034) |
+| `payments.reconcile(notice, codes)` | Matches the notice by a payment code from its description, else by an amount only one pending order holds, and confirms it; otherwise `unmatched` or `ambiguous` |
+| `payments.import_statement(from, to, lines, raw_sha256)` | Administrator: imports a bank statement's credits for those days (once per hash) and records an incident for every payment of the period that no credit backs (design 10.4) |
+| `payments.statement_findings(statement)` | Administrator: the incidents of a statement's period, with the order each payment paid |
 
-## Emits
+- `payments.statements`, `payments.statement_lines`: imported bank statements and their credits, append-only. The bank's export format is parsed before it reaches the database.
+- `payments.statement_incidents`: confirmed payments a statement does not back, `missing` (no credit with the notice's reference) or `amount_differs`. Append-only; a person resolves them.
 
-`payment.succeeded` when `payments.confirm` returns `paid`.
+- `payments.outbox`: the domain events this module emitted, published by the relay in `workers/jobs` (ADR 0029).
 
 ## Depends on
 
@@ -34,7 +38,7 @@ Matching a notice to its order (by payment code and amount) is part of reconcili
 
 ## Emits
 
-- `payment.succeeded`
+- `payment.succeeded`, when `payments.confirm` returns `paid`, through `payments.outbox`
 
 ## Guarantees
 

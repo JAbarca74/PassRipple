@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { type EventStatus, findEvent } from "./data.ts";
+import { embeddedEvent } from "./event-data.ts";
 import { EventPage, OrganizerPage } from "./pages/event.tsx";
 import { Home } from "./pages/home.tsx";
 import { DeleteDataPage, LegalPage, privacyPolicy, termsOfService } from "./pages/legal.tsx";
@@ -17,8 +18,11 @@ function pageFor(pathname: string, search: URLSearchParams) {
   if (pathname === "/eliminar-datos") return <DeleteDataPage />;
   if (pathname.startsWith("/organizadores/")) return <OrganizerPage />;
 
+  // A real event page carries its data, embedded by the site's Worker; the demonstration
+  // events exist only in development.
   const event = pathname.startsWith("/eventos/")
-    ? findEvent(pathname.slice("/eventos/".length))
+    ? (embeddedEvent(document) ??
+      (import.meta.env.DEV ? findEvent(pathname.slice("/eventos/".length)) : undefined))
     : undefined;
   if (event) {
     // ?estado=sold-out or ?estado=cancelled previews the other variants of the page.

@@ -3,7 +3,7 @@
 
 export const APP_URL = import.meta.env.VITE_APP_URL ?? "http://localhost:5174";
 
-export type EventStatus = "on-sale" | "sold-out" | "cancelled";
+export type EventStatus = "on-sale" | "sold-out" | "closed" | "cancelled";
 
 export type PublicEvent = {
   slug: string;
@@ -11,9 +11,13 @@ export type PublicEvent = {
   startsAt: Date;
   venue: string;
   canton: string;
-  organizer: { slug: string; name: string; verified: boolean };
+  /** No slug: the organizer has no public page yet. */
+  organizer: { slug?: string; name: string; verified: boolean };
   adultsOnly: boolean;
-  capacity: number;
+  /** Unknown for real events until the listing carries it. */
+  capacity?: number;
+  /** The lowest public price, when the ticket types are not listed. */
+  fromPrice?: number | null;
   status: EventStatus;
   ticketTypes: readonly {
     name: string;

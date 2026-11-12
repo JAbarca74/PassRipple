@@ -53,6 +53,7 @@ pnpm db:up        # start the local database (Docker)
 pnpm db:migrate   # apply bootstrap and pending migrations
 pnpm db:test      # run every pgTAP test
 pnpm db:down      # stop it and delete its data
+pnpm db:api-login # let passripple_api log in locally, for `wrangler dev` (refuses any other host)
 ```
 
 `DATABASE_URL` overrides the target database. The scripts never read it from a `.env` file, so a local command cannot reach production by accident.
@@ -70,7 +71,7 @@ Production runs on Neon, with a `production` branch and a `dev` branch. The API 
    ```
 
    Then migrate `production` the same way. `pnpm db:test` runs against the local database and in CI, never against Neon: the concurrency tests open extra passwordless local connections with dblink and commit data of their own.
-4. **Let the API log in.** Locally `passripple_api` cannot log in. On each Neon branch, once, by hand (never in a migration, because the password is a secret):
+4. **Let the API log in.** Locally `passripple_api` cannot log in until `pnpm db:api-login`, which needs no password because the local database trusts local connections. On each Neon branch, once, by hand (never in a migration, because the password is a secret):
 
    ```sql
    ALTER ROLE passripple_api LOGIN PASSWORD '<generated password>';
@@ -80,9 +81,11 @@ Production runs on Neon, with a `production` branch and a `dev` branch. The API 
 5. **Create the Hyperdrive configuration** with the `passripple_api` connection (`API_DATABASE_URL` in `.env.example`):
 
    ```bash
-   npx wrangler hyperdrive create passripple-db --connection-string='<passripple_api connection string>'
+   npx wrangler hyperdrive create passripple-db --caching-disabled --connection-string='<passripple_api connection string>'
    ```
 
-   The API Worker receives it as a Hyperdrive binding in its `wrangler.toml` once the API exists.
+   Caching stays disabled: every read the API makes depends on the session's actor and on the moment (sessions, device status, manifests), so a cached answer could be another actor's or a stale one.
+
+   The API Worker receives it as the `HYPERDRIVE` binding in `workers/api/wrangler.jsonc`.
 
 Neon suspends an idle database; the first query after a pause is slower. Keeping it awake during sales windows and event days is a scheduled job that arrives with the Workers.
