@@ -79,7 +79,8 @@ describe("settlement-api", () => {
     });
 
     test("rejects a negative balance (I9)", () => {
-      expect(settlementStatement.safeParse({ ...statement, balanceCrc: -1 }).success).toBe(false);
+      // Door-sale commissions can leave the organizer owing the platform.
+      expect(settlementStatement.safeParse({ ...statement, balanceCrc: -396 }).success).toBe(true);
     });
   });
 
@@ -160,6 +161,7 @@ describe("settlementEvent", () => {
     expect(settlementEvent.parse({ ...event, balanceCrc: 0, payoutPaidAt: AT }).payoutPaidAt).toBe(
       AT,
     );
-    expect(settlementEvent.safeParse({ ...event, balanceCrc: -1 }).success).toBe(false);
+    expect(settlementEvent.safeParse({ ...event, balanceCrc: -396 }).success).toBe(true);
+    expect(settlementEvent.safeParse({ ...event, balanceCrc: 1.5 }).success).toBe(false);
   });
 });

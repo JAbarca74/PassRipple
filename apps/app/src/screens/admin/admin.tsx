@@ -47,6 +47,7 @@ function eventStatus(
 ): { label: string; tone: "valid" | "verify" | "neutral" } {
   if (event.payoutConfirmedAt) return { label: "Recibida", tone: "valid" };
   if (event.payoutPaidAt) return { label: "Transferida", tone: "valid" };
+  if (event.balanceCrc < 0) return { label: "Debe comisión", tone: "verify" };
   if (event.balanceCrc === 0) return { label: "Sin saldo", tone: "neutral" };
   if (Date.parse(event.dueAt) < now) return { label: "Atrasada", tone: "verify" };
   if (Date.parse(event.endsAt) + 24 * 3600_000 > now)
@@ -192,7 +193,7 @@ function EventAdmin({
         `/admin/settlement/events/${event.eventId}/statement`,
       );
       setStatement(next);
-      setPayoutAmount((current) => current || String(next.balanceCrc));
+      setPayoutAmount((current) => current || String(Math.max(0, next.balanceCrc)));
     } catch (failure) {
       setError(failureText(failure));
     }

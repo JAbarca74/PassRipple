@@ -62,7 +62,8 @@ export const settlementStatement = z.object({
   adjustmentsCrc: z.int(),
   paidOutCrc: z.int().nonnegative(),
   /** What is still owed to the organizer. Never negative (invariant I9). */
-  balanceCrc: z.int().nonnegative(),
+  /** Negative when door-sale commissions exceed the online money: what the organizer owes. */
+  balanceCrc: z.int(),
   dueAt: time,
   overdue: z.boolean(),
   municipalTaxCrc: z.int().nonnegative(),
@@ -112,7 +113,8 @@ export const settlementEvent = z.object({
   startsAt: time,
   endsAt: time,
   collectedCrc: z.int().nonnegative(),
-  balanceCrc: z.int().nonnegative(),
+  /** Negative when door-sale commissions exceed the online money: what the organizer owes. */
+  balanceCrc: z.int(),
   dueAt: time,
   payoutPaidAt: time.nullable(),
   payoutConfirmedAt: time.nullable(),

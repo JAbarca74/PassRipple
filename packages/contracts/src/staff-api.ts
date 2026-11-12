@@ -151,3 +151,32 @@ export type AssignedBlock = z.infer<typeof assignedBlock>;
 /** POST /v1/staff/blocks/:id/close: how many unsold seats went back to the capacity. */
 export const closedBlock = z.object({ blockId: z.uuid(), returned: z.int().nonnegative() });
 export type ClosedBlock = z.infer<typeof closedBlock>;
+
+/**
+ * GET /v1/staff/events/:id/operations: what the organizer needs to run the door of one
+ * event: its ticket types, the courtesy quota and the door-sale blocks with what they sold.
+ */
+export const eventOperations = z.object({
+  ticketTypes: z.array(
+    z.object({
+      id: z.uuid(),
+      name: z.string(),
+      priceCrc: z.int().nonnegative(),
+      audience: z.enum(["public", "staff", "performer"]),
+    }),
+  ),
+  courtesy: z.object({ quota: z.int().nonnegative(), granted: z.int().nonnegative() }),
+  blocks: z.array(
+    z.object({
+      blockId: z.uuid(),
+      deviceId: z.uuid(),
+      ticketTypeId: z.uuid(),
+      size: z.int().min(1),
+      sold: z.int().nonnegative(),
+      collectedCrc: z.int().nonnegative(),
+      closedAt: isoTime.nullable(),
+      returned: z.int().nonnegative(),
+    }),
+  ),
+});
+export type EventOperations = z.infer<typeof eventOperations>;

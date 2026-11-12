@@ -9,6 +9,7 @@ import {
   type CreatedStaffCode,
   createStaffCodeRequest,
   type EnrollResponse,
+  type EventOperations,
   enrollRequest,
   type StaffCode,
   type StaffRole,
@@ -102,6 +103,66 @@ export const staffRoutes = new Hono<AppEnv>()
       size: input.size,
     };
     return c.json(body, 201);
+  })
+
+  // The door of one event at a glance (design 10.6, I3): ticket types, courtesy quota and
+  // the door-sale blocks with what each one sold. Row Level Security limits all of it to the
+  // organizer's own events.
+  .get("/events/:id/operations", async (c) => {
+    const eventId = param(c.req.param("id"), uuid);
+    const body = await c.var.db.transaction(
+      await userActor(c, "organizer"),
+      async (tx): Promise<EventOperations> => {
+        const types = await tx<
+          {
+            id: string;
+            name: string;
+            price_crc: number;
+            audience: "public" | "staff" | "performer";
+          }[]
+        >`SELECT id, name, price_crc, audience FROM catalog.ticket_types
+           WHERE event_id = ${eventId} ORDER BY price_crc, name`;
+        const [quota] = await tx<{ declared_quota: number; granted: number }[]>`
+          SELECT declared_quota, granted FROM courtesy.event_quotas WHERE event_id = ${eventId}`;
+        const blocks = await tx<
+          {
+            id: string;
+            device_id: string;
+            ticket_type_id: string;
+            size: number;
+            sold: number;
+            collected: number;
+            closed_at: Date | null;
+            returned: number;
+          }[]
+        >`SELECT b.id, b.device_id, b.ticket_type_id, b.size, b.closed_at, b.returned,
+                 count(s.id)::int AS sold, coalesce(sum(s.amount_crc), 0)::int AS collected
+            FROM inventory.device_blocks b
+            LEFT JOIN door_sales.sales s ON s.block_id = b.id
+           WHERE b.event_id = ${eventId} AND b.purpose = 'door_sale'
+           GROUP BY b.id ORDER BY b.created_at`;
+        return {
+          ticketTypes: types.map((type) => ({
+            id: type.id,
+            name: type.name,
+            priceCrc: type.price_crc,
+            audience: type.audience,
+          })),
+          courtesy: { quota: quota?.declared_quota ?? 0, granted: quota?.granted ?? 0 },
+          blocks: blocks.map((block) => ({
+            blockId: block.id,
+            deviceId: block.device_id,
+            ticketTypeId: block.ticket_type_id,
+            size: block.size,
+            sold: block.sold,
+            collectedCrc: block.collected,
+            closedAt: iso(block.closed_at),
+            returned: block.returned,
+          })),
+        };
+      },
+    );
+    return c.json(body);
   })
 
   // Closes a block when the doors close: its unsold tickets are voided and their seats go

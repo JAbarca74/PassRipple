@@ -109,6 +109,8 @@ export function createApp(services: Services): Hono<AppEnv> {
   app.use("/courtesies/*", panelCors);
   app.use("/staff/devices/*", panelCors);
   app.use("/staff/blocks/*", panelCors);
+  app.use("/staff/events/*", panelCors);
+  app.use("/staff/codes", panelCors);
 
   // The app (app.<domain>) calls the buyer's routes: events, orders, the wallet and transfers. Only the
   // origins in APP_ORIGINS may. The idempotency key and the order's token travel in headers.
