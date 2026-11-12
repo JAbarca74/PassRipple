@@ -20,10 +20,12 @@ import {
   type GateTicketRow,
   type GateTicketTypeRow,
 } from "@passripple/manifest";
+import { serviceCharge } from "@passripple/pricing";
 import { type Context, Hono } from "hono";
 import type { AppEnv } from "../app.ts";
 import { type AuthenticatedDevice, deviceActor, gateDeviceView } from "../auth.ts";
-import type { Tx } from "../db.ts";
+import { feeSchedule } from "../config.ts";
+import { SYSTEM_ACTOR, type Tx } from "../db.ts";
 import { ApiError } from "../errors.ts";
 import { serverKeys } from "../server-keys.ts";
 import { jsonBody, param } from "../validation.ts";
@@ -46,6 +48,35 @@ export async function forDevice<T>(
 
 // The envelope was checked; the database checks each operation (it is plain JSON).
 type JsonArray = Parameters<Tx["json"]>[0];
+
+/**
+ * Books each newly applied door sale in the event's ledger with its commission (design
+ * 10.6). In its own transaction and after the upload's: the sales are already safe in
+ * door_sales, so a missing fee schedule or a ledger error is logged, never answered to the
+ * gate. record_door_sale is idempotent, so a later retry can fill any gap.
+ */
+async function bookDoorSales(
+  c: Context<AppEnv>,
+  eventId: string,
+  sales: readonly { id: string; payload?: unknown }[],
+): Promise<void> {
+  if (sales.length === 0) return;
+  try {
+    const schedule = feeSchedule(c.env);
+    await c.var.db.transaction(SYSTEM_ACTOR, async (tx) => {
+      for (const sale of sales) {
+        const amount = Number((sale.payload as { amountCrc?: unknown } | undefined)?.amountCrc);
+        if (!Number.isInteger(amount) || amount < 0) continue;
+        const fee = serviceCharge(amount, schedule);
+        await tx`
+          SELECT settlement.record_door_sale(${sale.id}, ${eventId}, ${amount},
+                                             ${fee.feeCrc}, ${fee.feeTaxCrc})`;
+      }
+    });
+  } catch (error) {
+    console.error(JSON.stringify({ job: "door_sale_ledger", error: String(error) }));
+  }
+}
 
 export const gateRoutes = new Hono<AppEnv>()
   // The device's status and the server clock. Every status may ask.
@@ -96,7 +127,9 @@ export const gateRoutes = new Hono<AppEnv>()
     // module answers for its own operations; the answer keeps the batch's order.
     const sales = items.filter((item) => item.opType === "door_sale");
     const others = items.filter((item) => item.opType !== "door_sale");
+    let eventId = "";
     const results = await forDevice(c, DEVICE_STATUSES, async (device, tx) => {
+      eventId = device.eventId;
       const answered = new Map<string, GateBatchItemResult>();
       if (others.length > 0) {
         const [row] = await tx<{ results: GateBatchItemResult[] }[]>`
@@ -113,6 +146,14 @@ export const gateRoutes = new Hono<AppEnv>()
           answered.get(item.id) ?? { id: item.id, status: "rejected" as const, error: "no answer" },
       );
     });
+    const applied = new Set(
+      results.filter((result) => result.status === "applied").map((result) => result.id),
+    );
+    await bookDoorSales(
+      c,
+      eventId,
+      sales.filter((sale) => applied.has(sale.id)),
+    );
     const body: GateBatchResponse = { results, serverTime: Date.now() };
     return c.json(body);
   })
