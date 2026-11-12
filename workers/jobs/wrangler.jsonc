@@ -26,8 +26,8 @@
   "hyperdrive": [
     {
       "binding": "HYPERDRIVE",
-      // Placeholder: the id of the Hyperdrive configuration to use, created in the account.
-      "id": "00000000000000000000000000000000",
+      // `passripple-db`, the same configuration the API uses (Neon dev branch).
+      "id": "77a197abf8914c408db6d7549d672d47",
       // `wrangler dev` connects here instead: the local Docker database, as passripple_api
       // (run `pnpm db:api-login` once).
       "localConnectionString": "postgres://passripple_api:unused@localhost:54329/passripple"
