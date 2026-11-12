@@ -2,7 +2,13 @@
 // event. The reporting schema decides who may read it (an organizer of the event's
 // organization, or an administrator); the API only shapes the answer.
 
-import type { EventDashboard, GateDeviceStatus, HourlySales } from "@passripple/contracts";
+import type {
+  EventDashboard,
+  EventExport,
+  ExportRow,
+  GateDeviceStatus,
+  HourlySales,
+} from "@passripple/contracts";
 import { Hono } from "hono";
 import { z } from "zod";
 import type { AppEnv } from "../app.ts";
@@ -34,6 +40,18 @@ interface DeviceRow {
   last_sync_at: Date | null;
   admitted: number;
   incidents: number;
+}
+
+interface ExportDbRow {
+  seq: number;
+  code_tail: string;
+  ticket_type: string;
+  zone: string | null;
+  origin: ExportRow["origin"];
+  status: ExportRow["status"];
+  price_crc: number;
+  issued_at: Date;
+  admitted_at: Date | null;
 }
 
 export const reportingRoutes = new Hono<AppEnv>().get("/events/:id/dashboard", async (c) => {
@@ -69,5 +87,30 @@ export const reportingRoutes = new Hono<AppEnv>().get("/events/:id/dashboard", a
     };
     return dashboard;
   });
+  return c.json(body);
+});
+
+// One row per issued ticket, no personal data (the code is cut to its last four characters).
+reportingRoutes.get("/events/:id/export", async (c) => {
+  const eventId = param(c.req.param("id"), uuid);
+  const rows = await c.var.db.transaction(
+    await userActor(c, "organizer"),
+    (tx) => tx<ExportDbRow[]>`SELECT * FROM reporting.event_export(${eventId})`,
+  );
+  const body: EventExport = {
+    eventId,
+    rows: rows.map((row) => ({
+      seq: row.seq,
+      codeTail: row.code_tail,
+      ticketType: row.ticket_type,
+      zone: row.zone,
+      origin: row.origin,
+      status: row.status,
+      priceCrc: row.price_crc,
+      issuedAt: isoRequired(row.issued_at),
+      admittedAt: iso(row.admitted_at),
+    })),
+  };
+  c.header("Cache-Control", "no-store");
   return c.json(body);
 });

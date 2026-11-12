@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
-import { eventDashboard } from "./reporting-api.ts";
+import { csvDocument } from "./csv.ts";
+import { EXPORT_HEADER, eventDashboard, eventExport, exportCsvRows } from "./reporting-api.ts";
 
 const AT = "2026-11-10T12:00:00-06:00";
 
@@ -48,5 +49,34 @@ describe("reporting-api", () => {
         devices: [{ ...dashboard.devices[0], role: "cashier" }],
       }).success,
     ).toBe(false);
+  });
+});
+
+describe("event export", () => {
+  const row = {
+    seq: 1,
+    codeTail: "AA11",
+    ticketType: "General",
+    zone: null,
+    origin: "sale" as const,
+    status: "issued" as const,
+    priceCrc: 3000,
+    issuedAt: AT,
+    admittedAt: null,
+  };
+  const eventId = "12345678-1234-4234-8234-123456789001";
+
+  test("accepts rows without personal data and rejects an unknown origin", () => {
+    expect(eventExport.safeParse({ eventId, rows: [row] }).success).toBe(true);
+    expect(eventExport.safeParse({ eventId, rows: [{ ...row, origin: "gift" }] }).success).toBe(
+      false,
+    );
+  });
+
+  test("turns the rows into CSV with the header first", () => {
+    const rows = exportCsvRows([row]);
+    expect(rows[0]).toEqual([...EXPORT_HEADER]);
+    expect(rows[1]).toEqual([1, "AA11", "General", null, "sale", "issued", 3000, AT, null]);
+    expect(csvDocument(rows).split("\r\n")).toHaveLength(3);
   });
 });

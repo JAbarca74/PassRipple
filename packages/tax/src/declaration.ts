@@ -7,7 +7,12 @@
 //   - tax is rounded to the nearest colon;
 //   - "next_business_day" skips weekends only: public holidays are not modeled.
 
-import type { Declaration, DeclarationFigures } from "@passripple/contracts";
+import {
+  type CsvCell,
+  csvDocument,
+  type Declaration,
+  type DeclarationFigures,
+} from "@passripple/contracts";
 
 /** Costa Rica has no daylight saving time: local time is UTC minus six hours, always. */
 const COSTA_RICA_OFFSET_MS = -6 * 60 * 60 * 1000;
@@ -56,17 +61,10 @@ export function computeDeclaration(figures: DeclarationFigures): Declaration {
   };
 }
 
-/** A CSV cell: quoted, and neutralized when a spreadsheet would read it as a formula. */
-function cell(value: string | number | null): string {
-  const text = value === null ? "" : String(value);
-  const safe = typeof value === "string" && /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
-  return `"${safe.replaceAll('"', '""')}"`;
-}
-
 /** The declaration as CSV (UTF-8, one row per line), for the municipality's own tools. */
 export function declarationCsv(declaration: Declaration): string {
   const { figures: f } = declaration;
-  const rows: (string | number | null)[][] = [
+  const rows: CsvCell[][] = [
     ["Declaración de espectáculo público"],
     ["Evento", f.event.name],
     ["Lugar", f.event.venue],
@@ -101,5 +99,5 @@ export function declarationCsv(declaration: Declaration): string {
     ["Hash de la bitácora (sha256)", f.logHash],
     ["Generado", f.generatedAt],
   ];
-  return `${rows.map((row) => row.map(cell).join(",")).join("\r\n")}\r\n`;
+  return csvDocument(rows);
 }

@@ -2,12 +2,19 @@
 // hour, who got in, the latest payments with their bank reference, and each gate device's
 // last synchronization. Refreshed every 30 seconds while the tab is visible.
 
-import type { EventDashboard, LedgerResponse, SettlementEvent } from "@passripple/contracts";
-import { RefreshCw, TriangleAlert } from "lucide-react";
+import {
+  csvDocument,
+  type EventDashboard,
+  type EventExport,
+  exportCsvRows,
+  type LedgerResponse,
+  type SettlementEvent,
+} from "@passripple/contracts";
+import { Download, RefreshCw, TriangleAlert } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { formatColones, formatEventDate, formatEventTime } from "../../lib/format.ts";
 import { failureText, PanelGate, usePanel } from "../../lib/panel.tsx";
-import { Badge, Card, CardTitle, Notice, Stat } from "../../ui/ui.tsx";
+import { Badge, Button, Card, CardTitle, Notice, Stat } from "../../ui/ui.tsx";
 import { OrganizerEventScreen } from "./event-screen.tsx";
 import { OrganizerLayout } from "./organizer.tsx";
 
@@ -131,6 +138,24 @@ function EventDashboardView({ event }: { event: SettlementEvent }) {
     return () => window.clearInterval(timer);
   }, [load]);
 
+  // One row per issued ticket, no personal data: for a spreadsheet or an accountant.
+  async function exportTickets() {
+    try {
+      const data = await panel.call<EventExport>(`/reporting/events/${event.eventId}/export`);
+      const blob = new Blob([`﻿${csvDocument(exportCsvRows(data.rows))}`], {
+        type: "text/csv;charset=utf-8",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `entradas-${event.eventId}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (failure) {
+      setError(failureText(failure));
+    }
+  }
+
   if (!dashboard) {
     return error ? (
       <Notice icon={TriangleAlert} title="No pudimos cargar el dashboard" tone="verify">
@@ -152,6 +177,13 @@ function EventDashboardView({ event }: { event: SettlementEvent }) {
       <p className="-mt-4 mb-6 flex flex-wrap items-center gap-2 text-sm text-slate-600">
         {formatEventDate(new Date(event.startsAt))}
         {running && <Badge tone="valid">En curso</Badge>}
+        <Button
+          variant="secondary"
+          className="ml-auto min-h-10 px-3 text-sm"
+          onClick={() => void exportTickets()}
+        >
+          <Download size={16} aria-hidden /> Exportar entradas (CSV)
+        </Button>
       </p>
       {error && (
         <div className="mb-4">

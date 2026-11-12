@@ -50,3 +50,50 @@ export const eventDashboard = z.object({
   devices: z.array(gateDeviceStatus),
 });
 export type EventDashboard = z.infer<typeof eventDashboard>;
+
+/** One ticket of GET /v1/reporting/events/:id/export. No personal data: the code is cut to its tail. */
+export const exportRow = z.object({
+  seq: z.int().positive(),
+  codeTail: z.string(),
+  ticketType: z.string(),
+  zone: z.string().nullable(),
+  origin: z.enum(["sale", "courtesy", "door_sale"]),
+  status: z.enum(["issued", "bound", "void"]),
+  priceCrc: count,
+  issuedAt: time,
+  admittedAt: time.nullable(),
+});
+export type ExportRow = z.infer<typeof exportRow>;
+
+export const eventExport = z.object({ eventId: z.uuid(), rows: z.array(exportRow) });
+export type EventExport = z.infer<typeof eventExport>;
+
+/** The header and cells of the export as CSV rows, in the order of the columns. */
+export const EXPORT_HEADER = [
+  "N",
+  "Código (final)",
+  "Tipo",
+  "Zona",
+  "Origen",
+  "Estado",
+  "Precio (CRC)",
+  "Emitida",
+  "Ingresó",
+] as const;
+
+export function exportCsvRows(rows: readonly ExportRow[]): (string | number | null)[][] {
+  return [
+    [...EXPORT_HEADER],
+    ...rows.map((row) => [
+      row.seq,
+      row.codeTail,
+      row.ticketType,
+      row.zone,
+      row.origin,
+      row.status,
+      row.priceCrc,
+      row.issuedAt,
+      row.admittedAt,
+    ]),
+  ];
+}

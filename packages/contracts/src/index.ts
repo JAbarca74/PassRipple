@@ -64,6 +64,7 @@ export {
   SIGNATURE_LENGTH,
   TICKET_ID_LENGTH,
 } from "./credential-format.ts";
+export { type CsvCell, csvDocument } from "./csv.ts";
 export {
   type DomainEventEnvelope,
   decodeDomainEventEnvelope,
@@ -178,8 +179,14 @@ export {
 export {
   type EventCounters,
   type EventDashboard,
+  type EventExport,
+  EXPORT_HEADER,
+  type ExportRow,
   eventCounters,
   eventDashboard,
+  eventExport,
+  exportCsvRows,
+  exportRow,
   type GateDeviceStatus,
   gateDeviceStatus,
   type HourlySales,

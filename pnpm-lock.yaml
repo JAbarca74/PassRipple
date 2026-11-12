@@ -85,7 +85,14 @@ importers:
         specifier: 8.3.3
         version: 8.3.3(@types/node@26.6.3)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
 
-  apps/coordinator: {}
+  apps/coordinator:
+    dependencies:
+      hono:
+        specifier: 4.13.16
+        version: 4.13.16
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
 
   apps/scanner:
     dependencies:
@@ -412,6 +419,9 @@ importers:
 
   modules/redemption:
     dependencies:
+      '@passripple/catalog':
+        specifier: workspace:*
+        version: link:../catalog
       '@passripple/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
@@ -427,6 +437,9 @@ importers:
 
   modules/reporting:
     dependencies:
+      '@passripple/catalog':
+        specifier: workspace:*
+        version: link:../catalog
       '@passripple/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
