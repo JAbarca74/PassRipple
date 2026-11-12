@@ -15,8 +15,13 @@
   // Next to the API (8787) when both run locally.
   "dev": { "port": 8788 },
   "triggers": {
-    // Every minute: publish the outboxes, then expire holds and orders.
+    // Every minute: expire holds and orders, then publish the outboxes. At minute 0 also
+    // erase attendees' documents past retention.
     "crons": ["* * * * *"]
+  },
+  "vars": {
+    // Owner's decision (design 7.5, Ley 8968); 30 until then.
+    "ATTENDEE_DOC_RETENTION_DAYS": "30"
   },
   "hyperdrive": [
     {
