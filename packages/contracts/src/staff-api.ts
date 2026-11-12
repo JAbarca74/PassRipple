@@ -128,3 +128,26 @@ export const apiError = z.object({
   error: z.object({ code: z.string(), message: z.string() }),
 });
 export type ApiErrorBody = z.infer<typeof apiError>;
+
+/**
+ * POST /v1/staff/devices/:id/blocks: the organizer gives a door-sales device a block of
+ * seats of one ticket type before the doors open (design 8.5, 10.6). The seats leave the
+ * online capacity now; the ones not sold go back when the block is closed.
+ */
+export const assignBlockRequest = z.object({
+  ticketTypeId: z.uuid(),
+  size: z.int().min(1).max(1000),
+});
+export type AssignBlockRequest = z.infer<typeof assignBlockRequest>;
+
+export const assignedBlock = z.object({
+  blockId: z.uuid(),
+  deviceId: z.uuid(),
+  ticketTypeId: z.uuid(),
+  size: z.int().min(1),
+});
+export type AssignedBlock = z.infer<typeof assignedBlock>;
+
+/** POST /v1/staff/blocks/:id/close: how many unsold seats went back to the capacity. */
+export const closedBlock = z.object({ blockId: z.uuid(), returned: z.int().nonnegative() });
+export type ClosedBlock = z.infer<typeof closedBlock>;

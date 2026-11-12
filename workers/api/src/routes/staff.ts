@@ -3,6 +3,9 @@
 // no organizer screen until Phase 4: these routes are called directly until then.
 
 import {
+  type AssignedBlock,
+  assignBlockRequest,
+  type ClosedBlock,
   type CreatedStaffCode,
   createStaffCodeRequest,
   type EnrollResponse,
@@ -10,11 +13,12 @@ import {
   type StaffCode,
   type StaffRole,
 } from "@passripple/contracts";
-import { formatHumanCode } from "@passripple/crypto";
+import { formatHumanCode, HUMAN_CODE_ENTROPY_BYTES, humanCode } from "@passripple/crypto";
 import { Hono } from "hono";
 import { z } from "zod";
 import type { AppEnv } from "../app.ts";
 import { userActor } from "../auth.ts";
+import { SYSTEM_ACTOR } from "../db.ts";
 import { required } from "../env.ts";
 import { ApiError } from "../errors.ts";
 import {
@@ -57,7 +61,68 @@ function staffCodeView(row: StaffCodeRow): StaffCode {
   };
 }
 
+function newTicketCode(): string {
+  return humanCode(crypto.getRandomValues(new Uint8Array(HUMAN_CODE_ENTROPY_BYTES)));
+}
+
 export const staffRoutes = new Hono<AppEnv>()
+  // A block of seats for a door-sales device (design 8.5, 10.6). The organizer's session
+  // proves the device is of one of its events; the seats are taken and the block's tickets
+  // pre-issued as the system, in one transaction, so a block never exists half made.
+  .post("/devices/:id/blocks", async (c) => {
+    const deviceId = param(c.req.param("id"), uuid);
+    const input = await jsonBody(c, assignBlockRequest);
+    const [device] = await c.var.db.transaction(
+      await userActor(c, "organizer"),
+      (tx) =>
+        tx<{ event_id: string; role: string; revoked_at: Date | null }[]>`
+        SELECT event_id, role, revoked_at FROM staff.staff_devices WHERE id = ${deviceId}`,
+    );
+    if (!device) throw new ApiError(404, "not_found", "Not found.");
+    if (device.role !== "door_sales" || device.revoked_at !== null) {
+      throw new ApiError(409, "not_door_sales", "This device does not sell at the door.");
+    }
+    const blockId = crypto.randomUUID();
+    const codes = `{${Array.from({ length: input.size }, newTicketCode).join(",")}}`;
+    await c.var.db.transaction(SYSTEM_ACTOR, async (tx) => {
+      const [taken] = await tx<{ ok: boolean }[]>`
+        SELECT inventory.assign_block(${blockId}, ${device.event_id}, ${input.ticketTypeId},
+                                      ${deviceId}, ${input.size}, 'door_sale') AS ok`;
+      if (!taken?.ok) {
+        throw new ApiError(409, "sold_out", "There are not enough seats left for this block.");
+      }
+      await tx`
+        SELECT ticketing.issue_block(${blockId}, ${device.event_id}, ${input.ticketTypeId},
+                                     'door_sale', ${codes}::text[])`;
+    });
+    const body: AssignedBlock = {
+      blockId,
+      deviceId,
+      ticketTypeId: input.ticketTypeId,
+      size: input.size,
+    };
+    return c.json(body, 201);
+  })
+
+  // Closes a block when the doors close: its unsold tickets are voided and their seats go
+  // back to the capacity.
+  .post("/blocks/:id/close", async (c) => {
+    const blockId = param(c.req.param("id"), uuid);
+    const [block] = await c.var.db.transaction(
+      await userActor(c, "organizer"),
+      (tx) => tx<{ id: string }[]>`SELECT id FROM inventory.device_blocks WHERE id = ${blockId}`,
+    );
+    if (!block) throw new ApiError(404, "not_found", "Not found.");
+    const returned = await c.var.db.transaction(SYSTEM_ACTOR, async (tx) => {
+      const [voided] = await tx<{ count: number }[]>`
+        SELECT ticketing.void_unsold(${blockId}) AS count`;
+      const count = voided?.count ?? 0;
+      await tx`SELECT inventory.close_block(${blockId}, ${count})`;
+      return count;
+    });
+    const body: ClosedBlock = { blockId, returned };
+    return c.json(body);
+  })
   // ── Organizers ────────────────────────────────────────────────────────────
   .post("/codes", async (c) => {
     const input = await jsonBody(c, createStaffCodeRequest);

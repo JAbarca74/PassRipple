@@ -10,6 +10,7 @@ export const GATE_OPERATION_TYPES = [
   "staff_scan",
   "incident",
   "attendee_capture",
+  "door_sale",
 ] as const;
 export type GateOperationType = (typeof GATE_OPERATION_TYPES)[number];
 
@@ -47,6 +48,17 @@ export interface AttendeeCapturePayload {
   readonly docLast4: string;
 }
 
+/**
+ * A ticket of the device's block sold at the door (10.6): paid to the organizer in cash or by
+ * SINPE to the organizer's own number. The device also queues the ticket's admission.
+ */
+export interface DoorSalePayload {
+  readonly ticketId: string;
+  readonly method: "cash" | "sinpe";
+  /** What the person paid, in colones. */
+  readonly amountCrc: number;
+}
+
 interface OperationBase {
   /** Device-generated UUIDv7. */
   readonly id: string;
@@ -67,7 +79,8 @@ export type GateOperation =
   | (OperationBase & {
       readonly opType: "attendee_capture";
       readonly payload: AttendeeCapturePayload;
-    });
+    })
+  | (OperationBase & { readonly opType: "door_sale"; readonly payload: DoorSalePayload });
 
 /**
  * A batch as the API accepts it. Only the envelope is checked here: each operation is

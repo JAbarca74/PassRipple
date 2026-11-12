@@ -92,10 +92,26 @@ export const gateRoutes = new Hono<AppEnv>()
   // recorded (I6).
   .post("/batches", async (c) => {
     const { items } = await jsonBody(c, gateBatchRequest);
+    // Door sales belong to door_sales, everything else to redemption (design 8.4). Each
+    // module answers for its own operations; the answer keeps the batch's order.
+    const sales = items.filter((item) => item.opType === "door_sale");
+    const others = items.filter((item) => item.opType !== "door_sale");
     const results = await forDevice(c, DEVICE_STATUSES, async (device, tx) => {
-      const [row] = await tx<{ results: GateBatchItemResult[] }[]>`
-        SELECT redemption.apply_batch(${device.deviceId}, ${tx.json(items as JsonArray)}) AS results`;
-      return row?.results ?? [];
+      const answered = new Map<string, GateBatchItemResult>();
+      if (others.length > 0) {
+        const [row] = await tx<{ results: GateBatchItemResult[] }[]>`
+          SELECT redemption.apply_batch(${device.deviceId}, ${tx.json(others as JsonArray)}) AS results`;
+        for (const result of row?.results ?? []) answered.set(result.id, result);
+      }
+      if (sales.length > 0) {
+        const [row] = await tx<{ results: GateBatchItemResult[] }[]>`
+          SELECT door_sales.apply_sales(${device.deviceId}, ${tx.json(sales as JsonArray)}) AS results`;
+        for (const result of row?.results ?? []) answered.set(result.id, result);
+      }
+      return items.map(
+        (item) =>
+          answered.get(item.id) ?? { id: item.id, status: "rejected" as const, error: "no answer" },
+      );
     });
     const body: GateBatchResponse = { results, serverTime: Date.now() };
     return c.json(body);

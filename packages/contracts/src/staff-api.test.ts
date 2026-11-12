@@ -1,6 +1,9 @@
 import { describe, expect, test } from "vitest";
 import {
   apiError,
+  assignBlockRequest,
+  assignedBlock,
+  closedBlock,
   createStaffCodeRequest,
   enrollRequest,
   enrollResponse,
@@ -147,5 +150,30 @@ describe("sessionProfile", () => {
     expect(
       sessionProfile.safeParse({ ...profile, organizations: [{ id: "x", name: "A" }] }).success,
     ).toBe(false);
+  });
+});
+
+describe("door-sales blocks", () => {
+  const typeId = "12345678-1234-4234-8234-123456789010";
+
+  test("a block has 1 to 1000 seats of one ticket type", () => {
+    expect(assignBlockRequest.parse({ ticketTypeId: typeId, size: 50 })).toEqual({
+      ticketTypeId: typeId,
+      size: 50,
+    });
+    for (const size of [0, 1001, 2.5]) {
+      expect(assignBlockRequest.safeParse({ ticketTypeId: typeId, size }).success).toBe(false);
+    }
+    expect(assignBlockRequest.safeParse({ ticketTypeId: "x", size: 5 }).success).toBe(false);
+  });
+
+  test("the answers carry the block and what went back", () => {
+    const block = { blockId: typeId, deviceId: typeId, ticketTypeId: typeId, size: 5 };
+    expect(assignedBlock.parse(block)).toEqual(block);
+    expect(closedBlock.parse({ blockId: typeId, returned: 0 })).toEqual({
+      blockId: typeId,
+      returned: 0,
+    });
+    expect(closedBlock.safeParse({ blockId: typeId, returned: -1 }).success).toBe(false);
   });
 });

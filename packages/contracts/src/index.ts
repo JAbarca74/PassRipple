@@ -99,6 +99,7 @@ export {
   BATCH_ITEM_STATUSES,
   DEVICE_INCIDENT_KINDS,
   type DeviceIncidentKind,
+  type DoorSalePayload,
   GATE_OPERATION_TYPES,
   type GateBatchItemResult,
   type GateBatchRequest,
@@ -170,9 +171,15 @@ export {
 } from "./settlement-api.ts";
 export {
   type ApiErrorBody,
+  type AssignBlockRequest,
+  type AssignedBlock,
   apiError,
+  assignBlockRequest,
+  assignedBlock,
+  type ClosedBlock,
   type CreatedStaffCode,
   type CreateStaffCodeRequest,
+  closedBlock,
   createdStaffCode,
   createStaffCodeRequest,
   DEVICE_PLATFORMS,
