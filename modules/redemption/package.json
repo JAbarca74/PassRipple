@@ -15,6 +15,7 @@
     "@passripple/contracts": "workspace:*",
     "@passripple/crypto": "workspace:*",
     "@passripple/ticketing": "workspace:*",
-    "@passripple/staff": "workspace:*"
+    "@passripple/staff": "workspace:*",
+    "@passripple/catalog": "workspace:*"
   }
 }
