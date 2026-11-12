@@ -5,9 +5,11 @@
 // (design 10.4): its credits, already parsed, checked against the confirmed payments.
 
 import {
+  grantInspectorRequest,
   type ManualNoticeResponse,
   manualNoticeRequest,
   type ReconcileResult,
+  revokeInspectorRequest,
   type StatementImportResponse,
   statementImportRequest,
 } from "@passripple/contracts";
@@ -85,4 +87,25 @@ export const adminRoutes = new Hono<AppEnv>()
     });
     c.header("Cache-Control", "no-store");
     return c.json(body);
+  });
+
+// Municipal accounts (Phase 8): who may authorize, watch and declare for a canton. Granting
+// creates the account when the email has none yet, so the person can sign in with a code.
+adminRoutes
+  .post("/inspectors", async (c) => {
+    const input = await jsonBody(c, grantInspectorRequest);
+    const userId = await c.var.db.transaction(await userActor(c, "admin"), async (tx) => {
+      const [row] = await tx<{ id: string }[]>`
+        SELECT identity.grant_inspector(${input.email}, ${input.cantonCode}, ${input.kind}) AS id`;
+      if (!row) throw new Error("identity.grant_inspector returned nothing");
+      return row.id;
+    });
+    return c.json({ userId }, 201);
+  })
+  .post("/inspectors/revoke", async (c) => {
+    const input = await jsonBody(c, revokeInspectorRequest);
+    await c.var.db.transaction(await userActor(c, "admin"), async (tx) => {
+      await tx`SELECT identity.revoke_inspector(${input.userId}, ${input.cantonCode})`;
+    });
+    return c.body(null, 204);
   });

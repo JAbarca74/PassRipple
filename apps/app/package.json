@@ -11,6 +11,7 @@
   "dependencies": {
     "@passripple/contracts": "workspace:*",
     "@passripple/crypto": "workspace:*",
+    "@passripple/tax": "workspace:*",
     "lucide-react": "1.49.0",
     "qrcode": "1.5.4",
     "react": "19.3.0",

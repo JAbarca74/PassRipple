@@ -1,7 +1,6 @@
 import {
   CalendarPlus,
   Check,
-  Copy,
   FileText,
   LayoutDashboard,
   Lock,
@@ -13,7 +12,7 @@ import { demoEvent, ticketTypes } from "../../demo.ts";
 import { cn } from "../../lib/cn.ts";
 import { formatEventDate } from "../../lib/format.ts";
 import { PanelLayout, type PanelNavItem } from "../../ui/layouts.tsx";
-import { Button, Card, CardTitle, Field, Notice, PageHeader, Steps } from "../../ui/ui.tsx";
+import { Button, Card, Field, Notice, PageHeader, Steps } from "../../ui/ui.tsx";
 
 export const organizerNav: readonly PanelNavItem[] = [
   { to: "/organizador", label: "Dashboard", icon: LayoutDashboard },

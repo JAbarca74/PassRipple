@@ -38,7 +38,7 @@ function writeStorage(key: string, value: string | null): void {
   }
 }
 
-export type PanelRole = "organizer" | "admin";
+export type PanelRole = "organizer" | "admin" | "municipal";
 
 interface Panel {
   readonly profile: SessionProfile;
@@ -155,6 +155,13 @@ export function PanelGate({ kind, children }: { kind: PanelRole; children: React
     return (
       <PanelMessage title="Esta cuenta no administra la plataforma" onSignOut={signOut}>
         Entre con una cuenta de administración.
+      </PanelMessage>
+    );
+  }
+  if (kind === "municipal" && panel.profile.municipal.length === 0) {
+    return (
+      <PanelMessage title="Esta cuenta no tiene acceso municipal" onSignOut={signOut}>
+        Pida a la administración de PassRipple que le dé acceso con este correo.
       </PanelMessage>
     );
   }

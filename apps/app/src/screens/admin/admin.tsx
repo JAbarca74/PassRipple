@@ -5,6 +5,7 @@
 // than the event holds.
 
 import type {
+  GrantInspectorRequest,
   LedgerResponse,
   PlatformTotals,
   SettlementEvent,
@@ -36,6 +37,7 @@ export function Admin() {
     <PanelGate kind="admin">
       <PanelLayout area="Administración" nav={adminNav}>
         <AdminScreen />
+        <MunicipalAccess />
       </PanelLayout>
     </PanelGate>
   );
@@ -389,5 +391,79 @@ function LedgerList({
         </li>
       ))}
     </ul>
+  );
+}
+
+const selectClass = "h-12 w-full rounded-xl border border-slate-300 bg-white px-3";
+
+/** Grants municipal access (Phase 8): an official authorizes and declares, an inspector verifies. */
+function MunicipalAccess() {
+  const panel = usePanel();
+  const [email, setEmail] = useState("");
+  const [cantonCode, setCantonCode] = useState("");
+  const [kind, setKind] = useState<GrantInspectorRequest["kind"]>("official");
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    try {
+      await panel.call("/admin/inspectors", {
+        method: "POST",
+        body: { email: email.trim(), cantonCode: cantonCode.trim(), kind },
+      });
+      setMessage(`Acceso dado a ${email.trim()}. Puede entrar con un código por correo.`);
+      setError(null);
+      setEmail("");
+    } catch (failure) {
+      setMessage(null);
+      setError(failureText(failure));
+    }
+  }
+
+  return (
+    <Card className="mt-6">
+      <CardTitle>Accesos municipales</CardTitle>
+      <p className="mt-2 text-sm text-slate-600">
+        Una persona de la municipalidad entra en /municipalidad con su correo. El código del cantón
+        es el de la tabla de jurisdicciones.
+      </p>
+      <form className="mt-3 grid gap-3 sm:grid-cols-4" onSubmit={submit}>
+        <Field
+          label="Correo"
+          type="email"
+          value={email}
+          onChange={(change) => setEmail(change.target.value)}
+          required
+        />
+        <Field
+          label="Código del cantón"
+          value={cantonCode}
+          onChange={(change) => setCantonCode(change.target.value)}
+          required
+        />
+        <div>
+          <label htmlFor="municipal-kind" className="block text-sm font-bold">
+            Tipo
+          </label>
+          <select
+            id="municipal-kind"
+            className={`mt-2 ${selectClass}`}
+            value={kind}
+            onChange={(change) => setKind(change.target.value as GrantInspectorRequest["kind"])}
+          >
+            <option value="official">Funcionario (autoriza y declara)</option>
+            <option value="inspector">Inspector (verifica y mira)</option>
+          </select>
+        </div>
+        <div className="flex items-end">
+          <Button submit className="w-full">
+            Dar acceso
+          </Button>
+        </div>
+      </form>
+      {message && <p className="mt-3 text-sm font-bold text-green-700">{message}</p>}
+      {error && <p className="mt-3 text-sm font-bold text-red-700">{error}</p>}
+    </Card>
   );
 }

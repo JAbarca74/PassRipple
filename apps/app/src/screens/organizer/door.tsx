@@ -18,6 +18,7 @@ import { failureText, PanelGate, usePanel } from "../../lib/panel.tsx";
 import { transferLink } from "../../lib/transfers.ts";
 import { Badge, Button, Card, CardTitle, Field, Notice, Row } from "../../ui/ui.tsx";
 import { OrganizerEventScreen } from "./event-screen.tsx";
+import { MunicipalCard } from "./municipal-card.tsx";
 import { OrganizerLayout } from "./organizer.tsx";
 
 const ROLE_LABELS = {
@@ -98,6 +99,7 @@ function EventDoor({ event }: { event: SettlementEvent }) {
         <Devices dashboard={dashboard} operations={operations} onChanged={load} />
         <Blocks operations={operations} typeName={typeName} onChanged={load} />
       </div>
+      <MunicipalCard event={event} />
       <Courtesies event={event} operations={operations} onChanged={load} />
     </div>
   );

@@ -20,6 +20,7 @@ import { courtesyRoutes } from "./routes/courtesies.ts";
 import { eventRoutes } from "./routes/events.ts";
 import { gateRoutes } from "./routes/gate.ts";
 import { healthRoutes } from "./routes/health.ts";
+import { municipalRoutes } from "./routes/municipal.ts";
 import { orderRoutes } from "./routes/orders.ts";
 import { reportingRoutes } from "./routes/reporting.ts";
 import { adminSettlementRoutes, settlementRoutes } from "./routes/settlement.ts";
@@ -107,6 +108,9 @@ export function createApp(services: Services): Hono<AppEnv> {
   app.use("/reporting/*", panelCors);
   app.use("/admin/settlement/*", panelCors);
   app.use("/courtesies/*", panelCors);
+  app.use("/municipal/*", panelCors);
+  app.use("/admin/inspectors/*", panelCors);
+  app.use("/admin/inspectors", panelCors);
   app.use("/staff/devices/*", panelCors);
   app.use("/staff/blocks/*", panelCors);
   app.use("/staff/events/*", panelCors);
@@ -151,6 +155,7 @@ export function createApp(services: Services): Hono<AppEnv> {
   app.route("/transfers", transferRoutes);
   app.route("/attendees", attendeeRoutes);
   app.route("/courtesies", courtesyRoutes);
+  app.route("/municipal", municipalRoutes);
 
   app.notFound((c) => c.json({ error: { code: "not_found", message: "Not found." } }, 404));
   app.onError((error, c) => {

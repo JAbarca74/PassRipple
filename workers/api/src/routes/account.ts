@@ -26,15 +26,21 @@ export const accountRoutes = new Hono<AppEnv>()
     const [row] = await c.var.db.transaction(
       SYSTEM_ACTOR,
       (tx) => tx<
-        { user_id: string; is_admin: boolean; organizations: SessionProfile["organizations"] }[]
+        {
+          user_id: string;
+          is_admin: boolean;
+          organizations: SessionProfile["organizations"];
+          municipal: SessionProfile["municipal"];
+        }[]
       >`
-        SELECT user_id, is_admin, organizations FROM identity.session_profile(${hash})`,
+        SELECT user_id, is_admin, organizations, municipal FROM identity.session_profile(${hash})`,
     );
     if (!row) throw new ApiError(401, "unauthorized", "Sign in again.");
     const body: SessionProfile = {
       userId: row.user_id,
       isAdmin: row.is_admin,
       organizations: row.organizations,
+      municipal: row.municipal,
     };
     return c.json(body);
   });
