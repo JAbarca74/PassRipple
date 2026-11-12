@@ -115,13 +115,17 @@ export function eventJsonLd(event: SeoEvent, origins: SiteOrigins, image: string
   };
 }
 
+const HTML_ENTITIES: Readonly<Record<string, string>> = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;",
+};
+
+/** Escapes text for HTML content and attributes in a single pass, so nothing is escaped twice. */
 export function escapeHtml(text: string): string {
-  return text
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
+  return text.replace(/[&<>"']/g, (char) => HTML_ENTITIES[char] ?? char);
 }
 
 /**
@@ -132,7 +136,7 @@ export function eventHeadTags(event: SeoEvent, origins: SiteOrigins, image: stri
   const title = escapeHtml(eventTitle(event));
   const description = escapeHtml(eventDescription(event));
   const url = escapeHtml(eventUrl(event, origins));
-  const jsonLd = JSON.stringify(eventJsonLd(event, origins, image)).replaceAll("<", "\\u003c");
+  const jsonLd = JSON.stringify(eventJsonLd(event, origins, image)).replace(/</g, "\\u003c");
   return [
     `<meta name="description" content="${description}">`,
     `<link rel="canonical" href="${url}">`,
